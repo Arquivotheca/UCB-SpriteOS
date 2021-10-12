@@ -1,0 +1,1853 @@
+#!/bin/sh
+# This is a shell archive (shar 3.24)
+# made 05/20/1994 00:18 UTC by shirriff@sprite.Berkeley.EDU
+# Source directory /user6/shirriff/rsrch/rbw/rbwdemo
+#
+# existing files WILL be overwritten
+#
+# This shar contains:
+# length  mode       name
+# ------ ---------- ------------------------------------------
+#   4901 -rw-r--r-- color.c
+#   5552 -rw-r--r-- rbwcolor.c
+#   2893 -rw-r--r-- utilities.c
+#  20746 -rw-r--r-- rbwdemo.c
+#   1096 -rw-r--r-- color.h
+#     21 -rw-r--r-- patchlevel.h
+#   7900 -rw-r--r-- Xdefs.h
+#    588 -rw-rw-r-- README
+#    302 -rw-rw-r-- Makefile
+#
+if touch 2>&1 | fgrep '[-amc]' > /dev/null
+ then TOUCH=touch
+ else TOUCH=true
+fi
+# ============= color.c ==============
+echo "x - extracting color.c (Text)"
+sed 's/^X//' << 'SHAR_EOF' > color.c &&
+X/* $Header: /user6/shirriff/rsrch/rbw/rbwdemo/RCS/color.c,v 1.1 93/01/26 22:33:23 shirriff Exp Locker: shirriff $ */
+X
+X/* 
+X * color.c - color helper routines
+X * 
+X * Author:	Christopher A. Kent
+X * 		Western Research Laboratory
+X * 		Digital Equipment Corporation
+X * Date:	Sun Dec 13 1987
+X * Copyright (c) 1987 Christopher A. Kent
+X */
+X
+X/* 
+X * See David F. Rogers, "Procedural Elements for Computer Graphics",
+X * McGraw-Hill, for the theory behind these routines.
+X */
+X
+X/*
+X * $Log:	color.c,v $
+X * Revision 1.1  93/01/26  22:33:23  shirriff
+X * Initial revision
+X * 
+X * Revision 1.1  91/06/06  18:39:07  shirriff
+X * Initial revision
+X * 
+X * Revision 1.2  88/06/30  09:58:36  mikey
+X * Handles CMY also.
+X * 
+X * Revision 1.1  88/06/30  09:10:32  mikey
+X * Initial revision
+X * 
+X */
+X
+Xstatic char rcs_ident[] = "$Header: /user6/shirriff/rsrch/rbw/rbwdemo/RCS/color.c,v 1.1 93/01/26 22:33:23 shirriff Exp Locker: shirriff $";
+X
+X#include <X11/Xlib.h>
+X#include "color.h"
+X
+X#define	MAX_INTENSITY	65535			    /* for X11 */
+X
+X#define	MIN(a, b)   ((a)<(b)?(a):(b))
+X#define	MAX(a, b)   ((a)>(b)?(a):(b))
+X#define	ABS(x)	    ((x)<0?-(x):(x))
+X
+XRGB	RGBWhite = { MAX_INTENSITY, MAX_INTENSITY, MAX_INTENSITY };
+XRGB	RGBBlack = { 0, 0, 0 };
+X
+X/*
+X * Mix two RGBs, with scale factors alpha and beta, in RGB space.
+X */
+X
+XRGB
+XMixRGB(r, alpha, s, beta)
+XRGB	r, s;
+Xfloat	alpha, beta;
+X{
+X	RGB	t;
+X
+X	t.r = MAX(0, MIN(MAX_INTENSITY, (int)(alpha*(r.r) + beta*(s.r))));
+X	t.g = MAX(0, MIN(MAX_INTENSITY, (int)(alpha*(r.g) + beta*(s.g))));
+X	t.b = MAX(0, MIN(MAX_INTENSITY, (int)(alpha*(r.b) + beta*(s.b))));
+X	return t;
+X}
+X
+X/*
+X * Mix two RGBs with scale factors alpha and beta, in HSV space.
+X */
+X
+XRGB
+XMixHSV(r, alpha, s, beta)
+XRGB	r, s;
+Xfloat	alpha, beta;
+X{
+X	HSV	rr, ss, tt;
+X
+X	rr = RGBToHSV(r);
+X	ss = RGBToHSV(s);
+X	tt.h = alpha*rr.h + beta*ss.h;
+X	if (ABS(rr.h - ss.h) > 0.5) {
+X		tt.h = tt.h + 0.5;
+X		if (tt.h >= 1.0)
+X			tt.h = tt.h - 1.0;
+X	}
+X	tt.s = alpha*rr.s + beta*ss.s;
+X	tt.v = alpha*rr.v + beta*ss.v;
+X	return HSVToRGB(tt);
+X}
+X
+X/*
+X * Convert an HSV to an RGB.
+X */
+X
+XRGB
+XHSVToRGB(hsv)
+XHSV	hsv;
+X{
+X	RGB	rgb;
+X	float	p, q, t, f;
+X	int	i;
+X	
+X	if (hsv.s == 0.0)
+X		rgb = PctToRGB(hsv.v, hsv.v, hsv.v);
+X	else {
+X		if (hsv.s > 1.0)
+X			hsv.s = 1.0;
+X		if (hsv.s < 0.0)
+X			hsv.s = 0.0;
+X		if (hsv.v > 1.0)
+X			hsv.v = 1.0;
+X		if (hsv.v < 0.0)
+X			hsv.v = 0.0;
+X		if (hsv.h >= 1.0)
+X			hsv.h = 0.0;
+X
+X		hsv.h = 6.0 * hsv.h;
+X		i = (int) hsv.h;
+X		f = hsv.h - (float) i;
+X		p = hsv.v * (1.0 - hsv.s);
+X		q = hsv.v * (1.0 - (hsv.s * f));
+X		t = hsv.v * (1.0 - (hsv.s * (1.0 - f)));
+X
+X		switch(i) {
+X		case 0:	rgb = PctToRGB(hsv.v, t, p); break;
+X		case 1:	rgb = PctToRGB(q, hsv.v, p); break;
+X		case 2:	rgb = PctToRGB(p, hsv.v, t); break;
+X		case 3:	rgb = PctToRGB(p, q, hsv.v); break;
+X		case 4:	rgb = PctToRGB(t, p, hsv.v); break;
+X		case 5:	rgb = PctToRGB(hsv.v, p, q); break;
+X		}
+X	}
+X	return rgb;
+X}
+X
+X/*
+X * Convert an RGB to HSV.
+X */
+X
+XHSV
+XRGBToHSV(rgb)
+XRGB	rgb;
+X
+X{
+X	HSV	hsv;
+X	float	rr, gg, bb;
+X	float	min, max;
+X	float	rc, gc, bc;
+X	
+X	rr = (float) rgb.r / (float) MAX_INTENSITY;
+X	gg = (float) rgb.g / (float) MAX_INTENSITY;
+X	bb = (float) rgb.b / (float) MAX_INTENSITY;
+X	
+X	max = MAX(MAX(rr, gg), bb);
+X	min = MIN(MIN(rr, gg), bb);
+X	hsv.v = max;
+X	if (max == 0.0)
+X		hsv.s = 0.0;
+X	else
+X		hsv.s = (max - min) / max;
+X	if (hsv.s == 0.0)
+X		hsv.h = 0.0;
+X	else {
+X		rc = (max - rr) / (max - min);
+X		gc = (max - gg) / (max - min);
+X		bc = (max - bb) / (max - min);
+X		if (rr == max)
+X			hsv.h = bc - gc;
+X		else if (gg == max)
+X			hsv.h = 2.0 + rc - bc;
+X		else if (bb = max)
+X			hsv.h = 4.0 + gc - rc;
+X
+X		if (hsv.h < 0.0)
+X			hsv.h += 6.0;
+X		hsv.h = hsv.h / 6.0;
+X	}
+X	return hsv;
+X}
+X
+X/*
+X * Intensity percentages to RGB.
+X */
+X
+XRGB
+XPctToRGB(rr, gg, bb)
+Xfloat	rr, gg, bb;
+X{
+X	RGB	rgb;
+X	
+X	if (rr > 1.0)
+X		rr = 1.0;
+X	if (gg > 1.0)
+X		gg = 1.0;
+X	if (bb > 1.0)
+X		bb = 1.0;
+X	
+X	rgb.r = (int)(0.5 + rr * MAX_INTENSITY);
+X	rgb.g = (int)(0.5 + gg * MAX_INTENSITY);
+X	rgb.b = (int)(0.5 + bb * MAX_INTENSITY);
+X	return rgb;
+X}
+X
+X/*
+X * Intensity percentages to HSV.
+X */
+X
+XHSV
+XPctToHSV(hh, ss, vv)
+Xfloat	hh, ss, vv;
+X{
+X	HSV	hsv;
+X
+X	if (hh > 1.0)
+X		hh = 1.0;
+X	if (ss > 1.0)
+X		ss = 1.0;
+X	if (vv > 1.0)
+X		vv = 1.0;
+X
+X	hsv.h = hh;
+X	hsv.s = ss;
+X	hsv.v = vv;
+X	return hsv;
+X}
+X
+X/*
+X * The Manhattan distance between two colors, between 0.0 and 3.0.
+X */
+X
+Xfloat
+XRGBDist(r, s)
+XRGB	r, s;
+X{
+X	return (
+X	    ABS((float)(r.r - s.r)) +
+X	    ABS((float)(r.g - s.g)) +
+X	    ABS((float)(r.b - s.b))) / (float)MAX_INTENSITY;
+X}
+X
+X/*
+X * Load an XColor with an RGB.
+X */
+X
+XRGBToXColor(r, x)
+XRGB	r;
+XXColor	*x;
+X{
+X	x->red = r.r;
+X	x->green = r.g;
+X	x->blue = r.b;
+X	x->flags = DoRed | DoGreen | DoBlue;
+X}
+X
+X/*
+X * Convert a CMY to RGB.
+X */
+X
+XRGB
+XCMYToRGB(cmy)
+XCMY	cmy;
+X
+X{
+X	RGB	rgb;
+X
+X	rgb.r = MAX_INTENSITY - cmy.c;
+X	rgb.g = MAX_INTENSITY - cmy.m;
+X	rgb.b = MAX_INTENSITY - cmy.y;
+X	return rgb;
+X}
+X
+X/*
+X * Convert an RGB to CMY.
+X */
+X
+XCMY
+XRGBToCMY(rgb)
+XRGB	rgb;
+X
+X{
+X	CMY	cmy;
+X
+X	cmy.c = MAX_INTENSITY - rgb.r;
+X	cmy.m = MAX_INTENSITY - rgb.g;
+X	cmy.y = MAX_INTENSITY - rgb.b;
+X	return cmy;
+X}
+SHAR_EOF
+$TOUCH -am 0126223393 color.c &&
+chmod 0644 color.c ||
+echo "restore of color.c failed"
+set `wc -c color.c`;Wc_c=$1
+if test "$Wc_c" != "4901"; then
+	echo original size 4901, current size $Wc_c
+fi
+# ============= rbwcolor.c ==============
+echo "x - extracting rbwcolor.c (Text)"
+sed 's/^X//' << 'SHAR_EOF' > rbwcolor.c &&
+X/* $Header: /user6/shirriff/rsrch/rbw/rbwdemo/RCS/rbwcolor.c,v 1.5 93/01/26 22:33:23 shirriff Exp Locker: shirriff $ */
+X
+X/*
+X * This file contains routines for converting between HSV color definitions
+X * and the R-G B-Y B-W color scheme.
+X * Copyright 1991 Ken Shirriff
+X */
+X
+X#define RBWMAP 0
+X#define OLDMAP 1
+X#define RGYBMAP 2
+X#define RGYB2MAP 3
+X#define HSVMAP 4
+X#define YESMAP 5
+X#define ARGYBMAP 6
+X
+Xint displayMode = RBWMAP;
+Xint displayModeNum = ARGYBMAP+1;
+X
+Xchar *displayModeLabels[] = {"RBW","Old RBW","RGYB","New RGYB","HSV","YES",
+X	"ARgYb"};
+X
+Xchar *scrollLabels[][6]={"Red","Blu","Wht","Grn","Yel","Blk",
+X    "Red","Blu","Wht","Grn","Yel","Blk",
+X    "Red","Blu","Wht","Grn","Yel","Blk",
+X    "Red","Blu","Wht","Grn","Yel","Blk",
+X    "Hue","Sat","Val","","","",
+X    "Y","E","S","","","",
+X    "A","Rg","Yb","","","",
+X    };
+X	
+X
+X#include "color.h"
+X#include <math.h>
+X#define fsqrt(x) ((float)sqrt((double)(x)))
+X
+X#define abs(x) ((x)<0?-(x):(x))
+X#define min(a,b) ((a)<(b)?(a):(b))
+X#define max(a,b) ((a)>(b)?(a):(b))
+X
+X/*
+X * Convert an HSV to RBW.
+X */
+XRBW
+XHSVToRBW(hsv)
+XHSV	hsv;
+X{
+X    RBW rbw;
+X    float vs;	/* Scaled saturation. */
+X    float k;	/* Quantity of black (0-2) */
+X    float c;	/* Quantity of color */
+X    float r,b;
+X    float f;
+X    float h;
+X    float a,t;
+X    int sr,sb;
+X
+X    vs = hsv.s*hsv.v;
+X
+X    /*
+X     * Figure out k and c from value and saturation.
+X     */
+X    if (displayMode==OLDMAP) {
+X	if (hsv.v<.5) {
+X	    c = vs*2;
+X	    k = hsv.v*2-c-1;
+X	} else if (hsv.v-.5>vs) {
+X	    k = hsv.v*2-1;
+X	    c = vs*2;
+X	} else if (hsv.v-.5>vs/2) {
+X	    c = hsv.v*2-1;
+X	    k = (c-vs)*2;
+X	} else {
+X	    c = 2*(vs-hsv.v)+1;
+X	    k = 2*hsv.v-c-1;
+X	}
+X    } else if (displayMode==RBWMAP) {
+X	if (hsv.v-.5>vs/2) {
+X	    a = 1.5+vs-hsv.v;
+X	    k = 1;
+X	} else {
+X	    a = .5+hsv.v;
+X	    k = -1;
+X	}
+X	t = fsqrt(a*a-2*vs);
+X	c = a-t;
+X	k = k*(2-a-t);
+X    }
+X
+X    h = hsv.h*6;
+X
+X    /*
+X     * Figure out the hue.
+X     */
+X    if (h <= 1) {
+X	sr = 1;
+X	sb = -1;
+X	f = 2*h-1;
+X    } else if (h <= 2) {
+X	sr = -1;
+X	sb = -1;
+X	f = 3-2*h;
+X    } else if (h <= 4) {
+X	sr = -1;
+X	sb = 1;
+X	f = h-3;
+X    } else if (h <= 6) {
+X	sr = 1;
+X	sb = 1;
+X	f = 5-h;
+X    }
+X    if (f>=0) {
+X	b = sb;
+X	r = (1-f)*sr;
+X    } else {
+X	r = sr;
+X	b = (f+1)*sb;
+X    }
+X
+X    rbw.r = r*c/2+.5;
+X    rbw.b = b*c/2+.5;
+X    rbw.w = (k+1)/2;
+X
+X    return rbw;
+X}
+X
+X/*
+X * Convert a RBW to RGB.
+X */
+XRGB
+XRBWToRGB(rbw)
+XRBW	rbw;
+X{
+X    HSV hsv;
+X    RGB rgb;
+X    float r,g,b;
+X    if (displayMode==HSVMAP) {
+X	rgb = HSVToRGB(rbw);
+X    } else if (displayMode==RGYB2MAP) {
+X	if (rbw.w>.5) {
+X	    r = 2*rbw.r - rbw.w*2*rbw.r + rbw.w*2-1;
+X	    g = 2*rbw.b - rbw.w*2*rbw.b + rbw.w*2-1;
+X	    b = max(rbw.r,rbw.b)*(rbw.w*2-2)+1;
+X	} else {
+X	    r = rbw.r*rbw.w*2;
+X	    g = rbw.b*rbw.w*2;
+X	    b = (1-max(rbw.r,rbw.b))*rbw.w*2;
+X	}
+X    } else if (displayMode==RGYBMAP) {
+X	r = rbw.r*rbw.w*2;
+X	g = rbw.b*rbw.w*2;
+X	b = (1-max(rbw.r,rbw.b))*rbw.w*2;
+X    } else if (displayMode==YESMAP) {
+X	float y,e,s;
+X	y = (rbw.r-.5)*1.8;
+X	e = (rbw.b-.5)*1.2;
+X	s = (rbw.w-.5)*1.2;
+X	r = y+1.698*e-1.163*s;
+X	g = y-.568*e +.136*s;
+X	b = y+.404*e+1.774*s;
+X    } else if (displayMode==ARGYBMAP) {
+X	float y,e,s;
+X	y = (rbw.r-.5)*1.2;
+X	e = (rbw.b-.5)*1.2;
+X	s = (rbw.w-.5)*1.2;
+X	r = y+1.29*e+0.22*s;
+X	g = y-.71*e +0.22*s;
+X	b = y+.29*e-1.78*s;
+X    }
+X    if (displayMode==RGYBMAP || displayMode==RGYB2MAP || displayMode==YESMAP
+X	    || displayMode==ARGYBMAP) {
+X	if (r<0||g<0||b<0) {
+X	    r = 0;
+X	    g = 0;
+X	    b = 0;
+X	}
+X	if (r>1||g>1||b>1) {
+X	    r = 1;
+X	    g = 1;
+X	    b = 1;
+X	}
+X	rgb.r = r*65535;
+X	rgb.g = g*65535;
+X	rgb.b = b*65535;
+X    } else if (displayMode==OLDMAP || displayMode==RBWMAP) {
+X	hsv = RBWToHSV(rbw);
+X	rgb = HSVToRGB(hsv);
+X    }
+X    return rgb;
+X}
+X
+X/*
+X * Convert a RGB to RBW.
+X */
+XRBW
+XRGBToRBW(rgb)
+XRGB rgb;
+X{
+X    HSV hsv;
+X    RBW rbw;
+X
+X    if (displayMode==HSVMAP) {
+X	hsv = RGBToHSV(rgb);
+X	rbw.r = hsv.h;
+X	rbw.b = hsv.s;
+X	rbw.w = hsv.v;
+X    } else if (displayMode==RGYBMAP || displayMode==RGYB2MAP) {
+X	float r,g,b;
+X	float c;
+X	r = rgb.r/65535.;
+X	g = rgb.g/65535.;
+X	b = rgb.b/65535.;
+X	if (r>g) {
+X	    rbw.w = (r+b)/2;
+X	} else {
+X	    rbw.w = (g+b)/2;
+X	}
+X	if (rbw.w!=0) {
+X	    if (displayMode==RGYB2MAP) {
+X		if (rbw.w>.5) {
+X		    rbw.r=1-(1+g)/(2-2*rbw.w);
+X		    rbw.b=1-(1+r)/(2-2*rbw.w);
+X		} else {
+X		    rbw.r=r/rbw.w/2;
+X		    rbw.b=g/rbw.w/2;
+X		}
+X	    } else {
+X		rbw.r=r/rbw.w/2;
+X		rbw.b=g/rbw.w/2;
+X	    }
+X	}
+X    } else if (displayMode==OLDMAP || displayMode==RBWMAP) {
+X	hsv = RGBToHSV(rgb);
+X	rbw = HSVToRBW(hsv);
+X    }
+X    return rbw;
+X}
+X
+X/*
+X * Convert a RBW to HSV.
+X */
+XHSV
+XRBWToHSV(rbw)
+XRBW	rbw;
+X{
+X    HSV hsv;
+X    float r = rbw.r*2-1;
+X    float b = rbw.b*2-1;
+X    float k = rbw.w*2-1;
+X    float f;
+X    float c,vs;
+X    float x1,x2;
+X
+X    if (r==0 && b==0) {
+X	hsv.h = 0;
+X    } else {
+X	if (abs(b)>abs(r)) {
+X	    f = 1-abs(r/b);
+X	} else {
+X	    f = abs(b/r)-1;
+X	}
+X	if (r>=0 && b<=0) {
+X	    hsv.h = .5+f/2;
+X	} else if (r<=0 && b<=0) {
+X	    hsv.h = 1.5-f/2;
+X	} else if (r<=0 && b>=0) {
+X	    hsv.h = 3+f;
+X	} else if (r>0 && b>=0) {
+X	    hsv.h = 5-f;
+X	}
+X    }
+X    hsv.h /= 6;
+X
+X    /*
+X     * Figure out the value and saturation.
+X     */
+X    c = max(abs(r),abs(b));
+X    if (displayMode==OLDMAP) {
+X	if (k>c) {
+X	    hsv.v = (k+1)/2;
+X	    vs = c/2;
+X	} else if (k>0) {
+X	    hsv.v = (c+1)/2;
+X	    vs = c-k/2;
+X	} else if (k>-c) {
+X	    hsv.v = (k+1+c)/2;
+X	    vs = c+k/2;
+X	} else {
+X	    hsv.v = (k+1+c)/2;
+X	    vs = c/2;
+X	}
+X    } else if (displayMode==RBWMAP) {
+X	if (k>=0) {
+X	    hsv.v = (k+1+c*(1-k))/2;
+X	    vs = c*(2-k)/2;
+X	} else {
+X	    hsv.v = (k+1+c)/2;
+X	    vs = c*(k+2)/2;
+X	}
+X    }
+X
+X    if (hsv.v==0) {
+X	hsv.s = 0;
+X    } else {
+X	hsv.s = vs/hsv.v;
+X    }
+X    return hsv;
+X}
+SHAR_EOF
+$TOUCH -am 0202223593 rbwcolor.c &&
+chmod 0644 rbwcolor.c ||
+echo "restore of rbwcolor.c failed"
+set `wc -c rbwcolor.c`;Wc_c=$1
+if test "$Wc_c" != "5552"; then
+	echo original size 5552, current size $Wc_c
+fi
+# ============= utilities.c ==============
+echo "x - extracting utilities.c (Text)"
+sed 's/^X//' << 'SHAR_EOF' > utilities.c &&
+X#ifndef lint
+Xstatic char rcsid[] = "$Header: /user6/shirriff/rsrch/rbw/rbwdemo/RCS/utilities.c,v 1.1 93/01/26 22:33:26 shirriff Exp Locker: shirriff $";
+X#endif !lint
+X
+X/* 
+X * Copyright 1990 Richard Hesketh / rlh2@ukc.ac.uk
+X *                Computing Lab. University of Kent at Canterbury, UK
+X *
+X * Permission to use, copy, modify and distribute this software and its
+X * documentation for any purpose is hereby granted without fee, provided that
+X * the above copyright notice appear in all copies and that both that
+X * copyright notice and this permission notice appear in supporting
+X * documentation, and that the names of Richard Hesketh and The University of
+X * Kent at Canterbury not be used in advertising or publicity pertaining to
+X * distribution of the software without specific, written prior permission.
+X * Richard Hesketh and The University of Kent at Canterbury make no
+X * representations about the suitability of this software for any purpose.
+X * It is provided "as is" without express or implied warranty.
+X *
+X * Richard Hesketh AND THE UNIVERSITY OF KENT AT CANTERBURY DISCLAIMS ALL
+X * WARRANTIES WITH REGARD TO THIS SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES
+X * OF MERCHANTABILITY AND FITNESS, IN NO EVENT SHALL Richard Hesketh OR THE
+X * UNIVERSITY OF KENT AT CANTERBURY BE LIABLE FOR ANY SPECIAL, INDIRECT OR
+X * CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE,
+X * DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
+X * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE
+X * OF THIS SOFTWARE.
+X *
+X * Author:  Richard Hesketh / rlh2@ukc.ac.uk, 
+X *                Computing Lab. University of Kent at Canterbury, UK
+X */
+X
+X
+X/*
+X * This file was generated by the DIRT interface editor
+X *	Author: Richard Hesketh / rlh2@ukc.ac.uk
+X *	Version: 1.0 of June 3rd 1989
+X *
+X * Generated for rlh2 on Mon Aug 21 09:35:53 1989
+X */
+X
+X#include <X11/Intrinsic.h>
+X#include <X11/Shell.h>
+X
+XDisplay *
+XXukcToolkitInitialize(dpy_str, app_name, app_class,
+X					argc, argv, options, num_options)
+XString dpy_str;
+XString app_name;
+XString app_class;
+XCardinal *argc;
+XString argv[];
+XXrmOptionDescRec options[];
+XCardinal num_options;
+X{
+X	Cardinal i;
+X	static Boolean inited = FALSE;
+X	XtAppContext new_context;
+X	Display *dpy;
+X
+X	if (!inited) {
+X		XtToolkitInitialize();
+X		inited = TRUE;
+X	}
+X
+X	new_context = XtCreateApplicationContext();
+X	dpy = XtOpenDisplay(new_context, dpy_str, app_name,
+X				app_class, options, num_options,
+X				argc, argv);
+X	if (dpy == NULL)
+X		XtError("Could not open Display");
+X	return (dpy);
+X}
+X
+X
+Xvoid
+XXukcRegisterApplicationDefaults(dpy, defs, n_defs)
+XDisplay *dpy;
+XString defs[];
+XCardinal n_defs;
+X{
+X	XrmDatabase rdb = NULL;
+X	Cardinal i;
+X
+X	for (i = 0; i < n_defs; i++)
+X		XrmPutLineResource(&rdb, defs[i]);
+X
+X	if (rdb != NULL) {
+X		XrmMergeDatabases(dpy->db, &rdb);
+X		dpy->db = rdb;   /* original dpy->db has been destroyed */
+X	}
+X}
+SHAR_EOF
+$TOUCH -am 0126223393 utilities.c &&
+chmod 0644 utilities.c ||
+echo "restore of utilities.c failed"
+set `wc -c utilities.c`;Wc_c=$1
+if test "$Wc_c" != "2893"; then
+	echo original size 2893, current size $Wc_c
+fi
+# ============= rbwdemo.c ==============
+echo "x - extracting rbwdemo.c (Text)"
+sed 's/^X//' << 'SHAR_EOF' > rbwdemo.c &&
+X#ifndef lint
+Xstatic char rcsid[] = "$Header: /user6/shirriff/rsrch/rbw/rbwdemo/RCS/rbwdemo.c,v 1.3 93/01/26 22:33:25 shirriff Exp Locker: shirriff $";
+X#endif !lint
+X
+X#define GAMMACORRECT
+X
+X/* 
+X * Copyright 1990 Richard Hesketh / rlh2@ukc.ac.uk
+X *                Computing Lab. University of Kent at Canterbury, UK
+X *
+X * Permission to use, copy, modify and distribute this software and its
+X * documentation for any purpose is hereby granted without fee, provided that
+X * the above copyright notice appear in all copies and that both that
+X * copyright notice and this permission notice appear in supporting
+X * documentation, and that the names of Richard Hesketh and The University of
+X * Kent at Canterbury not be used in advertising or publicity pertaining to
+X * distribution of the software without specific, written prior permission.
+X * Richard Hesketh and The University of Kent at Canterbury make no
+X * representations about the suitability of this software for any purpose.
+X * It is provided "as is" without express or implied warranty.
+X *
+X * Richard Hesketh AND THE UNIVERSITY OF KENT AT CANTERBURY DISCLAIMS ALL
+X * WARRANTIES WITH REGARD TO THIS SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES
+X * OF MERCHANTABILITY AND FITNESS, IN NO EVENT SHALL Richard Hesketh OR THE
+X * UNIVERSITY OF KENT AT CANTERBURY BE LIABLE FOR ANY SPECIAL, INDIRECT OR
+X * CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE,
+X * DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
+X * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE
+X * OF THIS SOFTWARE.
+X *
+X * Author:  Richard Hesketh / rlh2@ukc.ac.uk, 
+X *                Computing Lab. University of Kent at Canterbury, UK
+X * Modified by Ken Shirriff
+X */
+X
+X/* A picapix lookalike under X11 */
+X
+X/*
+X * rbwdemo - a colour palette mixer.  Demonstrates the rbw color space.
+X */
+X
+X#include <stdio.h>
+X#include <X11/Xatom.h>
+X#include <X11/X.h>
+X#include <X11/Intrinsic.h>
+X#include <X11/StringDefs.h>
+X#include <X11/Shell.h>
+X#include <X11/Xaw/Toggle.h>
+X#include <X11/Xaw/Command.h>
+X#include <X11/Xaw/Scrollbar.h>
+X#include <X11/Xaw/Label.h>
+X#include <X11/Xaw/Form.h>
+X#include <X11/Xaw/Box.h>
+X#include <X11/Xmu/Atoms.h>
+X#include "Xdefs.h"
+X#include "color.h"
+X#include <math.h>
+X
+X#define PRIMARY_COLOR "PRIMARY_COLOR"
+X#define XA_PRIMARY_COLOR XmuInternAtom(XtDisplay(w),_XA_PRIMARY_COLOR)
+Xstatic AtomPtr _XA_PRIMARY_COLOR = NULL;
+X
+Xextern void exit();
+Xextern void XukcRegisterApplicationDefaults();
+Xextern Display *XukcToolkitInitialize();
+X
+X/* callback routines */
+Xstatic void Quit();
+Xstatic void DisplayMode();
+Xstatic void Mode();
+Xstatic void Thumbed();
+Xstatic void Scrolled();
+Xstatic void Update_Colors();
+Xstatic void Update_RBW();
+Xstatic void Update_RGB();
+X
+X/* action routines */
+Xstatic void pick_memory();
+Xstatic void move_scroll();
+X
+Xstatic void update_grid();
+X
+X#ifdef GAMMACORRECT
+X#define GAMMA(x) ((float)(sqrt((double)(x))*256))
+X#define GAMMA1(x) (((float)x)/65535*((float)x))
+X#else
+X#define GAMMA(x) (x)
+X#define GAMMA1(x) (x)
+X#endif
+X
+X
+X#define MEMORY_OFFSET	8
+X#define NUM_MEMORIES	64
+X#define NUM_IN_ROW	8
+X#define MAX_COLORS	NUM_MEMORIES+MEMORY_OFFSET
+X#define MIN(a, b) ((a) < (b) ? (a) : (b))
+X
+X#ifdef SOLID_THUMB
+X#define THUMB(x) (1.0-(x))
+X#define THUMB2(x) (x)
+X#else
+X#define THUMB(x) (1-(x)<.0125?1-(x):1-(x)-.0125)
+X#define THUMB2(x) (0.025)
+X#endif
+X#define THUMBF(x) THUMB((x)/65536.0)
+X#define THUMBF2(x) THUMB2((x)/65536.0)
+X
+Xextern int displayMode;
+Xextern int displayModeNum;
+Xextern char *displayModeLabels[];
+X
+Xint modeCount = 2;
+X#define RBWR 0
+X#define RBWB 1
+X#define RBWW 2
+X#define RGBR 3
+X#define RGBG 4
+X#define RGBB 5
+X#define HSVH 6
+X#define HSVS 7
+X#define HSVV 8
+X#define MODE_NUM (RGBB+1)
+X
+Xextern char *scrollLabels[][6];
+X
+Xchar *modeLabels[MODE_NUM] = {"%s: constant %s", "%s: constant %s",
+X    "%s: constant %s",
+X    "RGB: constant R", "RGB: constant G", "RGB: constant B"};
+X
+Xstatic XColor colors[MAX_COLORS];
+Xstatic Display     *dpy;
+Xstatic Colormap    cmap;
+Xstatic GC	boxedGC, boxedChangedGC, unboxedGC;
+X
+Xstatic RGB rgb_values;
+Xstatic RBW rbw_values;
+Xstatic float pass_value;
+Xstatic int last_pos;
+Xstatic int current_memory = 20;
+Xstatic Pixel original_background;
+Xstatic Boolean silent_exit = FALSE;
+X
+Xstatic Widget toplevel, mixingForm, mixedColor;
+Xstatic Widget redLocked, greenLocked, blueLocked, title;
+Xstatic Widget redIntensity, greenIntensity, blueIntensity, modeValue,
+X	displayModeValue;
+Xstatic Widget redScroll, greenScroll, blueScroll;
+Xstatic Widget rgScroll, byScroll, bwScroll;
+Xstatic Widget rLabel, bLabel, wLabel, gLabel, yLabel, kLabel;
+Xstatic Widget quit;
+Xstatic Widget colorMemory[NUM_MEMORIES];
+Xstatic Boolean colorUsed[NUM_MEMORIES];
+X
+X#define RED    1
+X#define GREEN  2
+X#define BLUE   4
+X#define LOCKED 8
+X#define RG    16
+X#define BY    32
+X#define BW    64
+X
+X#define MIX_COLOR	0
+X#define RED_COLOR	1
+X#define GREEN_COLOR	2
+X#define BLUE_COLOR	3
+X#define PURE_BLACK	4
+X#define PURE_RED	5
+X#define PURE_GREEN	6
+X#define PURE_BLUE	7
+X
+Xstatic XtActionsRec actionTable[] = {
+X	{"pick_memory", pick_memory},
+X	{"move_scroll", move_scroll},
+X};
+X
+Xstatic XrmOptionDescRec options[] = {
+X	{ "-silent", ".silent", XrmoptionNoArg, (caddr_t)"true" }
+X};
+X
+Xstatic XtResource resources[] = {
+X	{ "silent", "Silent", XtRBoolean, sizeof(Boolean),
+X	  0, XtRImmediate, (XtPointer)FALSE }
+X};
+X
+X
+Xvoid main(argc, argv)
+Xunsigned int argc;
+Xchar **argv;
+X{
+X	Status ok;
+X	unsigned long plane_masks;
+X	unsigned long pixels[MAX_COLORS];
+X	Cardinal i, j, k;
+X	XGCValues values;
+X	Widget temp;
+X
+X	dpy = XukcToolkitInitialize((String)NULL, "rbwdemo", "Rbwdemo",
+X				&argc, argv, (XrmOptionDescRec *)NULL, 0);
+X	XukcRegisterApplicationDefaults(dpy, app_defaults,
+X        		                                XtNumber(app_defaults));
+X        toplevel = XtVaAppCreateShell("rbwdemo", "Rbwdemo",
+X                                        applicationShellWidgetClass, dpy,
+X                                        NULL);
+X	XtGetApplicationResources(toplevel, &silent_exit, resources,
+X					XtNumber(resources), (ArgList)NULL, 0);
+X
+X	cmap = DefaultColormap(dpy, DefaultScreen(dpy));
+X	if(!XAllocColorCells(dpy, cmap, 0, &plane_masks, 0, pixels,
+X	   MAX_COLORS))
+X		XtError("rbwdemo: Not enough colormap entries available");
+X
+X	/* allocate the standard cells used by the application */
+X	for (j = 0, i = 0; i < MEMORY_OFFSET; i++) {
+X		colors[i].pixel = pixels[j++];
+X		colors[i].flags = DoRed | DoGreen | DoBlue;
+X	}
+X
+X	/* initialize the pixel memory locations */
+X	for (k = 1, i = MEMORY_OFFSET; i < MAX_COLORS; i++) {
+X		colors[i].flags = DoRed | DoGreen | DoBlue;
+X		if (argc > 1) {
+X			/* pull in any colormap entries specified on the
+X			 * command line */
+X			colors[i].pixel = atoi(argv[k++]);
+X			colorUsed[i-MEMORY_OFFSET] = TRUE;
+X			argc--;
+X		} else {
+X			colors[i].pixel = pixels[j++];
+X			colors[i].red = colors[i].green = colors[i].blue = 0;
+X			colorUsed[i-MEMORY_OFFSET] = FALSE;
+X		}
+X	}
+X
+X	/* retrieve the given colormap entries current values */
+X	if (k > 1)
+X		XQueryColors(dpy, cmap, &(colors[MEMORY_OFFSET]), k-1);
+X
+X	current_memory = 20;
+X
+X	colors[MIX_COLOR].flags = DoRed | DoGreen | DoBlue;
+X	colors[MIX_COLOR].red = GAMMA(.5*65536);
+X	colors[MIX_COLOR].green = GAMMA(.5*65536);
+X	colors[MIX_COLOR].blue = GAMMA(.5*65536);
+X	rgb_values.r = .5*65536;
+X	rgb_values.g = .5*65536;
+X	rgb_values.b = .5*65536;
+X
+X	colors[PURE_BLACK].red = colors[PURE_BLACK].green = 0;
+X	colors[PURE_BLACK].blue = 0;
+X
+X	colors[PURE_RED].blue = colors[PURE_RED].green = 0;
+X	colors[RED_COLOR].blue = colors[RED_COLOR].green = 0; 
+X	colors[PURE_RED].red = colors[RED_COLOR].red = (short)~0;
+X
+X	/* not as pure as it should be!! looks better like this though 8-) */
+X	colors[PURE_GREEN].red = 0x4f*256;
+X	colors[PURE_GREEN].green = 0xb5*256;
+X	colors[PURE_GREEN].blue = 0x1e*256;
+X
+X	colors[GREEN_COLOR].red = colors[GREEN_COLOR].blue = 0;
+X	colors[GREEN_COLOR].green = (short)~0;
+X
+X	colors[PURE_BLUE].red = colors[PURE_BLUE].green = 0;
+X	colors[BLUE_COLOR].red = colors[BLUE_COLOR].green = 0;
+X	colors[PURE_BLUE].blue = colors[BLUE_COLOR].blue = (short)~0;
+X
+X	colors[PURE_RED].red = 0;
+X	colors[PURE_GREEN].red = 0;
+X	colors[PURE_GREEN].green = 0;
+X	colors[PURE_GREEN].blue = 0;
+X	colors[PURE_BLUE].blue = 0;
+X
+X
+X	XStoreColors(dpy, cmap, colors, MAX_COLORS);
+X	for (i = MEMORY_OFFSET; i < j; i++)
+X		colors[i].flags = DoRed | DoGreen | DoBlue;
+X
+X	XtAppAddActions(XtWidgetToApplicationContext(toplevel),
+X					actionTable, XtNumber(actionTable));
+X
+X	/* create the UI */
+X	mixingForm = XtVaCreateManagedWidget("mixingForm", formWidgetClass,
+X						toplevel, NULL);
+X	rLabel = XtVaCreateManagedWidget("hueLabel", commandWidgetClass,
+X						mixingForm, NULL);
+X	rgScroll = XtVaCreateManagedWidget("hueScroll", scrollbarWidgetClass,
+X						mixingForm, NULL);
+X	bLabel = XtVaCreateManagedWidget("satLabel", commandWidgetClass,
+X						mixingForm, NULL);
+X	byScroll = XtVaCreateManagedWidget("satScroll", scrollbarWidgetClass,
+X						mixingForm, NULL);
+X	wLabel = XtVaCreateManagedWidget("valLabel", commandWidgetClass,
+X						mixingForm, NULL);
+X	bwScroll = XtVaCreateManagedWidget("valScroll", scrollbarWidgetClass,
+X						mixingForm, NULL);
+X	gLabel = XtVaCreateManagedWidget("hue2Label", commandWidgetClass,
+X						mixingForm, NULL);
+X	yLabel = XtVaCreateManagedWidget("sat2Label", commandWidgetClass,
+X						mixingForm, NULL);
+X	kLabel = XtVaCreateManagedWidget("val2Label", commandWidgetClass,
+X						mixingForm, NULL);
+X	title = XtVaCreateManagedWidget("title", labelWidgetClass,
+X						mixingForm, NULL);
+X	mixedColor = XtVaCreateManagedWidget("mixedColor", widgetClass,
+X					mixingForm,
+X					XtNbackground, colors[MIX_COLOR].pixel,
+X					NULL);
+X	redLocked = XtVaCreateManagedWidget("redLocked", commandWidgetClass,
+X						mixingForm, NULL);
+X	greenLocked = XtVaCreateManagedWidget("greenLocked", commandWidgetClass,
+X						mixingForm, NULL);
+X	blueLocked = XtVaCreateManagedWidget("blueLocked",commandWidgetClass,
+X						mixingForm, NULL);
+X	redScroll = XtVaCreateManagedWidget("redScroll", scrollbarWidgetClass,
+X						mixingForm, NULL);
+X	greenScroll = XtVaCreateManagedWidget("greenScroll",
+X				scrollbarWidgetClass, mixingForm, NULL);
+X	blueScroll = XtVaCreateManagedWidget("blueScroll", scrollbarWidgetClass,
+X						mixingForm, NULL);
+X	redIntensity = XtVaCreateManagedWidget("redIntensity", widgetClass,
+X					mixingForm,
+X					XtNbackground, colors[RED_COLOR].pixel,
+X					NULL);
+X	greenIntensity = XtVaCreateManagedWidget("greenIntensity", widgetClass,
+X				mixingForm,
+X				XtNbackground, colors[GREEN_COLOR].pixel,
+X				NULL);
+X	blueIntensity = XtVaCreateManagedWidget("blueIntensity", widgetClass,
+X				mixingForm,
+X				XtNbackground, colors[BLUE_COLOR].pixel,
+X				NULL);
+X	displayModeValue = XtVaCreateManagedWidget("displayModeValue",
+X		commandWidgetClass,
+X						mixingForm, NULL);
+X	modeValue = XtVaCreateManagedWidget("modeValue", commandWidgetClass,
+X						mixingForm, NULL);
+X	quit = XtVaCreateManagedWidget("quit", commandWidgetClass, mixingForm,
+X						NULL);
+X
+X	temp = quit;
+X	for (i = 0; i < NUM_MEMORIES; i++) {
+X		if (i > 0 && i%NUM_IN_ROW == 0)
+X			temp = colorMemory[i-1];
+X		colorMemory[i] = XtVaCreateManagedWidget("colorMemory",
+X				widgetClass, mixingForm,
+X				XtNbackground, colors[i+MEMORY_OFFSET].pixel,
+X				XtNfromVert, temp,
+X				XtNfromHoriz,
+X				(i%NUM_IN_ROW ? colorMemory[i-1] : bwScroll),
+X				XtNhorizDistance, i%NUM_IN_ROW?0:4,
+X				XtNvertDistance, i<NUM_IN_ROW?4:0,
+X				NULL);
+X	}
+X
+X	values.foreground = colors[PURE_RED].pixel;
+X	values.line_width = 2;
+X	values.line_style = LineOnOffDash;
+X	boxedChangedGC = XtGetGC(mixingForm, GCForeground | GCLineWidth,
+X					&values);
+X	boxedGC = XtGetGC(mixingForm, GCForeground | GCLineWidth | GCLineStyle,
+X					&values);
+X
+X	XtVaGetValues(mixingForm, XtNbackground, &(values.foreground), NULL);
+X	unboxedGC = XtGetGC(mixingForm, GCForeground | GCLineWidth, &values);
+X
+X	original_background = values.foreground;
+X
+X	XtAddCallback(redScroll, XtNjumpProc, Update_RGB, (XtPointer)RED);
+X	XtAddCallback(greenScroll, XtNjumpProc, Update_RGB, (XtPointer)GREEN);
+X	XtAddCallback(blueScroll, XtNjumpProc, Update_RGB, (XtPointer)BLUE);
+X
+X	XtAddCallback(redScroll, XtNscrollProc, Scrolled, (XtPointer)RED);
+X	XtAddCallback(greenScroll, XtNscrollProc, Scrolled, (XtPointer)GREEN);
+X	XtAddCallback(blueScroll, XtNscrollProc, Scrolled, (XtPointer)BLUE);
+X	XtAddCallback(rgScroll, XtNscrollProc, Scrolled, (XtPointer)RG);
+X	XtAddCallback(byScroll, XtNscrollProc, Scrolled, (XtPointer)BY);
+X	XtAddCallback(bwScroll, XtNscrollProc, Scrolled, (XtPointer)BW);
+X
+X	XtAddCallback(rgScroll, XtNjumpProc, Update_RBW, (XtPointer)RG);
+X	XtAddCallback(byScroll, XtNjumpProc, Update_RBW, (XtPointer)BY);
+X	XtAddCallback(bwScroll, XtNjumpProc, Update_RBW, (XtPointer)BW);
+X
+X	XtAddCallback(displayModeValue, XtNcallback, DisplayMode,
+X		(XtPointer)toplevel);
+X	XtAddCallback(modeValue, XtNcallback, Mode, (XtPointer)toplevel);
+X	XtAddCallback(quit, XtNcallback, Quit, (XtPointer)toplevel);
+X
+X	XtRealizeWidget(toplevel);
+X
+X	/* set the scrollbars to the initial mixed colour values */
+X	rbw_values = RGBToRBW(rgb_values);
+X	Update_Colors((Widget)NULL, (XEvent *)NULL,
+X			(String *)NULL, (Cardinal *)NULL);
+X
+X	updateLabels();
+X	XtAppMainLoop(XtWidgetToApplicationContext(toplevel));
+X}
+X
+X/* ARGSUSED */
+Xstatic void 
+XDisplayMode(w, client, call)
+XWidget w;
+XXtPointer client, call;
+X{
+X	displayMode++;
+X	if (displayMode >= displayModeNum) displayMode = 0;
+X
+X	rbw_values = RGBToRBW(rgb_values);
+X	Update_Colors((Widget)NULL, (XEvent *)NULL,
+X			(String *)NULL, (Cardinal *)NULL);
+X	updateLabels();
+X}
+X
+X/* ARGSUSED */
+Xstatic void 
+XMode(w, client, call)
+XWidget w;
+XXtPointer client, call;
+X{
+X	modeCount++;
+X	if (modeCount >= MODE_NUM) modeCount = 0;
+X
+X	updateLabels();
+X}
+X
+XupdateLabels()
+X{
+X	char buf[30];
+X	XtVaSetValues(displayModeValue, XtNlabel,
+X		displayModeLabels[displayMode], NULL);
+X	XtVaSetValues(rLabel, XtNlabel, scrollLabels[displayMode][0], NULL);
+X	XtVaSetValues(bLabel, XtNlabel, scrollLabels[displayMode][1], NULL);
+X	XtVaSetValues(wLabel, XtNlabel, scrollLabels[displayMode][2], NULL);
+X	XtVaSetValues(gLabel, XtNlabel, scrollLabels[displayMode][3], NULL);
+X	XtVaSetValues(yLabel, XtNlabel, scrollLabels[displayMode][4], NULL);
+X	XtVaSetValues(kLabel, XtNlabel, scrollLabels[displayMode][5], NULL);
+X	sprintf(buf,modeLabels[modeCount], displayModeLabels[displayMode],
+X		scrollLabels[displayMode][modeCount%3]);
+X	XtVaSetValues(modeValue, XtNlabel, buf, NULL);
+X	update_grid();
+X}
+X
+X/* ARGSUSED */
+Xstatic void 
+XQuit(w, client, call)
+XWidget w;
+XXtPointer client, call;
+X{
+X	Cardinal i;
+X
+X	XtReleaseGC(mixingForm, boxedGC);
+X	XtReleaseGC(mixingForm, boxedChangedGC);
+X	XtReleaseGC(mixingForm, unboxedGC);
+X	exit(0);
+X}
+X
+Xstatic void
+Xpick_memory(w, event, params, num_params)
+XWidget w;
+XXEvent *event;
+XString *params;
+XCardinal *num_params;
+X{
+X    int i;
+X    for (i=0;i<NUM_MEMORIES;i++) {
+X	if (w==colorMemory[i]) {
+X	    colors[MIX_COLOR].red = colors[i+MEMORY_OFFSET].red;
+X	    colors[MIX_COLOR].green = colors[i+MEMORY_OFFSET].green;
+X	    colors[MIX_COLOR].blue = colors[i+MEMORY_OFFSET].blue;
+X	    rgb_values.r = GAMMA1(colors[MIX_COLOR].red);
+X	    rgb_values.g = GAMMA1(colors[MIX_COLOR].green);
+X	    rgb_values.b = GAMMA1(colors[MIX_COLOR].blue);
+X	    rbw_values=RGBToRBW(rgb_values);
+X	    Update_Colors((Widget)NULL, (XEvent *)NULL,
+X			(String *)NULL, (Cardinal *)NULL);
+X	    break;
+X	}
+X    }
+X}
+X
+Xstatic int
+XWhichButton(name)
+XString name;
+X{
+X	if (strcmp(name, "red") == 0)
+X		return RED;
+X	if (strcmp(name, "blue") == 0)
+X		return BLUE;
+X	if (strcmp(name, "green") == 0)
+X		return GREEN;
+X	return 0;
+X}
+X
+Xstatic void
+Xupdate_triple(w, event, params, num_params)
+XWidget w;
+XXEvent *event;
+XString *params;
+XCardinal *num_params;
+X{
+X}
+X
+X/*
+X * rgb_values and rbw_values have been changed.
+X * Update the mix color and grid.
+X */
+Xstatic void
+XUpdate_Colors(w, event, params, num_params)
+XWidget w;
+XXEvent *event;
+XString *params;
+XCardinal *num_params;
+X{
+X    XawScrollbarSetThumb(rgScroll,THUMB(rbw_values.r),THUMB2(rbw_values.r));
+X    XawScrollbarSetThumb(byScroll,THUMB(rbw_values.b),THUMB2(rbw_values.b));
+X    XawScrollbarSetThumb(bwScroll,THUMB(rbw_values.w),THUMB2(rbw_values.w));
+X    XawScrollbarSetThumb(redScroll,THUMBF(rgb_values.r),THUMBF2(rgb_values.r));
+X    XawScrollbarSetThumb(greenScroll,THUMBF(rgb_values.g),
+X	    THUMBF2(rgb_values.g));
+X    XawScrollbarSetThumb(blueScroll,THUMBF(rgb_values.b),THUMBF2(rgb_values.b));
+X    XStoreColors(dpy, cmap, colors, 4);
+X    update_grid();
+X}
+X
+Xstatic void
+Xmove_scroll(w, event, params, num_params)
+XWidget w;
+XXEvent *event;
+XString *params;
+XCardinal *num_params;
+X{
+X#define ADJUST_CHANGE(color) if (change < 0) { \
+X					if (color + change < 0) \
+X						change = -color; \
+X			     } else { \
+X					if (color + change > 255) \
+X						change = 255-color; \
+X			     }
+X
+X	int change;
+X	float pass_value;
+X	int red_pos, green_pos, blue_pos;
+X
+X	change = last_pos - event->xmotion.y;
+X	last_pos = event->xmotion.y;
+X
+X	red_pos += change;
+X	green_pos += change;
+X	blue_pos += change;
+X
+X	/* update the new scroll bar positions and change the color */
+X
+X	Update_Colors((Widget)NULL, (XEvent *)NULL,
+X			(String *)NULL, (Cardinal *)NULL);
+X}
+X
+X
+Xstatic void
+XScrolled(w, closure, change)
+XWidget w;
+XXtPointer closure, change;
+X{
+X	Boolean going_up = (int)change < 0;
+X	int which = (int)closure;
+X	int pos = 0;
+X
+X	switch (which) {
+X		case RED:
+X			pos = rgb_values.r/256;
+X			break;
+X		case BLUE:
+X			pos = rgb_values.b/256;
+X			break;
+X		case GREEN:
+X			pos = rgb_values.g/256;
+X			break;
+X		case RG:
+X		case BY:
+X		case BW:
+X			/* Not yet implemented */
+X			return;
+X		default:
+X			fprintf(stderr, "Oops Scroll calldata inbwid\n");
+X			exit(1);
+X	}
+X
+X	if (going_up) {
+X		if (pos > 0)
+X			pos--;
+X	} else {
+X		if (pos < 255)
+X			pos++;
+X	}
+X
+X	pass_value = 1.0 - (double)pos/255;
+X	Thumbed(w, closure, (XtPointer)(&pass_value));
+X}
+X
+X	
+X
+Xstatic void
+XUpdate_RBW(w, closure, ptr)
+XWidget w;
+XXtPointer closure, ptr;
+X{
+X	int which = (int)closure;
+X	float r, g, b;
+X	float per = *(float*)ptr;
+X	double top = (double)per;
+X	XEvent event;
+X
+X	switch (which) {
+X		case RG:
+X			rbw_values.r = 1.0 - top;
+X			break;
+X		case BY:
+X			rbw_values.b = 1.0 - top;
+X			break;
+X		case BW:
+X			rbw_values.w = 1.0 - top;
+X			break;
+X	}
+X
+X	rgb_values = RBWToRGB(rbw_values);
+X
+X	pass_value = 1.0 - rgb_values.r/65536.0;
+X	Thumbed(redScroll, (XtPointer)RED, (XtPointer)(&pass_value));
+X	pass_value = 1.0 - rgb_values.g/65536.0;
+X	Thumbed(greenScroll, (XtPointer)GREEN, (XtPointer)(&pass_value));
+X	pass_value = 1.0 - rgb_values.b/65536.0;
+X	Thumbed(blueScroll, (XtPointer)BLUE, (XtPointer)(&pass_value));
+X	Update_Colors((Widget)NULL, (XEvent *)NULL,
+X			(String *)NULL, (Cardinal *)NULL);
+X}
+X
+X#define UPDATE
+Xstatic void
+Xupdate_grid()
+X{
+X#ifdef UPDATE
+X	RBW new_rbw;
+X	RGB new_rgb;
+X	HSV new_hsv;
+X	int i,j,n;
+X	float x,y;
+X	i=0;
+X	j=NUM_IN_ROW-1;
+X	new_hsv = RGBToHSV(rgb_values);
+X	new_rbw = rbw_values;
+X	new_rgb = rgb_values;
+X	for (n= MEMORY_OFFSET;n<MEMORY_OFFSET+NUM_MEMORIES;n++) {
+X	    x = i/(float)(NUM_IN_ROW-1);
+X	    y = j/(float)(NUM_IN_ROW-1);
+X	    switch (modeCount) {
+X		case RBWR:
+X		    new_rbw.b = x;
+X		    new_rbw.w = y;
+X		    break;
+X		case RBWB:
+X		    new_rbw.r = x;
+X		    new_rbw.w = y;
+X		    break;
+X		case RBWW:
+X		    new_rbw.r = x;
+X		    new_rbw.b = y;
+X		    break;
+X		case HSVH:
+X		    new_hsv.s = x;
+X		    new_hsv.v = y;
+X		    break;
+X		case HSVS:
+X		    new_hsv.h = x;
+X		    new_hsv.v = y;
+X		    break;
+X		case HSVV:
+X		    new_hsv.h = x;
+X		    new_hsv.s = y;
+X		    break;
+X		case RGBR:
+X		    new_rgb.g = x*0xffff;
+X		    new_rgb.b = y*0xffff;
+X		    break;
+X		case RGBG:
+X		    new_rgb.r = x*0xffff;
+X		    new_rgb.b = y*0xffff;
+X		    break;
+X		case RGBB:
+X		    new_rgb.r = x*0xffff;
+X		    new_rgb.g = y*0xffff;
+X		    break;
+X	    }
+X	    switch (modeCount) {
+X		case RBWR:
+X		case RBWB:
+X		case RBWW:
+X		    new_rgb = RBWToRGB(new_rbw);
+X		    break;
+X		case HSVH:
+X		case HSVS:
+X		case HSVV:
+X		    new_rgb = HSVToRGB(new_hsv);
+X		    break;
+X	    }
+X	    colors[n].red = GAMMA(new_rgb.r);
+X	    colors[n].green = GAMMA(new_rgb.g);
+X	    colors[n].blue = GAMMA(new_rgb.b);
+X	    i++;
+X	    if (i==NUM_IN_ROW) {
+X		i=0;
+X		j--;
+X	    }
+X	}
+X	XStoreColors(dpy, cmap, colors, MAX_COLORS);
+X#endif
+X}
+X
+Xstatic void
+XUpdate_RGB(w, closure, ptr)
+XWidget w;
+XXtPointer closure, ptr;
+X{
+X	int which = (int)closure;
+X	int mix;
+X	float per = *(float*)ptr;
+X	double top = (double)per;
+X	XEvent event;
+X
+X	Thumbed(w,closure,ptr);
+X	rbw_values = RGBToRBW(rgb_values);
+X	Update_Colors((Widget)NULL, (XEvent *)NULL,
+X			(String *)NULL, (Cardinal *)NULL);
+X}
+X
+Xstatic void
+XThumbed(w, closure, ptr)
+XWidget w;
+XXtPointer closure, ptr;
+X{
+X	int which = (int)closure;
+X	int mix;
+X	float per = *(float*)ptr;
+X	double top = (double)per;
+X	XEvent event;
+X
+X	mix = (int) ((1.0 - top) * 256.0 * 256.0);
+X	if (mix > 0xFFFF)
+X		mix = 0xFFFF;
+X
+X	switch (which) {
+X		case RED:
+X			colors[MIX_COLOR].red = colors[RED_COLOR].red =
+X				GAMMA(mix);
+X			rgb_values.r = mix;
+X			break;
+X		case GREEN:
+X			colors[MIX_COLOR].green = colors[GREEN_COLOR].green =
+X				GAMMA(mix);
+X			rgb_values.g = mix;
+X			break;
+X		case BLUE:
+X			colors[MIX_COLOR].blue = colors[BLUE_COLOR].blue =
+X				GAMMA(mix);
+X			rgb_values.b = mix;
+X			break;
+X	}
+X}
+SHAR_EOF
+$TOUCH -am 0613170793 rbwdemo.c &&
+chmod 0644 rbwdemo.c ||
+echo "restore of rbwdemo.c failed"
+set `wc -c rbwdemo.c`;Wc_c=$1
+if test "$Wc_c" != "20746"; then
+	echo original size 20746, current size $Wc_c
+fi
+# ============= color.h ==============
+echo "x - extracting color.h (Text)"
+sed 's/^X//' << 'SHAR_EOF' > color.h &&
+X/* $Header: /user6/shirriff/rsrch/rbw/rbwdemo/RCS/color.h,v 1.1 93/01/26 22:33:27 shirriff Exp Locker: shirriff $ */
+X
+X/* 
+X * color.h - color definitions
+X * 
+X * Author:	Christopher A. Kent
+X * 		Western Research Laboratory
+X * 		Digital Equipment Corporation
+X * Date:	Sun Dec 13 1987
+X * Copyright (c) 1987 Christopher A. Kent
+X */
+X
+X/*
+X * $Log:	color.h,v $
+X * Revision 1.1  93/01/26  22:33:27  shirriff
+X * Initial revision
+X * 
+X * Revision 1.1  91/06/06  22:43:25  shirriff
+X * Initial revision
+X * 
+X * Revision 1.2  88/06/30  09:58:56  mikey
+X * Handles CMY also.
+X * 
+X * Revision 1.1  88/06/30  09:10:53  mikey
+X * Initial revision
+X * 
+X */
+X
+Xtypedef	struct _RGB {
+X	unsigned short r, g, b;
+X} RGB;
+X
+Xtypedef struct _RBW {
+X	float r,b,w;	/* [-1,1] */
+X} RBW;
+X
+Xtypedef	struct _HSV {
+X	float	h, s, v;	/* [0, 1] */
+X} HSV;
+X
+Xtypedef struct _CMY {
+X	unsigned short c, m, y;
+X} CMY;
+X
+Xextern RGB	RGBWhite, RGBBlack;
+X
+XRGB	MixRGB();
+XRGB	MixHSV();
+XRGB	HSVToRGB();
+XHSV	RGBToHSV();
+Xfloat	RGBDist();
+XRGB	PctToRGB();
+XHSV	PctToHSV();
+XRGB	CMYToRGB();
+XCMY	RGBToCMY();
+X
+XRBW	HSVToRBW();
+XHSV	RBWToHSV();
+XRGB	RBWToRGB();
+XRBW	RGBToRBW();
+SHAR_EOF
+$TOUCH -am 0126223393 color.h &&
+chmod 0644 color.h ||
+echo "restore of color.h failed"
+set `wc -c color.h`;Wc_c=$1
+if test "$Wc_c" != "1096"; then
+	echo original size 1096, current size $Wc_c
+fi
+# ============= patchlevel.h ==============
+echo "x - extracting patchlevel.h (Text)"
+sed 's/^X//' << 'SHAR_EOF' > patchlevel.h &&
+X#define PATCHLEVEL 0
+SHAR_EOF
+$TOUCH -am 0126223393 patchlevel.h &&
+chmod 0644 patchlevel.h ||
+echo "restore of patchlevel.h failed"
+set `wc -c patchlevel.h`;Wc_c=$1
+if test "$Wc_c" != "21"; then
+	echo original size 21, current size $Wc_c
+fi
+# ============= Xdefs.h ==============
+echo "x - extracting Xdefs.h (Text)"
+sed 's/^X//' << 'SHAR_EOF' > Xdefs.h &&
+X/* $Header: /user6/shirriff/rsrch/rbw/rbwdemo/RCS/Xdefs.h,v 1.2 93/01/26 22:33:26 shirriff Exp Locker: shirriff $ */
+X
+X/* 
+X * Copyright 1990 Richard Hesketh / rlh2@ukc.ac.uk
+X *                Computing Lab. University of Kent at Canterbury, UK
+X *
+X * Permission to use, copy, modify and distribute this software and its
+X * documentation for any purpose is hereby granted without fee, provided that
+X * the above copyright notice appear in all copies and that both that
+X * copyright notice and this permission notice appear in supporting
+X * documentation, and that the names of Richard Hesketh and The University of
+X * Kent at Canterbury not be used in advertising or publicity pertaining to
+X * distribution of the software without specific, written prior permission.
+X * Richard Hesketh and The University of Kent at Canterbury make no
+X * representations about the suitability of this software for any purpose.
+X * It is provided "as is" without express or implied warranty.
+X *
+X * Richard Hesketh AND THE UNIVERSITY OF KENT AT CANTERBURY DISCLAIMS ALL
+X * WARRANTIES WITH REGARD TO THIS SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES
+X * OF MERCHANTABILITY AND FITNESS, IN NO EVENT SHALL Richard Hesketh OR THE
+X * UNIVERSITY OF KENT AT CANTERBURY BE LIABLE FOR ANY SPECIAL, INDIRECT OR
+X * CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE,
+X * DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
+X * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE
+X * OF THIS SOFTWARE.
+X *
+X * Author:  Richard Hesketh / rlh2@ukc.ac.uk, 
+X *                Computing Lab. University of Kent at Canterbury, UK
+X *
+X * Modified by Ken Shirriff
+X */
+X
+Xstatic String app_defaults[] = {
+X/* global defaults */
+X	"Rbwdemo*Foreground: black",
+X	"Rbwdemo*Background: white",
+X	"Rbwdemo*BorderColor: black",
+X	"Rbwdemo*Font: screen.r.14",
+X/* For all scrollbars */
+X	"Rbwdemo*Scrollbar.borderWidth: 2",
+X	"Rbwdemo*Scrollbar.height: 445",
+X	"Rbwdemo*Scrollbar.width: 30",
+X	"Rbwdemo*Scrollbar.translations: \
+X <Btn1Down>: StartScroll(Continuous) MoveThumb() NotifyThumb() \\n\
+X <Btn2Down>: StartScroll(Continuous) MoveThumb() NotifyThumb() \\n\
+X <Btn3Down>: StartScroll(Continuous) MoveThumb() NotifyThumb() \\n\
+X <Btn1Motion>: MoveThumb() NotifyThumb() \\n\
+X <Btn2Motion>: MoveThumb() NotifyThumb() \\n\
+X <Btn3Motion>: MoveThumb() NotifyThumb() \\n\
+X <BtnUp>: NotifyScroll(Proportional) EndScroll()",
+X/* hue label */
+X	"Rbwdemo*hueLabel.label: Red",
+X	"Rbwdemo*hueLabel.width: 30",
+X	"Rbwdemo*hueLabel.height: 15",
+X/* saturation label */
+X	"Rbwdemo*satLabel.label: Blu",
+X	"Rbwdemo*satLabel.fromHoriz: hueScroll",
+X	"Rbwdemo*satLabel.width: 30",
+X	"Rbwdemo*satLabel.height: 15",
+X/* value label */
+X	"Rbwdemo*valLabel.label: Wht",
+X	"Rbwdemo*valLabel.fromHoriz: satScroll",
+X	"Rbwdemo*valLabel.width: 30",
+X	"Rbwdemo*valLabel.height: 15",
+X/* Title */
+X	"Rbwdemo*title.label: Rbwdemo v1.1",
+X	"Rbwdemo*title.borderWidth: 0",
+X	"Rbwdemo*title.fromHoriz: valLabel",
+X/* Mixed colour box */
+X	"Rbwdemo*mixedColor.height: 148",
+X	"Rbwdemo*mixedColor.width: 162",
+X	"Rbwdemo*mixedColor.fromHoriz: valScroll",
+X	"Rbwdemo*mixedColor.fromVert: title",
+X/* Red locked button */
+X	"Rbwdemo*redLocked.width: 30",
+X	"Rbwdemo*redLocked.height: 15",
+X	"Rbwdemo*redLocked.label: R",
+X	"Rbwdemo*redLocked.fromHoriz: mixedColor",
+X/* Green locked button */
+X	"Rbwdemo*greenLocked.width: 30",
+X	"Rbwdemo*greenLocked.height: 15",
+X	"Rbwdemo*greenLocked.label: G",
+X	"Rbwdemo*greenLocked.fromHoriz: redLocked",
+X/* Blue locked button */
+X	"Rbwdemo*blueLocked.width: 30",
+X	"Rbwdemo*blueLocked.height: 15",
+X	"Rbwdemo*blueLocked.label: B",
+X	"Rbwdemo*blueLocked.fromHoriz: greenLocked",
+X/* Red Scroll bar */
+X	"Rbwdemo*redScroll.fromVert: redLocked",
+X	"Rbwdemo*redScroll.fromHoriz: mixedColor",
+X/* Green Scroll bar */
+X	"Rbwdemo*greenScroll.fromHoriz: redScroll",
+X	"Rbwdemo*greenScroll.fromVert: greenLocked",
+X/* Blue Scroll bar */
+X	"Rbwdemo*blueScroll.fromHoriz: greenScroll",
+X	"Rbwdemo*blueScroll.fromVert: blueLocked",
+X/* Red colour box */
+X	"Rbwdemo*redIntensity.height: 49",
+X	"Rbwdemo*redIntensity.width: 49",
+X	"Rbwdemo*redIntensity.fromVert: mixedColor",
+X	"Rbwdemo*redIntensity.fromHoriz: valScroll",
+X	"Rbwdemo*redIntensity.translations: <MotionNotify>: move_scroll()",
+X/* Green colour box */
+X	"Rbwdemo*greenIntensity.height: 49",
+X	"Rbwdemo*greenIntensity.width: 49",
+X	"Rbwdemo*greenIntensity.fromVert: mixedColor",
+X	"Rbwdemo*greenIntensity.fromHoriz: redIntensity",
+X	"Rbwdemo*greenIntensity.translations: <MotionNotify>: move_scroll()",
+X/* Blue colour box */
+X	"Rbwdemo*blueIntensity.height: 49",
+X	"Rbwdemo*blueIntensity.width: 49",
+X	"Rbwdemo*blueIntensity.fromVert: mixedColor",
+X	"Rbwdemo*blueIntensity.fromHoriz: greenIntensity",
+X	"Rbwdemo*blueIntensity.translations: <MotionNotify>: move_scroll()",
+X/* display mode Value */
+X	"Rbwdemo*displayModeValue.label: RBW",
+X	"Rbwdemo*displayModeValue.width: 162",
+X	"Rbwdemo*displayModeValue.fromHoriz: valScroll",
+X	"Rbwdemo*displayModeValue.fromVert: redIntensity",
+X/* mode Value */
+X	"Rbwdemo*modeValue.label: opponent: constant a",
+X	"Rbwdemo*modeValue.width: 162",
+X	"Rbwdemo*modeValue.fromHoriz: valScroll",
+X	"Rbwdemo*modeValue.fromVert: displayModeValue",
+X/* quit button */
+X	"Rbwdemo*quit.label: Quit",
+X	"Rbwdemo*quit.width: 162",
+X	"Rbwdemo*quit.fromVert: modeValue",
+X	"Rbwdemo*quit.fromHoriz: valScroll",
+X/* hue2 label */
+X	"Rbwdemo*hue2Label.label: Grn",
+X	"Rbwdemo*hue2Label.fromVert: hueScroll",
+X	"Rbwdemo*hue2Label.width: 30",
+X	"Rbwdemo*hue2Label.height: 15",
+X/* saturation2 label */
+X	"Rbwdemo*sat2Label.label: Yel",
+X	"Rbwdemo*sat2Label.fromHoriz: hueLabel",
+X	"Rbwdemo*sat2Label.fromVert: hueScroll",
+X	"Rbwdemo*sat2Label.width: 30",
+X	"Rbwdemo*sat2Label.height: 15",
+X/* value2 label */
+X	"Rbwdemo*val2Label.label: Blk",
+X	"Rbwdemo*val2Label.fromHoriz: satLabel",
+X	"Rbwdemo*val2Label.fromVert: hueScroll",
+X	"Rbwdemo*val2Label.width: 30",
+X	"Rbwdemo*val2Label.height: 15",
+X/* hue scrollbar */
+X	"Rbwdemo*hueScroll.fromVert: hueLabel",
+X	"Rbwdemo*hueScroll.translations: \
+X <Btn1Down>: StartScroll(Continuous) MoveThumb() NotifyThumb() \\n\
+X <Btn2Down>: StartScroll(Continuous) MoveThumb() NotifyThumb() \\n\
+X <Btn3Down>: StartScroll(Continuous) MoveThumb() NotifyThumb() \\n\
+X <Btn1Motion>: MoveThumb() NotifyThumb() \\n\
+X <Btn2Motion>: MoveThumb() NotifyThumb() \\n\
+X <Btn3Motion>: MoveThumb() NotifyThumb() \\n\
+X <BtnUp>: NotifyScroll(Proportional) EndScroll()",
+X/* saturation scrollbar */
+X	"Rbwdemo*satScroll.fromHoriz: hueScroll",
+X	"Rbwdemo*satScroll.fromVert: satLabel",
+X	"Rbwdemo*satScroll.translations: \
+X <Btn1Down>: StartScroll(Continuous) MoveThumb() NotifyThumb() \\n\
+X <Btn2Down>: StartScroll(Continuous) MoveThumb() NotifyThumb() \\n\
+X <Btn3Down>: StartScroll(Continuous) MoveThumb() NotifyThumb() \\n\
+X <Btn1Motion>: MoveThumb() NotifyThumb() \\n\
+X <Btn2Motion>: MoveThumb() NotifyThumb() \\n\
+X <Btn3Motion>: MoveThumb() NotifyThumb() \\n\
+X <BtnUp>: NotifyScroll(Proportional) EndScroll()",
+X/* value scrollbar */
+X	"Rbwdemo*valScroll.fromVert: valLabel",
+X	"Rbwdemo*valScroll.fromHoriz: satScroll",
+X	"Rbwdemo*valScroll.translations: \
+X <Btn1Down>: StartScroll(Continuous) MoveThumb() NotifyThumb() \\n\
+X <Btn2Down>: StartScroll(Continuous) MoveThumb() NotifyThumb() \\n\
+X <Btn3Down>: StartScroll(Continuous) MoveThumb() NotifyThumb() \\n\
+X <Btn1Motion>: MoveThumb() NotifyThumb() \\n\
+X <Btn2Motion>: MoveThumb() NotifyThumb() \\n\
+X <Btn3Motion>: MoveThumb() NotifyThumb() \\n\
+X <BtnUp>: NotifyScroll(Proportional) EndScroll()",
+X/* memory buttons */
+X	"Rbwdemo*colorMemory.width: 11",
+X	"Rbwdemo*colorMemory.height: 11",
+X	"Rbwdemo*colorMemory.borderWidth: 0",
+X	"Rbwdemo*colorMemory.borderColor: black",
+X	"Rbwdemo*colorMemory.horizDistance: 0",
+X	"Rbwdemo*colorMemory.vertDistance: 0",
+X	"Rbwdemo*colorMemory.translations: \
+X <Btn1Down>: pick_memory() \\n\
+X <Btn2Down>: pick_memory() \\n\
+X <Btn3Down>: pick_memory()",
+X	"Rbwdemo*colorMemory.translations: <Btn1Down>: pick_memory() \\n\
+X	"
+X};
+SHAR_EOF
+$TOUCH -am 0127112193 Xdefs.h &&
+chmod 0644 Xdefs.h ||
+echo "restore of Xdefs.h failed"
+set `wc -c Xdefs.h`;Wc_c=$1
+if test "$Wc_c" != "7900"; then
+	echo original size 7900, current size $Wc_c
+fi
+# ============= README ==============
+echo "x - extracting README (Text)"
+sed 's/^X//' << 'SHAR_EOF' > README &&
+XThis X11 program is a demonstration of the RBW color space.  
+XOn the left are three sliders for the red-green, blue-yellow, and
+Xwhite-black axes.  On the right are three RGB sliders.  The top square shows
+Xthe current color.  The bottom square shows a slice through the color space.
+X
+XThere are three buttons.  The top button selects the color space for input
+XThe middle button selects the slice that is viewed.  The bottom button
+Xquits.
+X
+XThis program is based on a color selector written by Richard Hesketh at the
+XUniversity of Kent at Canterbury.
+X
+XKen Shirriff			shirriff@cs.Berkeley.EDU
+SHAR_EOF
+$TOUCH -am 0519171894 README &&
+chmod 0664 README ||
+echo "restore of README failed"
+set `wc -c README`;Wc_c=$1
+if test "$Wc_c" != "588"; then
+	echo original size 588, current size $Wc_c
+fi
+# ============= Makefile ==============
+echo "x - extracting Makefile (Text)"
+sed 's/^X//' << 'SHAR_EOF' > Makefile &&
+XSRC = color.c rbwcolor.c utilities.c rbwdemo.c color.h patchlevel.h Xdefs.h README
+XFILES = color.o rbwcolor.o utilities.o rbwdemo.o
+X
+Xrbwdemo: $(FILES)
+X	cc -o rbwdemo $(FILES) -lm -lXaw -lXmu -lXt -lX11
+X
+Xrbwdemo.c: Xdefs.h
+X
+Xshar: $(SRC)
+X	shar -s shirriff@sprite.Berkeley.EDU $(SRC) Makefile > rbw.shar
+X
+SHAR_EOF
+$TOUCH -am 0519171894 Makefile &&
+chmod 0664 Makefile ||
+echo "restore of Makefile failed"
+set `wc -c Makefile`;Wc_c=$1
+if test "$Wc_c" != "302"; then
+	echo original size 302, current size $Wc_c
+fi
+exit 0

@@ -1,0 +1,7 @@
+.(z
+.GS C
+pointscale on
+x .5
+file nfs.and.g
+.GE
+.)z

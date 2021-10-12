@@ -1,0 +1,153 @@
+# This file contains contains a collection of tests for the "trace"
+# command in Tcl.  If everything is OK then it finishes silently.
+# If a problem is detected then it generates a Tcl error with a
+# cryptic message.  To trace the error you'll have to read through
+# the commands in this file.
+#
+# $Header: /sprite/src/lib/tcl/tests/RCS/trace.test,v 1.1 90/07/23 11:15:33 ouster Exp $ (Berkeley)
+
+proc check {a b num} {
+    if {[string compare $a $b] != 0} {
+	error [format {Trace error %s: wanted "%s", got "%s"} $num $b $a]}
+}
+
+proc traceProc {name op old new} {
+    global info value
+    set info [format "%s %s |%s| |%s|" $name $op $old $new]
+    return $value
+}
+
+proc errorProc {name op old new} {
+    error disallowed
+}
+
+proc testProc1 a {
+    trace var a d traceProc
+}
+
+proc testProc2 {} {
+    trace var x d traceProc
+}
+
+# Read-tracng on variables
+
+if [info exists _trace1] {
+    error "Can't run this test repeatedly;  must restart Tcl each time"
+}
+set info ""
+set value abcde
+trace variable _trace1 r traceProc
+check [set _trace1] abcde 1.1
+check $info "_trace1 ru || ||" 1.2
+check [set _trace1] abcde 1.3
+check $info "_trace1 r |abcde| ||" 1.4
+set info ""
+set _trace1 xxx
+check $info "" 1.5
+check $_trace1 abcde 1.6
+check $info "_trace1 r |xxx| ||" 1.7
+check [trace variable _trace1] "r traceProc" 1.8
+set info ""
+trace v _trace1 {} {}
+check $info "" 1.9
+set _trace1 xyzzy
+check $_trace1 xyzzy 1.10
+check $info "" 1.11
+
+# Write-tracing on variables
+
+trace v _trace2 w traceProc
+set _trace2 12345
+check $info "_trace2 wu || |12345|" 2.1
+set info ""
+check $_trace2 abcde 2.2
+check $info "" 2.3
+set _trace2 34567
+check $info "_trace2 w |abcde| |34567|" 2.4
+check $_trace2 abcde 2.5
+check [trace var _trace2] "w traceProc" 2.6
+set info ""
+trace v _trace2 {} {}
+check $info "" 2.7
+set _trace2 nono
+check $info "" 2.8
+check $_trace2 nono 2.9
+
+# Delete-tracing on variables
+
+trace va _trace6 d traceProc
+set info ""
+trace va _trace6 {} {}
+check $info "_trace6 du || ||" 3.1
+trace va _trace6 d traceProc
+set info ""
+trace va _trace6 {} {}
+check $info "_trace6 du || ||" 3.2
+trace va _trace6 d traceProc
+set info ""
+set _trace6 testValue
+check $info "" 3.3
+check $_trace6 testValue 3.4
+check $info "" 3.5
+check [trace var _trace6] "d traceProc" 3.6
+trace var _trace6 {} {}
+check $info "_trace6 d |testValue| ||" 3.7
+testProc1 747
+check $info "a d |747| ||" 3.8
+testProc2
+check $info "x du || ||" 3.9
+
+# Read-write-delete-tracing on variables
+
+trace va _trace3 rwd traceProc
+set info ""
+trace va _trace3 {} {}
+check $info "_trace3 du || ||" 4.1
+trace va _trace3 rwd traceProc
+set _trace3 xyzzy
+check $info "_trace3 wu || |xyzzy|" 4.2
+check $_trace3 abcde 3.3
+check $info "_trace3 r |abcde| ||" 4.4
+check [trace variable _trace3] "rwd traceProc" 4.5
+trace var _trace3 {} {}
+set info ""
+set _trace3 foobar
+check $info "" 4.6
+check $_trace3 foobar 4.7
+check $info "" 4.8
+
+# Returning an error while variable tracing
+
+trace va _trace4 r errorProc
+check [catch {set _trace4} msg] 1 5.1
+check $msg {couldn't find variable "_trace4"} 5.2
+set _trace4 xyzzy
+check [catch {set _trace4} msg] 1 5.3
+check $msg {couldn't find variable "_trace4"} 5.4
+trace va _trace4 {} {}
+check [catch {set _trace4} msg] 0 5.5
+check $msg xyzzy 5.6
+set _trace5 12345
+trace va _trace5 w errorProc
+check [catch {set _trace5 xyzzy} msg] 0 5.7
+check $msg "" 5.8
+check $_trace5 "12345" 5.9
+trace va _trace5 {} {}
+check [catch {set _trace5 xyzzy} msg] 0 5.10
+check $msg "" 5.11
+check $_trace5 xyzzy 5.12
+
+# Syntax errors associated with variable tracing
+
+check [catch {trace var _trace1 rw} msg] 1 6.1
+check $msg {wrong # args: should be "trace variable name [ops command]"} 6.2
+check [catch {trace var _trace1 rw errorProc foo} msg] 1 6.3
+check $msg {wrong # args: should be "trace variable name [ops command]"} 6.4
+check [catch {trace var} msg] 1 6.5
+check $msg {wrong # args: should be "trace variable name [ops command]"} 6.6
+check [catch {trace var _trace1 x errorProc} msg] 1 6.7
+check $msg {bad operations "x": must be combination of rwd} 6.8
+trace var _trace1 rw errorProc
+check [catch {trace var _trace1 rw errorProc} msg] 1 6.9
+check $msg {variable "_trace1" already traced} 6.10
+trace var _trace1 {} {}

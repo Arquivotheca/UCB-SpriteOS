@@ -1,0 +1,33 @@
+esults1a.a.old/results:Status totals:
+results1a.a.old/results:5083515 total attribute accesses (sum of the above)
+results1b.a.old/results:Status totals:
+results1b.a.old/results:5987979 total attribute accesses (sum of the above)
+results2a.a.old/results:Status totals:
+results2a.a.old/results:3148943 total attribute accesses (sum of the above)
+results2b.a.old/results:Status totals:
+results2b.a.old/results:2601814 total attribute accesses (sum of the above)
+results3a.a.old/results:Status totals:
+results3a.a.old/results:5166228 total attribute accesses (sum of the above)
+results3b.a.old/results:Status totals:
+results3b.a.old/results:6726357 total attribute accesses (sum of the above)
+results4a.a.old/results:Status totals:
+results4a.a.old/results:3153799 total attribute accesses (sum of the above)
+results5a.a.old/results:Status totals:
+results5a.a.old/results:8452391 total attribute accesses (sum of the above)
+<ks violence 3:10> grep invalidation results??.a.old/results | grep removed
+results1a.a.old/results:39445 attribute invalidated (removed from LRU lists for invalidation)
+results1a.a.old/results:11151 machine-attribute invalidated (#machines with entry removed for invalidation)
+results1b.a.old/results:116364 attribute invalidated (removed from LRU lists for invalidation)
+results1b.a.old/results:70188 machine-attribute invalidated (#machines with entry removed for invalidation)
+results2a.a.old/results:44964 attribute invalidated (removed from LRU lists for invalidation)
+results2a.a.old/results:9159 machine-attribute invalidated (#machines with entry removed for invalidation)
+results2b.a.old/results:35190 attribute invalidated (removed from LRU lists for invalidation)
+results2b.a.old/results:6116 machine-attribute invalidated (#machines with entry removed for invalidation)
+results3a.a.old/results:43234 attribute invalidated (removed from LRU lists for invalidation)
+results3a.a.old/results:9916 machine-attribute invalidated (#machines with entry removed for invalidation)
+results3b.a.old/results:54367 attribute invalidated (removed from LRU lists for invalidation)
+results3b.a.old/results:10322 machine-attribute invalidated (#machines with entry removed for invalidation)
+results4a.a.old/results:30579 attribute invalidated (removed from LRU lists for invalidation)
+results4a.a.old/results:6102 machine-attribute invalidated (#machines with entry removed for invalidation)
+results5a.a.old/results:41393 attribute invalidated (removed from LRU lists for invalidation)
+results5a.a.old/results:9372 machine-attribute invalidated (#machines with entry removed for invalidation)

@@ -1,0 +1,62 @@
+This is the Sprite anonymous ftp directory.
+
+papers:		Directory containing Sprite papers and bibliography.
+
+* Sources: 
+
+bench.tar.Z:	Sources for a collection of small benchmarks used in
+		the paper "Why Aren't Operating Systems Getting Faster
+		as Fast as Hardware".  Maintained by John Ousterhout.
+
+gdb.tar.Z:	gdb for Mach 3.0.  Maintained by Mike Kupfer.
+
+gld.tar.Z:	Gnu linker with modifications for cross-linking between
+		different machine types.
+
+hash.tar.Z:	The Sprite hashing package. You'll also need the
+		list package. Maintained by John Hartman.
+
+list.tar.Z:	The Sprite list package. Maintained by John Hartman.
+
+mab.tar.Z:	Sources for Modified Andrew Benchmark (used in paper
+		"Why Aren't Operating Systems Getting Faster as Fast
+		as Hardware" and for other purposes).  Maintained
+		by John Ousterhout.
+
+mipsim.tar.Z:	A simulator and assembly-language program debugger for
+		the MIPS R2000 architecture, written by John Ousterhout
+		for use in a freshman-level course in C and assembler.
+
+
+sosp-traces	A directory for the traces and post-processors used for the
+		sosp91 measurements paper.
+
+tcl		A subdirectory full of various files containing sources and
+		documentation for Tcl and Tk and related packages.  See the
+		README file in that directory for more information.
+
+xtsim.tar.Z	library to interface event driven simulator to Xt toolkit.
+
+ncube:		GNU software for nCUBE multiprocessor (gcc,gas,gld,g++)
+
+chaos.c.Z	Draw chaotic attractor.
+
+sprite-X.XXX.tar.Z Sprite kernel sources, version X.XXX.  Won't compile into
+		   a kernel, but useful for browsing or borrowing code.
+
+sprited.tar.Z	Sources for a Mach-based Sprite single-server.  Mostly
+		of interest only to people doing work with Mach.
+
+* Other:
+
+cdrom.txt       Information about Sprite sources and docs on CDROM.
+
+cs252_ftp:	Ftp directory for CS 252 class.
+
+douglis:
+eklee:
+welch:		Ftp directories for those users
+
+This archive is maintained by shirriff@sprite.Berkeley.EDU.
+
+Note to spriters: please update this README if you add ftp files.

@@ -1,0 +1,15 @@
+.(z
+.GS C
+pointscale on
+x .5
+file cont.g
+.GE
+.(q
+\fBFigure 4.\fR  Effect of multiple diskless clients running the Andrew 
+benchmark simultaneously on different files in a Sun-3 configuration with
+variable-size client caches.  (a) shows additional
+time required by each diskless client to complete the benchmark, relative
+to a single client running with local disk.  (b) shows server CPU utilization.
+(c) shows percent network utilization.
+.)q
+.)z

@@ -1,0 +1,42 @@
+'\" Copyright 1990 Regents of the University of California
+'\" Permission to use, copy, modify, and distribute this
+'\" documentation for any purpose and without fee is hereby
+'\" granted, provided that this notice appears in all copies.
+'\" The University of California makes no representations about
+'\" the suitability of this material for any purpose.  It is
+'\" provided "as is" without express or implied warranty.
+'\" 
+'\" $Header: /sprite/src/lib/tcl/RCS/Tcl_AppendResult.man,v 1.1 90/07/12 17:37:29 ouster Exp $ SPRITE (Berkeley)
+'\" 
+.so \*(]ltmac.sprite
+.HS Tcl_AppendResult tcl
+.BS
+.SH NAME
+Tcl_AppendResult \- add text to the current result
+.SH SYNOPSIS
+.nf
+\fB#include <tcl.h>\fR
+.sp
+\fBTcl_AppendResult(\fIinterp, string, string, string, \fB(char *) NULL)\fR
+.SH ARGUMENTS
+.AP Tcl_Interp *interp out
+Interpreter whose current return value is to be augmented.
+.AP char *string in
+String value to be added to return value.
+.BE
+
+.SH DESCRIPTION
+.PP
+\fBTcl_AppendResult\fR is a utility procedure that makes it easy
+to build up Tcl results in pieces.  It takes each of its \fIstring\fR
+arguments and appends them in order to the current result associated
+with \fIinterp\fR.  \fBTcl_AppendResult\fR may be called repeatedly
+as additional pieces of the result are produced.
+\fBTcl_AppendResult\fR takes care of all the
+storage management issues associated with managing \fIinterp\fR's
+result, such as allocating a larger result area if necessary.
+Any number of \fIstring\fR arguments may be passed in a single
+call;  the last argument in the list must be a NULL pointer.
+
+.SH KEYWORDS
+append, result, return value, interpreter

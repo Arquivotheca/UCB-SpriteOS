@@ -1,0 +1,57 @@
+head     1.1;
+branch   ;
+access   ;
+symbols  ;
+locks    shirriff:1.1; strict;
+comment  @ * @;
+
+
+1.1
+date     90.12.11.22.12.03;  author shirriff;  state Exp;
+branches ;
+next     ;
+
+
+desc
+@@
+
+
+
+1.1
+log
+@Initial revision
+@
+text
+@#include <sprite.h>
+#include <hash.h>
+
+#define NUM_MACHINES 90
+
+#define NAMELEN 100
+typedef struct nameRec {
+    char name[NAMELEN];
+    int fileID[4];
+    int count;
+    int valid;
+    int revalidates;
+    int remoteRevalidates;
+    int uses;
+    unsigned char machineInfo[NUM_MACHINES];
+		/* 0 = not present, 1 = valid, 2 = invalid. */
+} nameRec;
+
+/*
+ * The LRU entry holds an entry in the LRU list associated with each
+ * machine.  To determine if the entry is valid or not, one must check
+ * the machineInfo vector.
+ */
+typedef struct LRUentry {
+    nameRec *nameInfo;	/* Pointer to the associated nameRec structure. */
+    struct LRUentry *down;
+} LRUentry;
+
+extern Hash_Table *tablePtr;
+
+extern nameRec *hashID _ARGS_((int id[]));
+extern char *	lookupID _ARGS_((int id[]));
+@

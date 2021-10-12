@@ -1,0 +1,29 @@
+ \begin{table}[h]
+ \begin{center}
+ \begin{tabular} {|c||r|r|r|r|r|}
+	 \hline
+	 \hline
+    & \multicolumn{5}{c|}{Number of dirty 4K-byte blocks per file} \\
+	 \hline
+    Number of open files& ~~~~~~0~~ & ~~~~~~1~~ & ~~~~~~5~~ &
+    ~~~~~10~~ & ~~~~~20~~ \\ 
+	 \hline
+   ~0 	&	0.20\makebox[0pt][l]{s} 	& \multicolumn{4}{c|}{N/A} \\
+ \hline
+  ~1 	&	0.21     &  0.22\makebox[0pt][l]{s} &
+  0.25\makebox[0pt][l]{s}& 0.28\makebox[0pt][l]{s} & 0.36\makebox[0pt][l]{s} 	   \\
+ \hline
+  ~5 	&	0.26    &	0.31 &0.45	 &	0.62 & 0.98 \\
+ \hline
+  10 	&	0.34    &	0.43 &0.71	 &	1.06 & 1.78  \\
+	 \hline
+	 \hline
+ \end{tabular}
+ \caption{Effect of open files and dirty file blocks on time to
+ migrate.  All times are the number of seconds taken to migrate a
+ process after it has opened a number of files and written data to
+ them.  Each process had 3 dirty pages.}
+ \label{migFile}
+ \end{center}
+ \end{table}
+

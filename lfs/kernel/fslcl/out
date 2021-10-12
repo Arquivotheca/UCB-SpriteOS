@@ -1,0 +1,2907 @@
+# 1 "fsLclAttributes.c"
+static char rcsid[] = "$Header: /sprite/src/kernel/fslcl/RCS/fsLclAttributes.c,v 8.7 89/08/21 15:27:23 mendel Exp $ SPRITE (Berkeley)";
+# 1 "/sprite/lib/include/sprite.h"
+# 1 "/sprite/lib/include/cfuncproto.h"
+# 41 "/sprite/lib/include/cfuncproto.h"
+# 22 "/sprite/lib/include/sprite.h"
+typedef int Boolean;
+typedef int  ReturnStatus;
+typedef char *Address;
+typedef int *ClientData;
+# 29 "fsLclAttributes.c"
+# 1 "../Include/fs.h"
+# 1 "../Include/sys.h"
+# 1 "../Include/user/sys.h"
+# 24 "../Include/user/sys.h"
+typedef enum {
+    SYS_WARNING,
+    SYS_FATAL
+} Sys_PanicLevel;
+typedef struct {
+    int architecture;		
+    int type;			
+    int	processors;		
+} Sys_MachineInfo;
+extern ReturnStatus		Sys_GetMachineInfo();
+# 18 "../Include/sys.h"
+# 1 "/sprite/lib/include/sprite.h"
+# 95 "/sprite/lib/include/sprite.h"
+# 19 "../Include/sys.h"
+# 1 "/sprite/lib/include/status.h"
+# 39 "/sprite/lib/include/status.h"
+extern char *Stat_GetMsg();
+extern char *Stat_GetPrivateMsg();
+extern void Stat_PrintMsg();
+extern ReturnStatus	stat_LastError;
+extern void 	  	Stat_SetErrorHandler();
+extern void 	  	Stat_SetErrorData();
+extern void		Stat_GetErrorHandler();
+extern ReturnStatus	Stat_Error();
+extern int		Compat_MapCode();
+extern ReturnStatus	Compat_MapToSprite();
+# 20 "../Include/sys.h"
+# 1 "../Include/timer.h"
+# 1 "/sprite/lib/include/list.h"
+# 23 "/sprite/lib/include/list.h"
+typedef struct List_Links {
+    struct List_Links *prevPtr;
+    struct List_Links *nextPtr;
+} List_Links;
+extern void	List_Init 	(); 
+extern void	List_Insert 	();
+extern void	List_ListInsert 
+	();
+extern void	List_Remove 	();
+extern void	List_Move 	();
+# 22 "../Include/timer.h"
+# 1 "/sprite/lib/include/spriteTime.h"
+# 23 "/sprite/lib/include/spriteTime.h"
+typedef struct {
+    int	seconds;
+    int	microseconds;
+} Time;
+typedef struct {
+    int year;
+    int month;
+    int dayOfYear;
+    int dayOfMonth;
+    int dayOfWeek;
+    int	hours;
+    int	minutes;
+    int	seconds;
+    int localOffset;
+    Boolean dst;
+} Time_Parts;
+extern Time time_ZeroSeconds;
+extern Time time_OneMicrosecond;
+extern Time time_OneMillisecond;
+extern Time time_TenMilliseconds;
+extern Time time_HundredMilliseconds;
+extern Time time_HalfSecond;
+extern Time time_OneSecond;
+extern Time time_TwoSeconds;
+extern Time time_TenSeconds;
+extern Time time_OneMinute;
+extern Time time_OneHour;
+extern Time time_OneDay;
+extern Time time_OneYear;
+extern Time time_OneLeapYear;
+extern void	Time_Add 	();
+extern void	Time_Subtract 
+	();
+extern void	Time_Multiply 	();
+extern void	Time_Divide 	();
+extern void	Time_Normalize 	();
+extern void	Time_ToAscii 
+	();
+extern void	Time_ToParts 
+	();
+# 25 "../Include/timer.h"
+# 1 "../Include/ds3100.md/timerTick.h"
+# 1 "/sprite/lib/include/spriteTime.h"
+# 145 "/sprite/lib/include/spriteTime.h"
+# 21 "../Include/ds3100.md/timerTick.h"
+typedef Time Timer_Ticks;
+extern unsigned int 	timer_IntZeroSeconds; 
+extern unsigned int 	timer_IntOneMillisecond;   
+extern unsigned int 	timer_IntOneSecond;
+extern unsigned int 	timer_IntOneMinute;
+extern unsigned int 	timer_IntOneHour; 
+extern Timer_Ticks	timer_TicksZeroSeconds;
+extern Time 		timer_MaxIntervalTime; 
+# 51 "../Include/ds3100.md/timerTick.h"
+extern void Timer_AddIntervalToTicks();
+extern void Timer_GetCurrentTicks();
+# 92 "../Include/ds3100.md/timerTick.h"
+# 26 "../Include/timer.h"
+# 1 "../Include/ds3100.md/timerMach.h"
+# 27 "../Include/timer.h"
+# 1 "../Include/syncLock.h"
+# 1 "../Include/user/list.h"
+# 280 "../Include/user/list.h"
+# 26 "../Include/syncLock.h"
+# 1 "../Include/user/sync.h"
+# 33 "../Include/user/sync.h"
+typedef struct Sync_UserLock {
+    Boolean inUse;		
+    Boolean waiting;		
+} Sync_UserLock;
+# 57 "../Include/user/sync.h"
+typedef struct Sync_Condition {
+    Boolean waiting;		
+} Sync_Condition;
+# 86 "../Include/user/sync.h"
+typedef struct {
+    int		inUse;				
+    int		class;				
+    int		hit;				
+    int		miss;				
+    char	name[30];			
+    int		priorCount;			
+    int		priorTypes[1];	
+    int		activeCount;			
+    int		deadCount;			
+    int		spinCount;			
+} Sync_LockStat;
+extern ReturnStatus	Sync_GetLock();
+extern ReturnStatus	Sync_Unlock();
+extern ReturnStatus	Sync_SlowLock();
+extern ReturnStatus	Sync_SlowWait();
+extern ReturnStatus	Sync_SlowBroadcast();
+# 27 "../Include/syncLock.h"
+# 30 "../Include/syncLock.h"
+# 39 "../Include/syncLock.h"
+# 46 "../Include/syncLock.h"
+typedef struct Sync_ListInfo {
+    List_Links	links;		
+    Address	lock;		
+} Sync_ListInfo;
+typedef enum Sync_LockClass {
+    SYNC_SEMAPHORE,			
+    SYNC_LOCK
+} Sync_LockClass;
+typedef struct Sync_Semaphore {
+    int value;				
+# 107 "../Include/syncLock.h"
+    char *name;				
+    Address holderPC;			
+    Address holderPCBPtr;		
+# 119 "../Include/syncLock.h"
+} Sync_Semaphore;
+typedef struct Sync_KernelLock{
+    Boolean inUse;			
+    Boolean waiting;	        	
+# 142 "../Include/syncLock.h"
+    char *name;				
+    Address holderPC;			
+    Address holderPCBPtr;		
+# 155 "../Include/syncLock.h"
+} Sync_KernelLock;
+typedef Sync_KernelLock Sync_Lock;	
+# 28 "../Include/timer.h"
+# 33 "../Include/timer.h"
+typedef struct {
+    List_Links	links;		
+    void	(*routine)();	
+    Timer_Ticks	time;		
+    ClientData	clientData;	
+    Boolean	processed;	
+    unsigned int interval;	
+} Timer_QueueElement;
+typedef struct {
+    int		callback;	
+    int		profile;	
+    int		spurious;	
+    int		schedule;	
+    int		resched;	
+    int		desched;	
+} Timer_Statistics;
+extern Timer_Statistics	timer_Statistics;
+extern	Time		timer_UniversalApprox;
+extern Sync_Semaphore 	timer_ClockMutex;
+# 245 "../Include/timer.h"
+extern void	Timer_ScheduleRoutine();
+extern Boolean  Timer_DescheduleRoutine();
+extern void Timer_GetTimeOfDay();
+extern void Timer_GetRealTimeOfDay();
+extern void Timer_GetRealTimeFromTicks();
+extern void Timer_SetTimeOfDay();
+extern void Timer_LockRegister();
+extern void 	Timer_TimerInit();
+extern void 	Timer_TimerStart();
+extern void	Timer_TimerInactivate();
+extern	void	Timer_TimerServiceInterrupts();
+extern void 	Timer_TimerGetInfo();
+extern void	Timer_DumpQueue();
+extern void	Timer_DumpStats();
+# 21 "../Include/sys.h"
+extern	Boolean	sys_ShuttingDown;	
+extern	Boolean	sys_ErrorShutdown;	
+extern	Boolean	sys_ErrorSync;		
+extern	int	sys_NumCalls[];
+extern void	Sys_Init 	();
+extern void	Sys_SyncDisks 	();
+extern int	Sys_GetHostId 	();
+extern void	Sys_HostPrint 	();
+extern ReturnStatus Sys_GetTimeOfDay 
+	();
+extern ReturnStatus Sys_SetTimeOfDay 
+	();
+extern int	vprintf 	();
+extern void	panic 	();
+extern ReturnStatus Proc_RemoteDummy();
+# 73 "../Include/sys.h"
+# 34 "../Include/fs.h"
+# 1 "../Include/sync.h"
+# 1 "/sprite/lib/include/sprite.h"
+# 95 "/sprite/lib/include/sprite.h"
+# 52 "../Include/sync.h"
+# 1 "/sprite/lib/include/list.h"
+# 280 "/sprite/lib/include/list.h"
+# 53 "../Include/sync.h"
+# 1 "../Include/user/sync.h"
+# 210 "../Include/user/sync.h"
+# 56 "../Include/sync.h"
+# 1 "../Include/proc.h"
+# 1 "../Include/user/proc.h"
+# 1 "/sprite/lib/include/spriteTime.h"
+# 145 "/sprite/lib/include/spriteTime.h"
+# 24 "../Include/user/proc.h"
+# 1 "../Include/sig.h"
+# 1 "../Include/user/sig.h"
+typedef	struct {
+    int		action;
+    int		(*handler)();
+    int		sigHoldMask;
+} Sig_Action;
+# 19 "../Include/sig.h"
+# 21 "../Include/sig.h"
+# 1 "../Include/ds3100.md/mach.h"
+# 1 "../Include/ds3100.md/machConst.h"
+# 1 "../Include/ds3100.md/vmPmaxConst.h"
+# 22 "../Include/ds3100.md/machConst.h"
+# 24 "../Include/ds3100.md/machConst.h"
+# 22 "../Include/ds3100.md/mach.h"
+# 1 "../Include/user/fmt.h"
+typedef int Fmt_Format;
+# 52 "../Include/user/fmt.h"
+# 55 "../Include/user/fmt.h"
+# 61 "../Include/user/fmt.h"
+# 64 "../Include/user/fmt.h"
+# 67 "../Include/user/fmt.h"
+extern int	Fmt_Convert();
+extern int	Fmt_Size();
+# 23 "../Include/ds3100.md/mach.h"
+# 26 "../Include/ds3100.md/mach.h"
+typedef enum {
+    MACH_USER,
+    MACH_KERNEL
+} Mach_ProcessorStates;
+extern ReturnStatus (*(mach_NormalHandlers[]))();
+extern ReturnStatus (*(mach_MigratedHandlers[]))();
+typedef struct {
+    Address		pc;			
+    unsigned		regs[32];	
+    unsigned		fpRegs[32];	
+    unsigned		fpStatusReg;		
+    unsigned		mflo, mfhi;		
+} Mach_RegState;
+typedef struct {
+    Mach_RegState	regState;		
+    int			unixRetVal;		
+} Mach_UserState;
+typedef struct Mach_State {
+    Mach_UserState	userState;		
+    Mach_RegState	switchRegState;		
+    Address		kernStackStart;		
+    Address		kernStackEnd;		
+    unsigned		sstepInst;		
+    unsigned		tlbHighEntry;		
+    unsigned		tlbLowEntries[4 - 1];
+} Mach_State;
+typedef struct {
+    int		  	break1Inst;	
+    Mach_UserState	userState;	
+    unsigned		fpRegs[32];	
+    unsigned		fpStatusReg;		
+} Mach_SigContext;
+typedef struct {
+    int		regs[32];
+    int		fpRegs[32];
+    unsigned	sig[32];
+    unsigned	excPC;
+    unsigned	causeReg;
+    unsigned	multHi;
+    unsigned	multLo;
+    unsigned	fpCSR;
+    unsigned	fpEIR;
+    unsigned	trapCause;
+    unsigned	trapInfo;
+    unsigned	tlbIndex;
+    unsigned	tlbRandom;
+    unsigned	tlbLow;
+    unsigned	tlbContext;
+    unsigned	badVaddr;
+    unsigned	tlbHi;
+    unsigned	statusReg;
+} Mach_DebugState;
+extern	Boolean	mach_KernelMode;
+extern	int	mach_NumProcessors;
+extern	Boolean	mach_AtInterruptLevel;
+extern	int	*mach_NumDisableIntrsPtr;
+extern	char	*mach_MachineType;
+extern	Fmt_Format	mach_Format;
+extern void	Mach_Init();
+extern	void		Mach_InitFirstProc();
+extern	ReturnStatus	Mach_SetupNewState();
+extern	void		Mach_SetReturnVal();
+extern	void		Mach_StartUserProc();
+extern	void		Mach_ExecUserProc();
+extern	void		Mach_FreeState();
+extern	void		Mach_CopyState();
+extern	void		Mach_GetDebugState();
+extern	void		Mach_SetDebugState();
+extern	Address		Mach_GetUserStackPtr();
+extern ReturnStatus		Mach_EncapState();
+extern ReturnStatus		Mach_DeencapState();
+extern ReturnStatus		Mach_GetEncapSize();
+extern Boolean			Mach_CanMigrate();
+extern void			Mach_InitSyscall();
+extern Mach_ProcessorStates	Mach_ProcessorState();
+extern int			Mach_GetNumProcessors();
+extern Address			Mach_GetPC();
+extern	void		Mach_GetEtherAddress();
+extern	void		Mach_ContextSwitch();
+extern	int		Mach_TestAndSet();
+extern	int		Mach_GetMachineType();
+extern	int		Mach_GetMachineArch();
+extern	Address		Mach_GetStackPointer();
+extern 	void		Mach_CheckSpecialHandling();
+extern 	int		Mach_GetBootArgs();
+extern  ReturnStatus	Mach_ProbeAddr();
+extern	void		Mach_FlushCode();
+extern	Address	mach_KernStart;
+extern	Address	mach_CodeStart;
+extern	Address	mach_StackBottom;
+extern	int	mach_KernStackSize;
+extern	Address	mach_KernEnd;
+extern	Address	mach_FirstUserAddr;
+extern	Address	mach_LastUserAddr;
+extern	Address	mach_MaxUserStackAddr;
+extern	int	mach_LastUserStackPage;
+# 23 "../Include/sig.h"
+# 27 "../Include/sig.h"
+typedef struct {
+    int			oldHoldMask;	
+    Mach_SigContext	machContext;	
+} Sig_Context;
+typedef struct {
+    int		sigNum;		
+    int		sigCode;    	
+    Sig_Context	*contextPtr;	
+    int		sigAddr;	
+    int		pad;		
+} Sig_Stack;
+extern	ReturnStatus	Sig_Send();
+extern	ReturnStatus 	Sig_SendProc();
+extern	ReturnStatus	Sig_UserSend();
+extern	ReturnStatus	Sig_SetHoldMask();
+extern	ReturnStatus	Sig_SetAction();
+extern	ReturnStatus	Sig_Pause();
+extern	void		Sig_Init();
+extern	void		Sig_ProcInit();
+extern	void		Sig_Fork();
+extern	void		Sig_Exec();
+extern	void		Sig_ChangeState();
+extern	Boolean		Sig_Handle();
+extern	void		Sig_CheckForKill();
+extern	void		Sig_Return();
+extern ReturnStatus	Sig_GetEncapSize();
+extern ReturnStatus	Sig_EncapState();
+extern ReturnStatus	Sig_DeencapState();
+extern	void		Sig_AllowMigration();
+# 25 "../Include/user/proc.h"
+# 1 "/sprite/lib/include/ds3100.md/kernel/mach.h"
+# 259 "/sprite/lib/include/ds3100.md/kernel/mach.h"
+# 26 "../Include/user/proc.h"
+# 1 "../Include/user/vm.h"
+# 1 "../Include/user/sprite.h"
+# 95 "../Include/user/sprite.h"
+# 17 "../Include/user/vm.h"
+# 1 "../Include/user/vmStat.h"
+# 1 "../Include/ds3100.md/vmMachStat.h"
+typedef struct {
+    int	stealTLB;	
+    int stealPID;	
+} VmMachDepStat;
+# 18 "../Include/user/vmStat.h"
+# 20 "../Include/user/vmStat.h"
+typedef struct {
+    int	numPhysPages;		
+    int	numFreePages;		
+    int	numDirtyPages;		
+    int	numReservePages;	
+    int	numUserPages;		
+    int	kernStackPages;		
+    int kernMemPages;		
+    int	totalFaults;		
+    int	totalUserFaults;	
+    int	zeroFilled;		
+    int	fsFilled;		
+    int	psFilled;		
+    int	collFaults;		
+    int	quickFaults;		
+    int	codeFaults;		
+    int	heapFaults;		
+    int	stackFaults;		
+    int	numAllocs;		
+    int	gotFreePage;		
+    int	pageAllocs;		
+    int	gotPageFromFS;		
+    int	numListSearches;	
+    int	usedFreePage;		
+    int	lockSearched;		
+    int	refSearched;		
+    int	dirtySearched;		
+    int	reservePagesUsed;	
+    int	pagesWritten;		
+    int	cleanWait;		
+    int	pageoutWakeup;		
+    int	pageoutNoWork;		
+    int pageoutWait;		
+    int	mapPageWait;		
+    int	accessWait;		
+    VmMachDepStat	machDepStat;
+    int	minVMPages;
+    int	fsAsked;		
+    int	haveFreePage;		
+    int	fsMap;			
+    int	fsUnmap;		
+    int	maxFSPages;		
+    int	minFSPages;		
+    int	numCOWHeapPages;	
+    int	numCOWStkPages;		
+    int numCORHeapPages;	
+    int numCORStkPages;		
+    int	numCOWHeapFaults;	
+    int	numCOWStkFaults;	
+    int	quickCOWFaults;		
+    int numCORHeapFaults;	
+    int numCORStkFaults;	
+    int	quickCORFaults;		
+    int swapPagesCopied;	
+    int	numCORCOWHeapFaults;	
+    int	numCORCOWStkFaults;	
+    int	potModPages;		
+    int	notModPages;		
+    int	notHardModPages;	
+    int	codePrefetches;		
+    int	heapSwapPrefetches;	
+    int	heapFSPrefetches;	
+    int	stackPrefetches;	
+    int	codePrefetchHits;	
+    int	heapSwapPrefetchHits;	
+    int	heapFSPrefetchHits;	
+    int	stackPrefetchHits;	
+    int	prefetchAborts;		
+} Vm_Stat;
+extern	Vm_Stat	vmStat;
+# 18 "../Include/user/vm.h"
+typedef int Vm_SegmentID;
+typedef struct Vm_SegmentInfo {
+    int			segNum;		
+    int 		refCount;	
+    char		objFileName[50];
+    int           	type;		
+    int			numPages;	
+    int			ptSize;		
+    int			resPages;	
+    int			flags;		
+    int			ptUserCount;	
+    int			numCOWPages;	
+    int			numCORPages;	
+    Address		minAddr;	
+    Address		maxAddr;	
+    int			traceTime;	
+} Vm_SegmentInfo;
+extern	ReturnStatus	Vm_PageSize();
+extern	ReturnStatus	Vm_CreateVA();
+extern	ReturnStatus	Vm_DestroyVA();
+extern	ReturnStatus	Vm_Cmd();
+extern	ReturnStatus	Vm_GetSegInfo();
+# 28 "../Include/user/proc.h"
+# 30 "../Include/user/proc.h"
+typedef unsigned int 	Proc_PID;
+typedef enum {
+    PROC_UNUSED,	
+    PROC_RUNNING,	
+    PROC_READY,		
+    PROC_WAITING,	
+    PROC_EXITING,	
+    PROC_DEAD,		
+    PROC_MIGRATED,	
+    PROC_NEW,		
+    PROC_SUSPENDED	
+} Proc_State;
+typedef struct {
+    Time kernelCpuUsage;	
+    Time userCpuUsage;		
+    Time childKernelCpuUsage;	
+    Time childUserCpuUsage;	
+    int	numQuantumEnds;		
+    int numWaitEvents;		
+} Proc_ResUsage;
+typedef enum {
+    PROC_GET_THIS_DEBUG,
+    PROC_GET_NEXT_DEBUG,
+    PROC_CONTINUE,
+    PROC_SINGLE_STEP,
+    PROC_GET_DBG_STATE,
+    PROC_SET_DBG_STATE,
+    PROC_READ,
+    PROC_WRITE,
+    PROC_DETACH_DEBUGGER
+} Proc_DebugReq;
+typedef struct {
+    Proc_PID	processID;		
+    int	termReason;			
+    int	termStatus;			
+    int	termCode;			
+    Mach_RegState regState;		
+    int	sigHoldMask;			
+    int	sigPendingMask;			
+    int	sigActions[		32]; 	
+    int	sigMasks[		32]; 	
+    int	sigCodes[		32]; 	
+} Proc_DebugState;
+typedef struct {
+    char *name;		
+    char *value;	
+} Proc_EnvironVar;
+typedef struct  {
+    int		processor;	
+    Proc_State	state;		
+    int		genFlags;	
+    Proc_PID	processID;		
+    Proc_PID	parentID;		
+    int		familyID;		
+    int		userID;			
+    int		effectiveUserID;	
+    int		 event;		 
+    int 	 billingRate;	
+    unsigned int recentUsage;	
+    unsigned int weightedUsage;	
+    unsigned int unweightedUsage; 
+    Time kernelCpuUsage;	
+    Time userCpuUsage;		
+    Time childKernelCpuUsage;	
+    Time childUserCpuUsage;	
+    int 	numQuantumEnds;		
+    int		numWaitEvents;		
+    unsigned int schedQuantumTicks;	
+    Vm_SegmentID		vmSegments[	4];
+    int		sigHoldMask;		
+    int		sigPendingMask;		
+    int		sigActions[		32];
+    int		peerHostID;		 
+    Proc_PID	peerProcessID;		 
+} Proc_PCBInfo;
+typedef struct {
+    Time	interval;	
+    Time	curValue;	
+} Proc_TimerInterval;
+typedef struct {
+    char argString[256];
+} Proc_PCBArgString;
+extern ReturnStatus Proc_SetExitHandler();
+extern void	    Proc_Exit();
+extern ReturnStatus Proc_Fork();
+extern void	    Proc_RawExit();
+extern ReturnStatus Proc_Detach();
+extern ReturnStatus Proc_Wait();
+extern ReturnStatus Proc_RawWait();
+extern ReturnStatus Proc_Exec();
+extern ReturnStatus Proc_ExecEnv();
+extern ReturnStatus Proc_GetIDs();
+extern ReturnStatus Proc_SetIDs();
+extern ReturnStatus Proc_GetGroupIDs();
+extern ReturnStatus Proc_SetGroupIDs();
+extern ReturnStatus Proc_GetFamilyID();
+extern ReturnStatus Proc_SetFamilyID();
+extern ReturnStatus Proc_GetPCBInfo();
+extern ReturnStatus Proc_GetResUsage();
+extern ReturnStatus Proc_GetPriority();
+extern ReturnStatus Proc_SetPriority();
+extern ReturnStatus Proc_Debug();
+extern ReturnStatus Proc_Profile();
+extern ReturnStatus Proc_SetIntervalTimer();
+extern ReturnStatus Proc_GetIntervalTimer();
+extern ReturnStatus Proc_SetEnviron();
+extern ReturnStatus Proc_UnsetEnviron();
+extern ReturnStatus Proc_GetEnvironVar();
+extern ReturnStatus Proc_GetEnvironRange();
+extern ReturnStatus Proc_InstallEnviron();
+extern ReturnStatus Proc_CopyEnviron();
+extern ReturnStatus Proc_Migrate();
+# 25 "../Include/proc.h"
+# 1 "../Include/user/sync.h"
+# 210 "../Include/user/sync.h"
+# 26 "../Include/proc.h"
+# 1 "../Include/syncLock.h"
+# 164 "../Include/syncLock.h"
+# 27 "../Include/proc.h"
+# 1 "/sprite/lib/include/list.h"
+# 280 "/sprite/lib/include/list.h"
+# 28 "../Include/proc.h"
+# 1 "../Include/timer.h"
+# 287 "../Include/timer.h"
+# 29 "../Include/proc.h"
+# 1 "../Include/sig.h"
+# 102 "../Include/sig.h"
+# 30 "../Include/proc.h"
+# 1 "../Include/ds3100.md/mach.h"
+# 259 "../Include/ds3100.md/mach.h"
+# 31 "../Include/proc.h"
+# 39 "../Include/proc.h"
+typedef struct {
+    unsigned int	interval;	
+    ClientData		clientData;	
+    ClientData		token;		
+} Proc_CallInfo;
+typedef struct {
+    int			refCount;	
+    int			size;		
+    struct ProcEnvironVar *varArray;	
+} Proc_EnvironInfo;
+typedef struct {
+    List_Links links;			
+    struct Proc_ControlBlock *procPtr;	
+} Proc_PCBLink;
+typedef union {
+    Timer_Ticks	ticks;	
+    Time	time;	
+} Proc_Time;
+typedef struct {
+    int		type;		
+    Address	lockPtr;	
+} Proc_LockStackElement;
+typedef struct Proc_ControlBlock {
+    List_Links	links;		
+    int		processor;	
+    Proc_State	state;		
+    int		genFlags;	
+    int		syncFlags;	
+    int		schedFlags;	
+    int		exitFlags;	
+    List_Links		childListHdr;	
+    List_Links		*childList;	
+    Proc_PCBLink	siblingElement;	
+    Proc_PCBLink	familyElement;	
+    Proc_PID	processID;		
+    Proc_PID	parentID;		
+    int		familyID;		
+    int		userID;			
+    int		effectiveUserID;	
+    int		 event;		 
+    Proc_PCBLink eventHashChain; 
+    Sync_Condition	waitCondition;
+    Sync_Condition	lockedCondition;
+    int			waitToken;
+    int 	 billingRate;	
+    unsigned int recentUsage;	
+    unsigned int weightedUsage;	
+    unsigned int unweightedUsage; 
+    Proc_Time kernelCpuUsage;	
+    Proc_Time userCpuUsage;	
+    Proc_Time childKernelCpuUsage;	
+    Proc_Time childUserCpuUsage;	
+    int 	numQuantumEnds;		
+    int		numWaitEvents;		
+    unsigned int schedQuantumTicks;	
+    struct	Mach_State	*machStatePtr;
+    struct	Vm_ProcInfo	*vmPtr;
+    struct Fs_ProcessState	*fsPtr;
+    int	termReason;		
+    int	termStatus;		
+    int	termCode;		
+    int		sigHoldMask;		
+    int		sigPendingMask;		
+    int		sigActions[		32];
+    int		sigMasks[		32];
+    int		sigCodes[		32];
+    int		sigFlags;		
+    int		oldSigHoldMask;		
+    int		sigAddr;		
+    struct ProcIntTimerInfo	*timerArray;
+    int			peerHostID;	
+    Proc_PID		peerProcessID; 	
+    struct Proc_ControlBlock
+	             *rpcClientProcess;	
+    Proc_EnvironInfo	*environPtr;
+    char	*argString;
+# 386 "../Include/proc.h"
+     Sync_Semaphore		lockInfo;
+    ReturnStatus (**kcallTable)();	
+    int specialHandling;		
+     short *Prof_Buffer;    
+     int Prof_BufferSize;   
+     int Prof_Offset;       
+     int Prof_Scale;        
+     int Prof_PC;           
+    Address	remoteExecBuffer;	 
+    Address	migCmdBuffer;		 
+    int		migCmdBufSize;		 
+    int		migFlags;		 
+    Proc_Time   preEvictionUsage; 	 
+    int         unixErrno;               
+    int         unixProgress;            
+    int		extraField[10];		
+} Proc_ControlBlock;
+extern Proc_ControlBlock  **proc_RunningProcesses;
+extern Proc_ControlBlock **proc_PCBTable;
+extern int proc_MaxNumProcesses;
+extern Boolean proc_RefuseMigrations;
+extern void		  	Proc_Init();
+extern void		  	Proc_InitMainProc();
+extern ReturnStatus		Proc_NewProc();
+extern void			ProcStartUserProc();
+extern void			Proc_ExitInt();
+extern void			Proc_Exit();
+extern void			Proc_DetachInt();
+extern ReturnStatus		Proc_Detach();
+extern void			Proc_InformParent();	
+extern void			Proc_Reaper();
+extern void			Proc_NotifyMigratedWaiters();
+extern void			Proc_PutOnDebugList();
+extern void			Proc_SuspendProcess();
+extern void			Proc_ResumeProcess();
+extern int			Proc_ExecEnv();
+extern int			Proc_RemoteExec();
+extern ReturnStatus 		Proc_GetHostIDs();
+extern ReturnStatus		Proc_RpcRemoteWait();
+extern ReturnStatus		Proc_RpcGetPCB();
+extern ReturnStatus		Proc_EvictForeignProcs();
+extern ReturnStatus		Proc_EvictProc();
+extern Boolean			Proc_IsMigratedProc();
+extern void			Proc_FlagMigration();
+extern void			Proc_MigrateTrap();
+extern void			Proc_OkayToMigrate();
+extern ReturnStatus		Proc_MigSendUserInfo();
+extern ReturnStatus		Proc_DoRemoteCall();
+extern void			Proc_SetEffectiveProc();
+extern Proc_ControlBlock *	Proc_GetEffectiveProc();
+extern ReturnStatus		Proc_ByteCopy();
+extern ReturnStatus		Proc_MakeStringAccessible();
+extern void			Proc_MakeUnaccessible();
+extern void			Proc_MigrateStartTracing();
+extern void			Proc_DestroyMigratedProc();
+extern void			Proc_NeverMigrate();
+extern ReturnStatus		Proc_MigGetStats();
+extern ReturnStatus		Proc_MigZeroStats();
+extern  void	        Proc_MigAddToCounter();
+extern void			ProcInitMainEnviron();
+extern void			ProcSetupEnviron();
+extern void			ProcDecEnvironRefCount();
+extern void			Proc_SetServerPriority();
+extern	int			Proc_KillAllProcesses();
+extern	void			Proc_WakeupAllProcesses();
+extern	void			Proc_Unlock();
+extern	void			Proc_Lock();
+extern	Proc_ControlBlock	*Proc_LockPID();
+extern	ReturnStatus		Proc_LockFamily();
+extern	void			Proc_UnlockFamily();
+extern	void			Proc_TakeOffDebugList();
+extern	Boolean			Proc_HasPermission();
+extern	void			Proc_ServerInit();
+extern	void			Proc_CallFunc();
+extern	void			Proc_CancelCallFunc();
+extern	ClientData		Proc_CallFuncAbsTime();
+extern	void			Proc_ServerProc();
+extern	int			proc_NumServers;
+extern  ReturnStatus		Proc_Dump();
+extern  ReturnStatus		Proc_KDump();
+extern  void			Proc_DumpPCB();
+extern  void			Proc_RemoveFromLockStack();
+extern  void			Proc_PushLockStack();
+extern ReturnStatus		Proc_SetEnvironStub();
+extern ReturnStatus		Proc_UnsetEnvironStub();
+extern ReturnStatus		Proc_GetEnvironVarStub();
+extern ReturnStatus		Proc_GetEnvironRangeStub();
+extern ReturnStatus		Proc_InstallEnvironStub();
+extern ReturnStatus		Proc_CopyEnvironStub();
+extern int                      Proc_KernExec();
+# 57 "../Include/sync.h"
+# 1 "../Include/syncLock.h"
+# 164 "../Include/syncLock.h"
+# 58 "../Include/sync.h"
+# 1 "../Include/sys.h"
+# 75 "../Include/sys.h"
+# 59 "../Include/sync.h"
+# 1 "../Include/ds3100.md/mach.h"
+# 259 "../Include/ds3100.md/mach.h"
+# 60 "../Include/sync.h"
+# 66 "../Include/sync.h"
+# 75 "../Include/sync.h"
+# 82 "../Include/sync.h"
+typedef struct Sync_Instrument {
+    int numWakeups;		
+    int numWakeupCalls;		
+    int numSpuriousWakeups;	
+    int numLocks;		
+    int numUnlocks;		
+    int spinCount[60+1]; 
+    int sched_MutexMiss;	
+    char pad[	32];
+} Sync_Instrument;
+typedef struct Sync_RegElement {
+    List_Links 		links;			
+    int			hit;			
+    int			miss;			
+    int			type;			
+    char		*name;			
+    Sync_LockClass	class;			
+    int			priorCount;		
+    int			priorTypes[1]; 
+    int			activeLockCount;	
+    List_Links		activeLocks;		
+    int			deadLockCount;		
+} Sync_RegElement;
+typedef struct semid_ds Sync_SysVSem;
+typedef struct {
+    List_Links	links;		
+    int		hostID;		
+    Proc_PID	pid;		
+    int		waitToken;	
+} Sync_RemoteWaiter;
+extern Sync_Instrument 	sync_Instrument[	1];
+extern Sync_Instrument	*sync_InstrumentPtr[	1];
+extern int sync_BusyWaits;
+extern 	void 		Sync_Init();
+extern 	void 		Sync_WakeupProcess();
+extern 	void 		Sync_EventWakeup();
+extern 	void 		Sync_WakeWaitingProcess();
+extern 	void 		Sync_UnlockAndSwitch();
+extern 	Boolean 	Sync_SlowMasterWait();
+extern 	Boolean 	Sync_SlowWait();
+extern 	Boolean 	Sync_EventWait();
+extern 	Boolean 	Sync_WaitTime();
+extern 	Boolean 	Sync_WaitTimeInTicks();
+extern 	Boolean 	Sync_WaitTimeInterval();
+extern 	Boolean 	Sync_ProcWait();
+extern 	void 		Sync_ProcWakeup();
+extern 	void 		Sync_GetWaitToken();
+extern 	void 		Sync_SetWaitToken();
+extern 	ReturnStatus 	Sync_RemoteNotify();
+extern 	ReturnStatus 	Sync_RemoteNotifyStub();
+extern 	ReturnStatus 	Sync_SlowLockStub();
+extern 	ReturnStatus 	Sync_SlowWaitStub();
+extern 	ReturnStatus 	Sync_SlowBroadcastStub();
+extern 	void 		Sync_PrintStat();
+extern	void		Sync_LockStatInit();
+extern	void		Sync_AddPriorInt();
+extern	void		SyncDeleteCurrentInt();
+extern 	void		SyncMergePriorInt();
+extern	void		Sync_RegisterInt();
+extern	void		Sync_CheckoutInt();
+extern	void		Sync_PrintLockStats();
+extern	ReturnStatus	Sync_SemgetStub();
+extern	ReturnStatus	Sync_SemopStub();
+extern	ReturnStatus	Sync_SemctlStub();
+extern Sync_RegElement  *regQueuePtr;
+# 319 "../Include/sync.h"
+# 501 "../Include/sync.h"
+# 507 "../Include/sync.h"
+# 514 "../Include/sync.h"
+# 547 "../Include/sync.h"
+# 557 "../Include/sync.h"
+# 569 "../Include/sync.h"
+# 602 "../Include/sync.h"
+# 609 "../Include/sync.h"
+# 616 "../Include/sync.h"
+# 650 "../Include/sync.h"
+# 660 "../Include/sync.h"
+# 670 "../Include/sync.h"
+# 705 "../Include/sync.h"
+# 736 "../Include/sync.h"
+# 769 "../Include/sync.h"
+# 800 "../Include/sync.h"
+# 830 "../Include/sync.h"
+# 860 "../Include/sync.h"
+# 891 "../Include/sync.h"
+# 927 "../Include/sync.h"
+# 953 "../Include/sync.h"
+# 975 "../Include/sync.h"
+# 35 "../Include/fs.h"
+# 1 "../Include/proc.h"
+# 664 "../Include/proc.h"
+# 36 "../Include/fs.h"
+# 1 "../Include/user/fs.h"
+# 1 "/sprite/lib/include/spriteTime.h"
+# 145 "/sprite/lib/include/spriteTime.h"
+# 23 "../Include/user/fs.h"
+# 1 "../Include/proc.h"
+# 664 "../Include/proc.h"
+# 24 "../Include/user/fs.h"
+# 36 "../Include/user/fs.h"
+typedef struct Fs_Attributes {
+    int	serverID;		
+    int domain;			
+    int fileNumber;		
+    int type;			
+    int size;			
+    int numLinks;		
+    unsigned int permissions;	
+    int uid;			
+    int gid;			
+    int devServerID;		
+    int devType;		
+    int devUnit;		
+    Time createTime;		
+    Time accessTime;		
+    Time descModifyTime;	
+    Time dataModifyTime;	
+    int  blocks;		
+    int  blockSize;		
+    int	version;		
+    int userType;		
+    int pad[4];			
+} Fs_Attributes;
+typedef struct Fs_FileID {
+    int		type;		
+    int		serverID;	
+    int		major;		
+    int		minor;		
+} Fs_FileID;			
+typedef struct Fs_UserIDs {
+    int user;			
+    int numGroupIDs;		
+    int group[8];	
+} Fs_UserIDs;			
+typedef struct Ioc_RepositionArgs {
+    int base;	
+    int offset;	
+} Ioc_RepositionArgs;
+typedef struct Ioc_LockArgs {
+    int		flags;		
+    int		hostID;		
+    Proc_PID	pid;		
+    int		token;		
+} Ioc_LockArgs;
+typedef struct Ioc_Owner {
+    Proc_PID	id;		
+    int		procOrFamily;	
+} Ioc_Owner;
+typedef struct Ioc_MapArgs {
+    int		numBytes;
+    Address	address;
+} Ioc_MapArgs;
+typedef struct Ioc_PrefixArgs {
+    char	prefix[1024];  
+} Ioc_PrefixArgs;
+typedef struct Ioc_WriteBackArgs {
+    int		firstByte;	
+    int		lastByte;	
+    Boolean	shouldBlock;	
+} Ioc_WriteBackArgs;
+typedef struct Ioc_MmapInfoArgs {
+    int		isMapped;	
+    int		clientID;	
+} Ioc_MmapInfoArgs;
+typedef struct Fs_TwoPaths {
+    int		pathLen1;	
+    int		pathLen2;	
+    char 	*path1;		
+    char 	*path2;		
+} Fs_TwoPaths;
+typedef struct {
+    int	maxKbytes;		
+    int	freeKbytes;		
+    int	maxFileDesc;		
+    int	freeFileDesc;		
+    int blockSize;		
+    int optSize;		
+} Fs_DomainInfo;
+typedef struct Fs_Prefix {
+    int serverID;		
+    int domain;			
+    int fileNumber;		
+    int version;		
+    int flags;			
+    char prefix[64];
+    Fs_DomainInfo domainInfo;	
+} Fs_Prefix;
+typedef struct {
+    int		bufSize;	
+    Address	buffer;		
+} Fs_IOVector;
+typedef struct Fs_Device {
+    int		serverID;	
+    int		type;		
+    int		unit;		
+    ClientData	data;		
+} Fs_Device;
+typedef ClientData Fs_TimeoutHandler;
+extern void		    Fs_Dispatch();
+extern void		    Fs_EventHandlerCreate();
+extern void 		    Fs_EventHandlerDestroy();
+extern ClientData 	    Fs_EventHandlerData();
+extern ClientData 	    Fs_EventHandlerChangeData();
+extern char		    *Fs_GetTempName();
+extern int		    Fs_GetTempFile();
+extern int                  Fs_IOControl();
+extern Boolean		    Fs_IsATerm();
+extern Fs_TimeoutHandler    Fs_TimeoutHandlerCreate();
+extern void 		    Fs_TimeoutHandlerDestroy();
+extern int                  Ioc_ClearBits();
+extern int                  Ioc_GetFlags();
+extern int                  Ioc_GetOwner();
+extern int                  Ioc_Lock();
+extern int                  Ioc_Map();
+extern int                  Ioc_NumReadable();
+extern int                  Ioc_SetBits();
+extern int                  Ioc_Reposition();
+extern int                  Ioc_SetFlags();
+extern int                  Ioc_SetOwner();
+extern int                  Ioc_Truncate();
+extern int                  Ioc_Unlock();
+extern int                  Ioc_WriteBack();
+# 37 "../Include/fs.h"
+# 1 "/sprite/lib/include/fmt.h"
+# 74 "/sprite/lib/include/fmt.h"
+# 38 "../Include/fs.h"
+# 44 "../Include/fs.h"
+typedef struct Fs_ProcessState {
+    struct Fs_Stream	*cwdPtr;	
+    unsigned int   	filePermissions;
+    int		   	numStreams;	
+    struct Fs_Stream   **streamList;	
+    char		*streamFlags;	
+    int			numGroupIDs;	
+    int			*groupIDs;	
+} Fs_ProcessState;
+typedef struct Fs_HandleHeader {
+    Fs_FileID		fileID;		
+    int			flags;		
+    Sync_Condition	unlocked;	
+    int			refCount;	
+    char		*name;		
+    List_Links		lruLinks;	
+    int			lockProcID;	
+} Fs_HandleHeader;
+typedef struct Fs_NameInfo {
+    Fs_FileID		fileID;		
+    Fs_FileID		rootID;		
+    int			domainType;	
+    struct Fsprefix	*prefixPtr;	
+} Fs_NameInfo;
+typedef struct Fs_Stream {
+    Fs_HandleHeader	hdr;		
+    int			offset;		
+    int			flags;		
+    Fs_HandleHeader	*ioHandlePtr;	
+    Fs_NameInfo	 	*nameInfoPtr;	
+    List_Links		clientList;	
+} Fs_Stream;
+typedef struct Fs_IOParam {
+    Address	buffer;			
+    int		length;			
+    int		offset;			
+    int		flags;			
+    Proc_PID	procID;			
+    Proc_PID	familyID;		
+    int		uid;			
+    int		reserved;		
+} Fs_IOParam;
+typedef struct Fs_IOReply {
+    int		length;			
+    int		flags;			
+    int		signal;			
+    int		code;			
+} Fs_IOReply;
+typedef struct Fs_IOCParam {
+    int		command;	
+    Address	inBuffer;	
+    int		inBufSize;	
+    Address	outBuffer;	
+    int		outBufSize;	
+    Fmt_Format	format;		
+    Proc_PID	procID;		
+    Proc_PID	familyID;	
+    int		uid;		
+    int		flags;		
+} Fs_IOCParam;
+typedef enum {
+    FS_CODE_PAGE,
+    FS_HEAP_PAGE,
+    FS_SWAP_PAGE,
+    FS_SHARED_PAGE
+} Fs_PageType;
+typedef Address Fs_NotifyToken;
+extern  Boolean fsutil_Initialized;	
+extern int fsMaxRpcDataSize;
+extern int fsMaxRpcParamSize;
+extern	int	fsutil_TmpDirNum;
+extern	Boolean	fsutil_DelayTmpFiles;
+extern	Boolean	fsutil_WriteThrough;
+extern	Boolean	fsutil_WriteBackASAP;
+extern	Boolean	fsutil_WriteBackOnClose;
+extern	Boolean	fsutil_WBOnLastDirtyBlock;
+extern	void	Fs_InitData();
+extern	void	Fs_InitNameSpace();
+extern	void	Fs_ProcInit();
+extern	void	Fs_InheritState();
+extern	void	Fs_CloseState();
+extern	ReturnStatus	Fs_AttachDiskStub();
+extern	ReturnStatus	Fs_ChangeDirStub();
+extern	ReturnStatus	Fs_CommandStub();
+extern	ReturnStatus	Fs_CreatePipeStub();
+extern	ReturnStatus	Fs_GetAttributesIDStub();
+extern	ReturnStatus	Fs_GetAttributesStub();
+extern	ReturnStatus	Fs_GetNewIDStub();
+extern	ReturnStatus	Fs_HardLinkStub();
+extern	ReturnStatus	Fs_IOControlStub();
+extern	ReturnStatus	Fs_LockStub();
+extern	ReturnStatus	Fs_MakeDeviceStub();
+extern	ReturnStatus	Fs_MakeDirStub();
+extern	ReturnStatus	Fs_OpenStub();
+extern	ReturnStatus	Fs_ReadLinkStub();
+extern	ReturnStatus	Fs_ReadStub();
+extern	ReturnStatus	Fs_ReadVectorStub();
+extern	ReturnStatus	Fs_RemoveDirStub();
+extern	ReturnStatus	Fs_RemoveStub();
+extern	ReturnStatus	Fs_RenameStub();
+extern	ReturnStatus	Fs_SelectStub();
+extern	ReturnStatus	Fs_SetAttributesIDStub();
+extern	ReturnStatus	Fs_SetAttributesStub();
+extern	ReturnStatus	Fs_SetAttrIDStub();
+extern	ReturnStatus	Fs_SetAttrStub();
+extern	ReturnStatus	Fs_SetDefPermStub();
+extern	ReturnStatus	Fs_SymLinkStub();
+extern	ReturnStatus	Fs_TruncateIDStub();
+extern	ReturnStatus	Fs_TruncateStub();
+extern	ReturnStatus	Fs_WriteStub();
+extern	ReturnStatus	Fs_WriteVectorStub();
+extern	ReturnStatus	Fs_FileWriteBackStub();
+extern	ReturnStatus	Fs_UserClose();
+extern	ReturnStatus	Fs_UserRead();
+extern	ReturnStatus	Fs_UserReadVector();
+extern	ReturnStatus	Fs_UserWrite();
+extern	ReturnStatus	Fs_UserWriteVector();
+extern	ReturnStatus	Fs_ChangeDir();
+extern	ReturnStatus	Fs_Close();
+extern	ReturnStatus	Fs_Command();
+extern	ReturnStatus	Fs_CheckAccess();
+extern	ReturnStatus	Fs_GetAttributes();
+extern	ReturnStatus	Fs_GetAttributesID();
+extern	ReturnStatus	Fs_GetNewID();
+extern	ReturnStatus	Fs_HardLink();
+extern	ReturnStatus	Fs_IOControl();
+extern	ReturnStatus	Fs_MakeDevice();
+extern	ReturnStatus	Fs_MakeDir();
+extern	ReturnStatus	Fs_Open();
+extern	ReturnStatus	Fs_Read();
+extern	ReturnStatus	Fs_Remove();
+extern	ReturnStatus	Fs_RemoveDir();
+extern	ReturnStatus	Fs_Rename();
+extern	ReturnStatus	Fs_SetAttributes();
+extern	ReturnStatus	Fs_SetAttributesID();
+extern	ReturnStatus	Fs_SetDefPerm();
+extern	ReturnStatus	Fs_SymLink();
+extern	ReturnStatus	Fs_Trunc();
+extern	ReturnStatus	Fs_TruncStream();
+extern	ReturnStatus	Fs_Write();
+extern	int		Fs_Cat();
+extern	int		Fs_Copy();
+extern  void		Fs_CheckSetID();
+extern  void		Fs_CloseOnExec();
+extern	int		Fs_GetEncapSize();
+extern	ReturnStatus	Fs_InitiateMigration();
+extern  ReturnStatus    Fs_EncapFileState();
+extern  ReturnStatus    Fs_DeencapFileState();
+extern	ReturnStatus	Fs_PageRead();
+extern	ReturnStatus	Fs_PageWrite();
+extern	ReturnStatus	Fs_PageCopy();
+extern	ReturnStatus	Fs_FileBeingMapped();
+extern ReturnStatus	Fs_GetStreamID();
+extern void		Fs_ClearStreamID();
+extern ReturnStatus	Fs_GetStreamPtr();
+extern  void		Fs_Bin();
+extern ReturnStatus	Fs_GetAttrStream();
+extern  void 		Fs_InstallDomainLookupOps();
+extern  void		Fs_CheckSetID();
+extern  ClientData      Fs_GetFileHandle();
+extern struct Vm_Segment **Fs_GetSegPtr();
+# 30 "fsLclAttributes.c"
+# 1 "../Include/fsutil.h"
+# 1 "/sprite/lib/include/stdlib.h"
+# 1 "/sprite/lib/include/sprite.h"
+# 95 "/sprite/lib/include/sprite.h"
+# 23 "/sprite/lib/include/stdlib.h"
+# 1 "/sprite/lib/include/sys/types.h"
+typedef	unsigned char	u_char;
+typedef	unsigned short	u_short;
+typedef	unsigned int	u_int;
+typedef	unsigned long	u_long;
+typedef	unsigned short	ushort;		
+# 42 "/sprite/lib/include/sys/types.h"
+# 48 "/sprite/lib/include/sys/types.h"
+typedef	struct	_quad { long val[2]; } quad;
+typedef	long	daddr_t;
+typedef	char *	caddr_t;
+typedef	long *	qaddr_t;	
+typedef	u_long	ino_t;
+typedef	long	swblk_t;
+typedef	int	size_t;
+typedef	long	time_t;
+typedef	long	clock_t;
+typedef	short	dev_t;
+typedef	long	off_t;
+typedef	short	uid_t;
+typedef	short	gid_t;
+typedef long	key_t;		
+typedef long	fd_mask;
+typedef	struct fd_set {
+	fd_mask	fds_bits[	(((256)+(( (sizeof(fd_mask) * 8		)	)-1))/( (sizeof(fd_mask) * 8		)	))];
+} fd_set;
+# 24 "/sprite/lib/include/stdlib.h"
+extern double	atof 	();
+extern int	atoi 	();
+extern long int	atol 	();
+extern double	strtod 	();
+extern long int	strtol 	();
+extern unsigned long int
+		strtoul 	();
+extern Address 	alloca 	();
+extern Address 	calloc 	();
+extern Address	malloc 	();
+extern Address	realloc 	();
+extern void	Mem_Bin 	();
+extern Address	Mem_CallerPC();
+extern void	Mem_DumpTrace 	();
+extern void	Mem_PrintConfig 	();
+extern void	Mem_PrintInUse 	();
+extern void	Mem_PrintStats 	();
+extern void	Mem_PrintStatsInt 	();
+extern void	Mem_SetPrintProc 	();
+extern int	Mem_Size 	();
+# 78 "/sprite/lib/include/stdlib.h"
+extern		free();
+typedef struct {
+    int		size;	
+    int		flags;	
+} Mem_TraceInfo;
+extern void	Mem_SetTraceSizes 
+	();
+extern int	mem_SmallMinNum;
+extern int	mem_LargeMinNum;
+extern int	mem_LargeMaxSize;
+extern int	mem_NumAllocs;
+extern int	mem_NumFrees;
+typedef struct div_t {
+    int quot;
+    int rem;
+} div_t;
+typedef struct {
+    long int quot;
+    long int rem;
+} ldiv_t;
+extern int	abs 	();
+extern div_t	div 	();
+extern long int	labs 	();
+extern ldiv_t	ldiv 	();
+extern void	abort 	();
+extern int	atexit 	();
+extern Address	bsearch 
+	();
+extern int	exit 	();
+extern char *	getenv 	();
+extern void	qsort 
+	();
+extern int	rand 	();
+extern long	random 	();
+extern void	setenv 	();
+extern int	srand 	();
+extern int	srandom 	();
+extern int	system 	();
+# 31 "../Include/fsutil.h"
+# 1 "../Include/fs.h"
+# 562 "../Include/fs.h"
+# 33 "../Include/fsutil.h"
+# 1 "../Include/fsio.h"
+# 1 "../Include/fs.h"
+# 562 "../Include/fs.h"
+# 22 "../Include/fsio.h"
+extern int fsio_LclToRmtType[];
+extern int fsio_RmtToLclType[];
+typedef struct Fsio_OpenOps {
+    int		type;			
+    ReturnStatus (*nameOpen)();
+} Fsio_OpenOps;
+extern Fsio_OpenOps fsio_OpenOpTable[];
+typedef struct Fsio_StreamTypeOps {
+    int		type;			
+    ReturnStatus (*ioOpen)();
+    ReturnStatus (*read)();
+    ReturnStatus (*write)();
+    ReturnStatus (*pageRead)();
+    ReturnStatus (*pageWrite)();
+    ReturnStatus (*ioControl)();
+    ReturnStatus (*select)();
+    ReturnStatus (*getIOAttr)();
+    ReturnStatus (*setIOAttr)();
+    Fs_HandleHeader *(*clientVerify)();
+    ReturnStatus (*release)();
+    ReturnStatus (*migEnd)();
+    ReturnStatus (*migrate)();
+    ReturnStatus (*reopen)();
+    Boolean	 (*scavenge)();
+    void	 (*clientKill)();
+    ReturnStatus (*close)();
+} Fsio_StreamTypeOps;
+extern Fsio_StreamTypeOps fsio_StreamOpTable[];
+typedef struct FsioStreamClient {
+    List_Links links;		
+    int		clientID;	
+} FsioStreamClient;
+typedef struct FsMigInfo {
+    Fs_FileID	streamID;	
+    Fs_FileID    ioFileID;     	
+    Fs_FileID	nameID;		
+    Fs_FileID	rootID;		
+    int		srcClientID;	
+    int         offset;     	
+    int         flags;      	
+} FsMigInfo;
+typedef struct Fsutil_UseCounts {
+    int		ref;		
+    int		write;		
+    int		exec;		
+} Fsutil_UseCounts;
+typedef struct Fsio_Request *Fsio_RequestToken;
+extern Fsio_RequestToken Fsio_DeviceBlockIOAsync();
+extern Fsio_DeviceBlockIOPoll();
+typedef struct Fsio_RecovTestInfo {
+    int		(*refFunc)();		
+    int		(*numBlocksFunc)();	
+    int		(*numDirtyBlocksFunc)();
+} Fsio_RecovTestInfo;
+extern	Fsio_RecovTestInfo	fsio_StreamRecovTestFuncs[];
+extern	int	Fsio_FileRecovTestUseCount();
+extern	int	Fsio_FileRecovTestNumCacheBlocks();
+extern	int	Fsio_FileRecovTestNumDirtyCacheBlocks();
+extern	int	Fsio_DeviceRecovTestUseCount();
+extern	int	Fsio_PipeRecovTestUseCount();
+extern void Fsio_InstallStreamOps();
+extern void Fsio_InstallSrvOpenOp();
+extern ReturnStatus Fsio_CreatePipe();
+extern void Fsio_Bin();
+extern void Fsio_InitializeOps();
+extern Boolean		Fsio_StreamClientOpen();
+extern Boolean		Fsio_StreamClientClose();
+extern Boolean		Fsio_StreamClientFind();
+extern Fs_Stream	*Fsio_StreamCreate();
+extern Fs_Stream	*Fsio_StreamAddClient();
+extern void		Fsio_StreamMigClient();
+extern Fs_Stream	*Fsio_StreamClientVerify();
+extern void		Fsio_StreamCreateID();
+extern void		Fsio_StreamCopy();
+extern void		Fsio_StreamDestroy();
+extern Boolean		Fsio_StreamScavenge();
+extern ReturnStatus	Fsio_StreamReopen();
+extern void		Fsio_LockInit();
+extern ReturnStatus	Fsio_IocLock();
+extern ReturnStatus	Fsio_Lock();
+extern ReturnStatus	Fsio_Unlock();
+extern void		Fsio_LockClose();
+extern void		Fsio_LockClientKill();
+extern ReturnStatus	Fsio_FileTrunc();
+extern void Fsio_DevNotifyException();
+extern void Fsio_DevNotifyReader();
+extern void Fsio_DevNotifyWriter();
+extern ReturnStatus Fsio_VanillaDevReopen();
+extern ReturnStatus	Fsio_EncapStream();
+extern ReturnStatus	Fsio_DeencapStream();
+extern ReturnStatus	Fsio_MigrateUseCounts();
+extern void		Fsio_MigrateClient();
+extern void Fsio_NullClientKill();
+extern ReturnStatus Fsio_NoProc();
+extern ReturnStatus Fsio_NullProc();
+extern Fs_HandleHeader *Fsio_NoHandle();
+# 34 "../Include/fsutil.h"
+typedef struct Fsutil_RecoveryInfo {
+    Sync_Lock		lock;		
+    Sync_Condition	reopenComplete;	
+    int			flags;		
+    ReturnStatus	status;		
+    Fsutil_UseCounts		use;		
+} Fsutil_RecoveryInfo;
+typedef	struct	Fsutil_FsRecovNamedStats {
+    Fs_FileID		fileID;			
+    Boolean		streamHandle;		
+    int			mode;			
+    int			refCount;		
+    int			streamRefCount;		
+    int			numBlocks;		
+    int			numDirtyBlocks;		
+    char		name[50];		
+} Fsutil_FsRecovNamedStats;
+extern	int			fsutil_TimeInSeconds;
+extern	Timer_QueueElement	fsutil_TimeOfDayElement;
+extern	int			fsutil_NumRecovering;
+extern Boolean fsconsist_Debug;
+extern Boolean fsutil_ShouldSyncDisks;
+extern void		Fsutil_RecoveryInit();
+extern void		Fsutil_RecoverySyncLockCleanup();
+extern void		Fsutil_WantRecovery();
+extern void		Fsutil_AttemptRecovery();
+extern ReturnStatus	Fsutil_WaitForRecovery();
+extern void		Fsutil_Reopen();
+extern Boolean		Fsutil_RecoveryNeeded();
+extern Boolean		Fsutil_RemoteHandleScavenge();
+extern void		Fsutil_ClientCrashed();
+extern void		Fsutil_RemoveClient();
+extern	void		Fsutil_WaitListInsert();
+extern	void		Fsutil_WaitListNotify();
+extern	void		Fsutil_FastWaitListInsert();
+extern	void		Fsutil_FastWaitListNotify();
+extern	void		Fsutil_WaitListDelete();
+extern	void		Fsutil_WaitListRemove();
+extern	void 	 	Fsutil_HandleInit();
+extern	Boolean     	Fsutil_HandleInstall();
+extern	Fs_HandleHeader 	*Fsutil_HandleFetch();
+extern	Fs_HandleHeader	*Fsutil_HandleDup();
+extern  Fs_HandleHeader	*Fsutil_GetNextHandle();
+extern	void 	 	Fsutil_HandleLockHdr();
+extern	void	 	Fsutil_HandleInvalidate();
+extern	Boolean		Fsutil_HandleValid();
+extern	void		Fsutil_HandleIncRefCount();
+extern	void		Fsutil_HandleDecRefCount();
+extern	Boolean	 	Fsutil_HandleUnlockHdr();
+extern	void 	 	Fsutil_HandleReleaseHdr();
+extern	void 	 	Fsutil_HandleRemoveHdr();
+extern	Boolean	 	Fsutil_HandleAttemptRemove();
+extern	void 	 	Fsutil_HandleRemoveInt();
+extern	void		Fsutil_FileError();
+extern	void		Fsutil_PrintStatus();
+extern	void		Fsutil_UpdateTimeOfDay();
+extern	void		Fs_ClearStreamID();
+extern  int	 	Fsdm_FindFileType();
+extern	char *		Fsutil_FileTypeToString();
+extern ReturnStatus	Fsutil_DomainInfo();
+extern ReturnStatus Fsutil_HandleDescWriteBack();
+extern	void	Fsutil_SyncProc();
+extern	void	Fsutil_Sync();
+extern void Fsutil_SyncStub();
+extern ReturnStatus Fsutil_WaitForHost();
+extern int Fsutil_TraceInit();
+extern ReturnStatus Fsutil_RpcRecovery();
+extern int Fsutil_PrintTraceRecord();
+extern void Fsutil_PrintTrace();
+extern	void		Fsutil_HandleScavengeStub();
+extern	void		Fsutil_HandleScavenge();
+extern  char		*Fsutil_GetFileName();
+extern	ReturnStatus	Fsutil_FsRecovInfo();
+# 31 "fsLclAttributes.c"
+# 1 "../Include/fsNameOps.h"
+extern	ReturnStatus (*fs_DomainLookup[		4][		11])();
+typedef struct Fs_AttrOps {
+    ReturnStatus	(*getAttr)();
+    ReturnStatus	(*setAttr)();
+} Fs_AttrOps;
+extern Fs_AttrOps fs_AttrOpTable[];
+typedef struct Fs_OpenArgs {
+    Fs_FileID	prefixID;	
+    Fs_FileID	rootID;		
+    int		useFlags;	
+    int		permissions;	
+    int		type;		
+    int		clientID;	
+    int		migClientID;	
+    Fs_UserIDs	id;		
+} Fs_OpenArgs;
+typedef struct Fs_OpenResults {
+    Fs_FileID	ioFileID;	
+    Fs_FileID	streamID;	
+    Fs_FileID	nameID;		
+    int		dataSize;	
+    ClientData	streamData;	
+} Fs_OpenResults;
+typedef struct Fs_LookupArgs {
+    Fs_FileID prefixID;	
+    Fs_FileID rootID;	
+    int useFlags;	
+    Fs_UserIDs id;	
+    int clientID;	
+    int migClientID;	
+} Fs_LookupArgs;
+typedef struct Fs_GetAttrResults {
+    Fs_FileID		*fileIDPtr;	
+    Fs_Attributes	*attrPtr;	
+} Fs_GetAttrResults;
+typedef	union	Fs_GetAttrResultsParam {
+    int	prefixLength;
+    struct	AttrResults {
+	Fs_FileID	fileID;
+	Fs_Attributes	attrs;
+    } attrResults;
+} Fs_GetAttrResultsParam;
+typedef struct Fs_SetAttrArgs {
+    Fs_OpenArgs		openArgs;
+    Fs_Attributes	attr;
+    int			flags;	
+} Fs_SetAttrArgs;
+typedef struct Fs_MakeDeviceArgs {
+    Fs_OpenArgs open;
+    Fs_Device device;
+} Fs_MakeDeviceArgs;
+typedef struct Fs_2PathParams {
+    Fs_LookupArgs	lookup;
+    Fs_FileID		prefixID2;
+} Fs_2PathParams;
+typedef struct Fs_2PathData {
+    char		path1[1024];
+    char		path2[1024];
+} Fs_2PathData;
+typedef struct Fs_2PathReply {
+    int		prefixLength;	
+    Boolean	name1ErrorP;	
+} Fs_2PathReply;
+typedef struct Fs_RedirectInfo {
+    int	prefixLength;		
+    char fileName[1024];	
+} Fs_RedirectInfo;
+typedef struct Fs_2PathRedirectInfo {
+    int name1ErrorP;		
+    int	prefixLength;		
+    char fileName[1024];	
+} Fs_2PathRedirectInfo;
+extern void Fs_SetIDs();
+# 32 "fsLclAttributes.c"
+# 1 "./fslclInt.h"
+# 1 "../Include/fscache.h"
+# 1 "../Include/sync.h"
+# 987 "../Include/sync.h"
+# 22 "../Include/fscache.h"
+# 1 "/sprite/lib/include/list.h"
+# 280 "/sprite/lib/include/list.h"
+# 23 "../Include/fscache.h"
+# 1 "../Include/fs.h"
+# 562 "../Include/fs.h"
+# 24 "../Include/fscache.h"
+typedef struct Fscache_Attributes {
+    int		firstByte;	
+    int		lastByte;	
+    int		accessTime;	
+    int		modifyTime;	
+    int		createTime;	
+    int		userType;	
+    int		permissions;	
+    int		uid;		
+    int		gid;		
+} Fscache_Attributes;
+typedef struct Fscache_IOProcs {
+    ReturnStatus (*allocate)();
+    ReturnStatus (*blockRead)();
+    ReturnStatus (*blockWrite)();
+    ReturnStatus (*blockCopy)();
+} Fscache_IOProcs;
+typedef struct Fscache_FileInfo {
+    List_Links	   links;	   
+    List_Links	   dirtyList;	   
+    List_Links	   blockList;      
+    List_Links	   indList;	   
+    Sync_Lock	   lock;	   
+    int		   flags;	   
+    int		   version;	   
+    struct Fs_HandleHeader *hdrPtr; 
+    int		   blocksInCache;  
+    int		   blocksWritten;  
+    int		   numDirtyBlocks; 
+    Sync_Condition noDirtyBlocks;  
+    int		   lastTimeTried;  
+    Fscache_Attributes attr;	   
+    Fscache_IOProcs   *ioProcsPtr;  
+} Fscache_FileInfo;
+typedef struct Fscache_Block {
+    List_Links	cacheLinks;	
+    List_Links	dirtyLinks;	
+    List_Links	fileLinks;	
+    unsigned int timeDirtied;	
+    unsigned int timeReferenced;
+    Address	blockAddr;	
+    Fscache_FileInfo *cacheInfoPtr;	
+    int		fileNum;	
+    int		blockNum;	
+    int		diskBlock;	
+    int		blockSize;	
+    int		refCount;	
+    Sync_Condition ioDone;	
+    int		flags;		
+} Fscache_Block;
+typedef struct Fscache_ReadAheadInfo {
+    Sync_Lock		lock;		
+    int			count;		
+    Boolean		blocked;	
+    Sync_Condition	done;		
+    Sync_Condition	okToRead;	
+} Fscache_ReadAheadInfo;			
+# 339 "../Include/fscache.h"
+extern int	fscache_MaxBlockCleaners;
+extern Boolean	fscache_RATracing;
+extern int	fscache_NumReadAheadBlocks;
+extern List_Links *fscacheFullWaitList;
+extern  void            Fscache_WriteBack();
+extern  ReturnStatus    Fscache_FileWriteBack();
+extern  void            Fscache_FileInvalidate();
+extern  void            Fscache_Empty();
+extern  void            Fscache_CheckFragmentation();
+extern  ReturnStatus	Fscache_CheckVersion();
+extern  ReturnStatus    Fscache_Consist();
+extern	void		Fscache_SetMaxSize();
+extern	void		Fscache_SetMinSize();
+extern	void		Fscache_BlocksUnneeded();
+extern	void		Fscache_DumpStats();
+extern  void		Fscache_GetPageFromFS();
+extern  void            Fscache_InfoInit();
+extern  void            Fscache_InfoSyncLockCleanup();
+extern  void            Fscache_FetchBlock();
+extern  void            Fscache_UnlockBlock();
+extern  void            Fscache_BlockTrunc();
+extern  void            Fscache_IODone();
+extern  void            Fscache_CleanBlocks();
+extern  void            Fscache_Init();
+extern  int             Fscache_PreventWriteBacks();
+extern  void            Fscache_AllowWriteBacks();
+extern void             Fscache_Trunc();
+extern ReturnStatus     Fscache_Read();
+extern ReturnStatus     Fscache_Write();
+extern ReturnStatus     Fscache_BlockRead();
+extern Boolean          Fscache_UpdateFile();
+extern void             Fscache_UpdateAttrFromClient();
+extern void             Fscache_UpdateAttrFromCache();
+extern void             Fscache_UpdateCachedAttr();
+extern void             Fscache_UpdateDirSize();
+extern void             Fscache_GetCachedAttr();
+extern Boolean		Fscache_AllBlocksInCache();
+extern Boolean		Fscache_OkToScavenge();
+extern void		Fscache_ReadAheadInit();
+extern void		Fscache_ReadAheadSyncLockCleanup();
+extern void		Fscache_WaitForReadAhead();
+extern void		Fscache_AllowReadAhead();
+extern void		FscacheReadAhead();
+# 17 "./fslclInt.h"
+# 1 "../Include/fsio.h"
+# 494 "../Include/fsio.h"
+# 18 "./fslclInt.h"
+extern char *fslclEmptyDirBlock;
+ReturnStatus FslclExport();
+ReturnStatus FslclOpen();
+ReturnStatus FslclLookup();
+ReturnStatus FslclGetAttrPath();
+ReturnStatus FslclSetAttrPath();
+ReturnStatus FslclMakeDevice();
+ReturnStatus FslclMakeDir();
+ReturnStatus FslclRemove();
+ReturnStatus FslclRemoveDir();
+ReturnStatus FslclRename();
+ReturnStatus FslclHardLink();
+ReturnStatus FslclGetAttr();
+ReturnStatus FslclSetAttr();
+extern void FslclAssignAttrs();
+# 33 "fsLclAttributes.c"
+# 1 "../Include/fsconsist.h"
+# 1 "../Include/fs.h"
+# 562 "../Include/fs.h"
+# 23 "../Include/fsconsist.h"
+# 1 "../Include/fsio.h"
+# 494 "../Include/fsio.h"
+# 24 "../Include/fsconsist.h"
+typedef struct Fsconsist_Info {
+    Sync_Lock	lock;		
+    int		flags;		
+    int		lastWriter;	
+    int		openTimeStamp;	
+    Fs_HandleHeader *hdrPtr;	
+    List_Links	clientList;	
+    List_Links	msgList;	
+    Sync_Condition consistDone;	
+    Sync_Condition repliesIn;	
+} Fsconsist_Info;
+typedef struct Fsconsist_ClientInfo {
+    List_Links	links;		
+    int		clientID;	
+    Fsutil_UseCounts use;		
+    Boolean	cached;		
+    int		openTimeStamp;	
+    Boolean	locked;		
+    Boolean	mapped;		
+} Fsconsist_ClientInfo;
+extern void		Fsconsist_ClientInit();
+extern Fsconsist_ClientInfo	*Fsconsist_IOClientOpen();
+extern Boolean		Fsconsist_IOClientClose();
+extern Boolean		Fsconsist_IOClientRemoveWriter();
+extern void		Fsconsist_IOClientKill();
+extern void		Fsconsist_IOClientStatus();
+extern void		Fsconsist_ClientScavenge();
+extern void		Fsconsist_Init();
+extern void		Fsconsist_SyncLockCleanup();
+extern ReturnStatus	Fsconsist_FileConsistency();
+extern void		Fsconsist_ReopenClient();
+extern ReturnStatus	Fsconsist_ReopenConsistency();
+extern ReturnStatus	Fsconsist_MigrateConsistency();
+extern void		Fsconsist_GetClientAttrs();
+extern Boolean		Fsconsist_Close();
+extern void		Fsconsist_DeleteLastWriter();
+extern void		Fsconsist_ClientRemoveCallback();
+extern void		Fsconsist_Kill();
+extern void		Fsconsist_GetAllDirtyBlocks();
+extern void		Fsconsist_FetchDirtyBlocks();
+extern ReturnStatus	Fsconsist_RpcConsist();
+extern ReturnStatus	Fsconsist_RpcConsistReply();
+extern int Fsconsist_NumClients();
+extern Boolean		Fsconsist_IOClientReopen();
+extern void Fsconsist_AddClient();
+# 34 "fsLclAttributes.c"
+# 1 "../Include/fscache.h"
+# 415 "../Include/fscache.h"
+# 35 "fsLclAttributes.c"
+# 1 "../Include/fsdm.h"
+# 1 "../Include/dev.h"
+# 1 "/sprite/lib/include/status.h"
+# 217 "/sprite/lib/include/status.h"
+# 23 "../Include/dev.h"
+# 1 "../Include/devSyslog.h"
+extern ReturnStatus Dev_SyslogOpen();
+extern ReturnStatus Dev_SyslogReopen();
+extern ReturnStatus Dev_SyslogRead();
+extern ReturnStatus Dev_SyslogWrite();
+extern ReturnStatus Dev_SyslogIOControl();
+extern ReturnStatus Dev_SyslogClose();
+extern ReturnStatus Dev_SyslogSelect();
+extern void	    Dev_SyslogPutChar();
+extern void	    Dev_SyslogDebug();
+extern void	    Dev_SyslogReturnBuffer();
+# 25 "../Include/dev.h"
+# 27 "../Include/dev.h"
+# 30 "../Include/dev.h"
+typedef struct Dev_DiskAddr {
+    int cylinder;
+    int head;
+    int sector;
+} Dev_DiskAddr;
+extern Time	dev_LastConsoleInput;
+extern void	Dev_ConsoleReset();
+extern void	Dev_Init();
+extern void	Dev_Config();
+extern void	Dev_GatherDiskStats();
+extern int	Dev_GetDiskStats();
+extern void	Dev_InvokeConsoleCmd();
+extern void	Dev_RegisterConsoleCmd();
+# 17 "../Include/fsdm.h"
+# 1 "../Include/fslcl.h"
+# 1 "../Include/fscache.h"
+# 415 "../Include/fscache.h"
+# 17 "../Include/fslcl.h"
+# 1 "../Include/fsio.h"
+# 494 "../Include/fsio.h"
+# 18 "../Include/fslcl.h"
+typedef struct Fslcl_DirEntry {
+    int fileNumber;		
+    short recordLength;		
+    short nameLength;		
+    char fileName[255+1];	
+} Fslcl_DirEntry;
+extern void		Fslcl_DomainInit();
+extern ReturnStatus	Fslcl_DeleteFileDesc();
+extern void 		Fslcl_NameInitializeOps();
+extern void 		Fslcl_NameHashInit();
+# 18 "../Include/fsdm.h"
+# 1 "../Include/fsioFile.h"
+# 1 "../Include/fsio.h"
+# 494 "../Include/fsio.h"
+# 23 "../Include/fsioFile.h"
+# 1 "../Include/fsutil.h"
+# 214 "../Include/fsutil.h"
+# 24 "../Include/fsioFile.h"
+# 1 "../Include/fsconsist.h"
+# 169 "../Include/fsconsist.h"
+# 25 "../Include/fsioFile.h"
+# 1 "../Include/fscache.h"
+# 415 "../Include/fscache.h"
+# 26 "../Include/fsioFile.h"
+# 1 "../Include/fsioLock.h"
+typedef struct Fsio_LockState {
+    int		flags;		
+    List_Links	waitList;	
+    int		numShared;	
+    List_Links	ownerList;	
+} Fsio_LockState;
+# 27 "../Include/fsioFile.h"
+typedef struct Fsio_FileState {
+    Boolean	cacheable;	
+    int		version;	
+    int		openTimeStamp;	
+    Fscache_Attributes attr;	
+    int		newUseFlags;	
+} Fsio_FileState;
+typedef struct Fsio_FileReopenParams {
+    Fs_FileID	fileID;		
+    Fs_FileID	prefixFileID;	
+    Fsutil_UseCounts	use;		
+    Boolean	flags;		
+    int		version;	
+} Fsio_FileReopenParams;
+typedef struct Fsio_FileIOHandle {
+    Fs_HandleHeader	hdr;		
+    Fsutil_UseCounts		use;		
+    int			flags;		
+    struct Fsdm_FileDescriptor *descPtr;	
+    Fscache_FileInfo	cacheInfo;	
+    Fsconsist_Info	consist;	
+    Fsio_LockState		lock;		
+    Fscache_ReadAheadInfo	readAhead;	
+    struct Vm_Segment	*segPtr;	
+} Fsio_FileIOHandle;			
+extern ReturnStatus	Fsio_FileNameOpen();
+extern ReturnStatus	Fsio_FileIoOpen();
+extern ReturnStatus	Fsio_FileRead();
+extern ReturnStatus	Fsio_FileWrite();
+extern ReturnStatus	Fsio_FileIOControl();
+extern ReturnStatus	Fsio_FileSelect();
+extern ReturnStatus	Fsio_FileMigClose();
+extern ReturnStatus	Fsio_FileMigOpen();
+extern ReturnStatus	Fsio_FileMigrate();
+extern ReturnStatus	Fsio_FileReopen();
+extern ReturnStatus	Fsio_FileBlockRead();
+extern ReturnStatus	Fsio_FileBlockWrite();
+extern ReturnStatus	Fsio_FileBlockCopy();
+extern Boolean		Fsio_FileScavenge();
+extern void		Fsio_FileClientKill();
+extern ReturnStatus	Fsio_FileClose();
+extern ReturnStatus	Fsio_FileCloseInt();
+extern void		Fsio_FileSyncLockCleanup();
+# 19 "../Include/fsdm.h"
+typedef struct Fsdm_DiskPartition {
+    int firstCylinder;	
+    int numCylinders;	
+} Fsdm_DiskPartition;
+typedef struct Fsdm_DiskHeader {
+    char asciiLabel[128];	
+    char pad[512 - 128 -
+	     (12 + 8 * 2) * sizeof(int)];
+    unsigned int magic;		
+    int numCylinders;		
+    int numAltCylinders;	
+    int numHeads;		
+    int numSectors;		
+    int bootSector;		
+    int numBootSectors;		
+    int summarySector;		
+    int domainSector;		
+    int numDomainSectors;	
+    int partition;		
+    Fsdm_DiskPartition map[8];	
+    int checkSum;		
+} Fsdm_DiskHeader;
+typedef struct Fsdm_SummaryInfo {
+    int		numFreeKbytes;		
+    int		numFreeFileDesc;	
+    int		state;			
+    char	domainPrefix[64];
+    int		domainNumber;		
+    int		flags;			
+    int		attachSeconds;		
+    int		detachSeconds;		
+    int		fixCount;		
+    char pad[512 -
+	     (8 * sizeof(int) + 64)];
+} Fsdm_SummaryInfo;
+typedef struct Fsdm_FileDescriptor {
+    unsigned short magic;
+    short flags;	
+    short fileType;	
+    short permissions;	
+    int uid;		
+    int gid;		
+    int lastByte;	
+    int lastByteXtra;	
+    int firstByte;	
+    int userType;	
+    int numLinks;	
+    int devServerID;	
+    short devType;	
+    unsigned short devUnit;	
+    int createTime;	
+    int accessTime;	
+    int descModifyTime;	
+    int dataModifyTime;	
+    int direct[10];
+    int indirect[3];
+    int numKbytes;	
+    int version;	
+} Fsdm_FileDescriptor;
+typedef struct Fsdm_Cylinder {
+    int	blocksFree;	
+} Fsdm_Cylinder;
+typedef struct Fsdm_Geometry {
+    int		sectorsPerTrack;
+    int		numHeads;	
+    int		blocksPerRotSet;	
+    int		tracksPerRotSet;	
+    int		rotSetsPerCyl;		
+    int		blocksPerCylinder;	
+    int		blockOffset[32];	
+    int		sortedOffsets[32];	
+} Fsdm_Geometry;
+typedef struct Fsdm_DomainHeader {
+    unsigned int magic;		
+    int		firstCylinder;	
+    int		numCylinders;	
+    Fs_Device	device;		
+    int		fdBitmapOffset;	
+    int		fdBitmapBlocks;	
+    int		fileDescOffset;	
+    int		numFileDesc;	
+    int		bitmapOffset;	
+    int		bitmapBlocks;	
+    int		dataOffset;	
+    int		dataBlocks;	
+    int		dataCylinders;	
+    Fsdm_Geometry	geometry;	
+} Fsdm_DomainHeader;
+typedef struct Fsdm_Domain {
+    Fsio_FileIOHandle	physHandle;	
+    Fsdm_DomainHeader *headerPtr; 		
+    Fsdm_SummaryInfo *summaryInfoPtr;
+    int		  summarySector;
+    unsigned char *dataBlockBitmap;	
+    int		bytesPerCylinder;	
+    Fsdm_Cylinder	*cylinders;		
+    List_Links	*fragLists[3];	
+    Sync_Lock	dataBlockLock;		
+    int		minKFree;		
+    unsigned char *fileDescBitmap;	
+    Sync_Lock	fileDescLock;		
+    int		flags;				
+    int		refCount;	
+    Sync_Condition condition;	
+} Fsdm_Domain;
+typedef	int	Fsdm_BlockIndexType;
+typedef struct Fsdm_IndirectInfo {
+    	Fscache_Block 	*blockPtr;	
+    	int		index;		
+    	Boolean	 	blockDirty;	
+    	int	 	deleteBlock;	
+} Fsdm_IndirectInfo;
+typedef struct Fsdm_BlockIndexInfo {
+    Fsdm_BlockIndexType	 indexType;	
+    int		blockNum;		
+    int		lastDiskBlock;		
+    int		*blockAddrPtr;		
+    int		directIndex;		
+    Fsdm_IndirectInfo indInfo[2];		
+    int		 flags;			
+    Fsdm_Domain	*domainPtr;		
+} Fsdm_BlockIndexInfo;
+extern Boolean fsdmKeepTypeInfo;
+extern ReturnStatus	Fsdm_FileDescInit();
+extern ReturnStatus	Fsdm_FileDescFetch();
+extern ReturnStatus	Fsdm_FileDescStore();
+extern ReturnStatus	Fsdm_FileDescFree();
+extern ReturnStatus	Fsdm_FileDescTrunc();
+extern ReturnStatus 	Fsdm_GetNewFileNumber();
+extern ReturnStatus	Fsdm_FileDescWriteBack();
+extern ReturnStatus	Fsdm_BlockAllocate();
+extern ReturnStatus	Fsdm_FindFileType();
+extern ReturnStatus	Fsdm_FreeFileNumber();
+extern	ReturnStatus	Fsdm_GetFirstIndex();
+extern	ReturnStatus	Fsdm_GetNextIndex();
+extern	void		Fsdm_EndIndex();
+extern  ReturnStatus	Fsdm_AttachDisk();
+extern  ReturnStatus	Fsdm_AttachDiskByHandle();
+extern  ReturnStatus	Fsdm_DetachDisk();
+extern	Fsdm_Domain	*Fsdm_DomainFetch();
+extern	void		Fsdm_DomainRelease();
+extern  ReturnStatus	Fsdm_DomainInfo();
+extern void 	     Fsdm_DomainWriteBack();
+extern ReturnStatus	Fsdm_RereadSummaryInfo();
+extern	void		Fsdm_RecordDeletionStats();
+extern  void		Fsdm_Init();
+# 36 "fsLclAttributes.c"
+# 1 "../Include/fsStat.h"
+typedef struct Fs_NameOpStats {
+    unsigned int numReadOpens;		
+    unsigned int numWriteOpens;		
+    unsigned int numReadWriteOpens;	
+    unsigned int chdirs;		
+    unsigned int makeDevices;		
+    unsigned int makeDirs;		
+    unsigned int removes;		
+    unsigned int removeDirs;		
+    unsigned int renames;		
+    unsigned int hardLinks;		
+    unsigned int symLinks;		
+    unsigned int getAttrs;		
+    unsigned int setAttrs;		
+    unsigned int getAttrIDs;		
+    unsigned int setAttrIDs;		
+    unsigned int getIOAttrs;		
+    unsigned int setIOAttrs;		
+} Fs_NameOpStats;
+typedef struct Fs_GeneralStats {
+    unsigned int physBytesRead;		
+    unsigned int fileBytesRead;		
+    unsigned int fileReadOverflow;	
+    unsigned int remoteBytesRead;	
+    unsigned int remoteReadOverflow;	
+    unsigned int deviceBytesRead;	
+    unsigned int physBytesWritten;	
+    unsigned int fileBytesWritten;	
+    unsigned int fileWriteOverflow;	
+    unsigned int remoteBytesWritten;	
+    unsigned int remoteWriteOverflow;	
+    unsigned int deviceBytesWritten;	
+    unsigned int fileBytesDeleted;	
+    unsigned int fileDeleteOverflow;	
+} Fs_GeneralStats;
+typedef struct Fs_BlockCacheStats {
+    unsigned int readAccesses;		
+    unsigned int bytesRead;		
+    unsigned int bytesReadOverflow;	
+    unsigned int readHitsOnDirtyBlock;	
+    unsigned int readHitsOnCleanBlock;	
+    unsigned int readZeroFills;		
+    unsigned int domainReadFails;	
+    unsigned int readAheads;		
+    unsigned int readAheadHits;		
+    unsigned int allInCacheCalls;	
+    unsigned int allInCacheTrue;        
+    unsigned int writeAccesses;		
+    unsigned int bytesWritten;		
+    unsigned int bytesWrittenOverflow;	
+    unsigned int appendWrites;		
+    unsigned int overWrites;		
+    unsigned int writeZeroFills1;	
+    unsigned int writeZeroFills2;	
+    unsigned int partialWriteHits;	
+    unsigned int partialWriteMisses;	
+    unsigned int blocksWrittenThru;	
+    unsigned int dataBlocksWrittenThru;	
+    unsigned int indBlocksWrittenThru;	
+    unsigned int descBlocksWrittenThru;	
+    unsigned int dirBlocksWrittenThru;	
+    unsigned int fragAccesses;		
+    unsigned int fragHits;		
+    unsigned int fragZeroFills;		
+    unsigned int fileDescReads;		
+    unsigned int fileDescReadHits;	
+    unsigned int fileDescWrites;	
+    unsigned int fileDescWriteHits;	
+    unsigned int indBlockAccesses;	
+    unsigned int indBlockHits;		
+    unsigned int indBlockWrites;	
+    unsigned int dirBlockAccesses;	
+    unsigned int dirBlockHits;		
+    unsigned int dirBlockWrites;	
+    unsigned int dirBytesRead;		
+    unsigned int dirBytesWritten;	
+    unsigned int vmRequests;		
+    unsigned int triedToGiveToVM;	
+    unsigned int vmGotPage;		
+    unsigned int partFree;		
+    unsigned int totFree;		
+    unsigned int unmapped;		
+    unsigned int lru;	    		
+    unsigned int minCacheBlocks;	
+    unsigned int maxCacheBlocks;	
+    unsigned int maxNumBlocks;		
+    unsigned int numCacheBlocks;	
+    unsigned int numFreeBlocks;		
+    unsigned int blocksPitched;		
+    int blocksFlushed;			
+    int migBlocksFlushed;		
+} Fs_BlockCacheStats;
+typedef struct Fs_AllocStats {
+    unsigned int blocksAllocated;	
+    unsigned int blocksFreed;		
+    unsigned int cylsSearched;		
+    unsigned int cylHashes;		
+    unsigned int cylBitmapSearches;	
+    unsigned int fragsAllocated;	
+    unsigned int fragsFreed;		
+    unsigned int fragToBlock;		
+    unsigned int fragUpgrades;		
+    unsigned int fragsUpgraded;		
+    unsigned int badFragList;		
+    unsigned int fullBlockFrags;	
+} Fs_AllocStats;
+typedef struct Fs_NameCacheStats {
+    unsigned int accesses;		
+    unsigned int hits;			
+    unsigned int replacements;		
+    unsigned int size;			
+} Fs_NameCacheStats;
+typedef struct Fs_HandleStats {
+    unsigned int maxNumber;	
+    unsigned int exists;	
+    unsigned int installCalls;	
+    unsigned int installHits;	
+    unsigned int fetchCalls;	
+    unsigned int fetchHits;	
+    unsigned int release;	
+    unsigned int locks;		
+    unsigned int lockWaits;	
+    unsigned int unlocks;	
+    unsigned int created;	
+    unsigned int lruScans;	
+    unsigned int lruChecks;	
+    unsigned int lruHits;	
+    unsigned int lruEntries;	
+    unsigned int limbo;		
+    unsigned int versionMismatch; 
+    unsigned int cacheFlushes;	
+    unsigned int segmentFetches; 
+    unsigned int segmentHits;	
+} Fs_HandleStats;
+typedef struct Fs_PrefixStats {
+    unsigned int relative;	
+    unsigned int absolute;	
+    unsigned int redirects;	
+    unsigned int loops;		
+    unsigned int timeouts;	
+    unsigned int stale;		
+    unsigned int found;		
+} Fs_PrefixStats;
+typedef struct Fs_LookupStats {
+    unsigned int number;	
+    unsigned int numComponents;	
+    unsigned int numSpecial;	
+    unsigned int forDelete;	
+    unsigned int forLink;	
+    unsigned int forRename;	
+    unsigned int forCreate;	
+    unsigned int symlinks;	
+    unsigned int redirect;	
+    unsigned int remote;	
+    unsigned int parent;	
+    unsigned int notFound;	
+} Fs_LookupStats;
+typedef struct Fs_ObjectStats {
+    int streams;
+    int streamClients;		
+    int files;			
+    int rmtFiles;
+    int pipes;
+    int devices;
+    int controls;		
+    int pseudoStreams;		
+    int remote;			
+    int directory;
+    int dirFlushed;		
+    int fileClients;		
+    int other;			
+} Fs_ObjectStats;
+typedef struct Fs_RecoveryStats {
+    int number;			
+    int wants;			
+    int waitOK;			
+    int waitFailed;		
+    int waitAbort;		
+    int timeout;		
+    int failed;			
+    int deleted;		
+    int offline;		
+    int succeeded;		
+    int clientCrashed;		
+    int clientRecovered;	
+} Fs_RecoveryStats;
+typedef struct Fs_ConsistStats {
+    int files;			
+    int clients;		
+    int notCaching;		
+    int readCachingMyself;	
+    int readCachingOther;	
+    int writeCaching;		
+    int writeBack;		
+    int readInvalidate;		
+    int writeInvalidate;	
+    int nonFiles;		
+    int swap;			
+    int cacheable;		
+    int uncacheable;		
+} Fs_ConsistStats;
+typedef struct Fs_WriteBackStats {
+    int passes;			
+    int files;			
+    int blocks;			
+    int maxBlocks;		
+} Fs_WriteBackStats;
+typedef struct Fs_RemoteIOStats {
+    int blocksReadForVM;	
+    int bytesReadForCache;	
+    int bytesWrittenFromCache;	
+    int uncacheableBytesRead;	
+    int uncacheableBytesWritten;
+    int sharedStreamBytesRead;	
+    int sharedStreamBytesWritten;
+    int hitsOnVMBlock;		
+    int missesOnVMBlock;	
+    int bytesReadForVM;		
+    int bytesWrittenForVM;	
+} Fs_RemoteIOStats;
+typedef struct Fs_MigStats {
+    unsigned int filesEncapsulated; 	
+    unsigned int filesDeencapsulated; 	
+    unsigned int consistActions; 	
+    unsigned int readOnlyFiles; 	
+    unsigned int alreadyThere; 		
+    unsigned int uncacheableFiles; 	
+    unsigned int cacheWritableFiles; 	
+    unsigned int uncacheToCacheFiles; 	
+    unsigned int cacheToUncacheFiles; 	
+    unsigned int errorsOnDeencap;	
+    unsigned int encapSquared; 		
+    unsigned int deencapSquared; 	
+} Fs_MigStats;
+typedef struct Fs_Stats {
+    int			statsVersion;   
+    Fs_NameOpStats	cltName;	
+    Fs_NameOpStats	srvName;	
+    Fs_GeneralStats	gen;		
+    Fs_BlockCacheStats	blockCache;	
+    Fs_AllocStats	alloc;		
+    Fs_HandleStats	handle;		
+    Fs_PrefixStats	prefix;		
+    Fs_LookupStats	lookup;		
+    Fs_NameCacheStats	nameCache;	
+    Fs_ObjectStats	object;		
+    Fs_RecoveryStats	recovery;	
+    Fs_ConsistStats	consist;	
+    Fs_WriteBackStats	writeBack;	
+    Fs_RemoteIOStats	rmtIO;		
+    Fs_MigStats		mig;		
+} Fs_Stats;
+typedef struct Fs_HistGroupInfo {
+    unsigned int secondsPerBucket;
+    unsigned int bucketsPerGroup;
+} Fs_HistGroupInfo;
+typedef struct Fs_TypeStats {
+    unsigned int diskBytes[2][5];
+    unsigned int cacheBytes[2][5];
+    unsigned int bytesDeleted[5];
+    unsigned int deleteHist	
+	    [(	10 + 			      5 + 			      	9 + 			      5 + 			      	9 + 			      2 + 			      1 + 			      	9 + 			      	5 + 			      	2 + 			      	4 + 			      	1)] [	33] [5];
+} Fs_TypeStats;
+Fs_TypeStats fs_TypeStats;
+extern	Fs_Stats	fs_Stats;
+# 37 "fsLclAttributes.c"
+# 1 "../Include/rpc.h"
+# 1 "../Include/net.h"
+# 1 "/sprite/lib/include/sprite.h"
+# 95 "/sprite/lib/include/sprite.h"
+# 23 "../Include/net.h"
+# 1 "/sprite/lib/include/netEther.h"
+# 1 "/sprite/lib/include/ds3100.md/machparam.h"
+# 1 "/sprite/lib/include/ds3100.md/limits.h"
+# 39 "/sprite/lib/include/ds3100.md/machparam.h"
+# 35 "/sprite/lib/include/netEther.h"
+# 60 "/sprite/lib/include/netEther.h"
+typedef struct {
+    unsigned char byte1;
+    unsigned char byte2;
+    unsigned char byte3;
+    unsigned char byte4;
+    unsigned char byte5;
+    unsigned char byte6;
+} Net_EtherAddress;
+# 93 "/sprite/lib/include/netEther.h"
+# 111 "/sprite/lib/include/netEther.h"
+typedef struct {
+	Net_EtherAddress destination;
+	Net_EtherAddress source;
+	unsigned short   type;		
+} Net_EtherHdr;
+# 149 "/sprite/lib/include/netEther.h"
+# 24 "../Include/net.h"
+# 1 "../Include/netRoute.h"
+# 1 "/sprite/lib/include/netInet.h"
+# 1 "/sprite/lib/include/ds3100.md/machparam.h"
+# 77 "/sprite/lib/include/ds3100.md/machparam.h"
+# 23 "/sprite/lib/include/netInet.h"
+# 1 "/sprite/lib/include/netEther.h"
+# 174 "/sprite/lib/include/netEther.h"
+# 24 "/sprite/lib/include/netInet.h"
+typedef unsigned int Net_InetAddress;
+typedef struct { 
+    unsigned short	hardwareType;		
+    unsigned short	protocolType;		
+    unsigned char	hardwareAddrLen;	
+    unsigned char	protocolAddrLen;	
+    unsigned short	opcode;			
+}  Net_ArpHeader;
+typedef struct {
+    Net_EtherHdr	header;			
+    unsigned short	hardwareType;		
+    unsigned short	protocolType;		
+    unsigned char	hardwareAddrLen;	
+    unsigned char	protocolAddrLen;	
+    unsigned short	opcode;			
+    Net_EtherAddress	senderEtherAddr;	
+    Net_InetAddress	senderProtAddr;		
+    Net_EtherAddress	targetEtherAddr;	
+    Net_InetAddress	targetProtAddr;		
+} Net_ArpPacket;
+typedef struct {
+    unsigned int	headerLen:4,	
+			version:4;	
+# 151 "/sprite/lib/include/netInet.h"
+    unsigned char	typeOfService;	
+    unsigned short	totalLen;	
+    unsigned short	ident;		
+    unsigned int	fragOffset:13,	
+			flags:3;	
+# 163 "/sprite/lib/include/netInet.h"
+    unsigned char	timeToLive;	
+    unsigned char	protocol;	
+    unsigned short	checksum;	
+    Net_InetAddress	source;		
+    Net_InetAddress	dest;		
+} Net_IPHeader;
+typedef struct {
+    Net_InetAddress	source;		
+    Net_InetAddress	dest;		
+    unsigned char	zero;		
+    unsigned char	protocol;	
+    unsigned short	len;		
+} Net_IPPseudoHdr;
+typedef struct {
+    unsigned char	type;
+    unsigned char	len;			
+    unsigned char	pointer;		
+    unsigned int	flags:4,		
+			overflow:4;		
+# 341 "/sprite/lib/include/netInet.h"
+} Net_IPTimestampHdr;
+typedef int Net_InetTime;
+typedef struct {
+    unsigned short	srcPort;	
+    unsigned short	destPort;	
+    unsigned int	seqNum;		
+    unsigned int	ackNum;		
+    unsigned int	reserved1:4,	
+			dataOffset:4,	
+			flags:6,	
+			reserved2:2;	
+# 376 "/sprite/lib/include/netInet.h"
+    unsigned short	window;		
+    unsigned short	checksum;	
+    unsigned short	urgentOffset;	
+} Net_TCPHeader;
+typedef struct {
+    unsigned short	srcPort;	
+    unsigned short	destPort;	
+    unsigned short	len;		
+    unsigned short	checksum;	
+} Net_UDPHeader;
+typedef struct {
+    unsigned char	type;		
+    unsigned char	code;		
+    unsigned short	checksum;	
+} Net_ICMPHeader;
+typedef struct {
+    int			unused;	
+    Net_IPHeader	ipHeader;
+    char		hdrOptions[60 - sizeof(Net_IPHeader)];
+    char		data[8];
+} Net_ICMPDataMisc;
+typedef struct {
+    Net_InetAddress	gatewayAddr;
+    Net_IPHeader	ipHeader;
+    char		hdrOptions[60 - sizeof(Net_IPHeader)];
+    char		data[8];
+} Net_ICMPDataRedir;
+typedef struct {
+    unsigned char	paramOffset;
+    char		unused1;
+    short		unused2;
+    Net_IPHeader	ipHeader;
+    char		hdrOptions[60 - sizeof(Net_IPHeader)];
+    char		data[8];
+} Net_ICMPDataParam;
+typedef struct {
+    unsigned short	id;
+    unsigned short	seqNum;
+} Net_ICMPDataInfoEcho;
+typedef struct {
+    unsigned short	id;
+    unsigned short	seqNum;
+    unsigned int	addrMask;
+} Net_ICMPDataMask;
+typedef struct {
+    unsigned short	id;
+    unsigned short	seqNum;
+    unsigned int	origTime;
+    unsigned int	recvTime;
+    unsigned int	transmitTime;
+} Net_ICMPDataTime;
+typedef struct {
+    Net_ICMPHeader	header;
+    union {
+	Net_ICMPDataMisc	overlay;	
+	Net_ICMPDataMisc	unreach;	
+	Net_ICMPDataMisc	timeExceed;	
+	Net_ICMPDataMisc	quench;		
+	Net_ICMPDataParam	param;		
+	Net_ICMPDataRedir	redirect;	
+	Net_ICMPDataTime	timeStamp;	
+	Net_ICMPDataMask	mask;		
+	Net_ICMPDataInfoEcho	info;		
+	Net_ICMPDataInfoEcho	echo;		
+    } data;
+} Net_ICMPPacket;
+typedef struct {
+    short		addrFamily;	
+    unsigned short	port;
+    Net_InetAddress	address;
+    char		padding[8];	
+} Net_InetSocketAddr;
+# 26 "../Include/netRoute.h"
+typedef struct Net_Route {
+    int		flags;		
+    int		spriteID;	
+    int		type;		
+    Address	data;		
+    char 	*name;		
+    char	*machType;	
+} Net_Route;
+extern Net_Route *netRouteArray[];
+typedef struct NetInetRoute {
+    Net_InetAddress inetAddr;
+    Net_EtherAddress gatewayAddress;
+} NetInetRoute;
+typedef struct NetSpriteArp {
+    Net_ArpHeader arpHeader;	
+    unsigned char arpData[(2 * (sizeof(Net_EtherAddress) + sizeof(int)))];
+} NetSpriteArp;
+extern void	 NetArpInput();
+# 25 "../Include/net.h"
+# 1 "../Include/user/net.h"
+# 1 "/sprite/lib/include/ds3100.md/machparam.h"
+# 77 "/sprite/lib/include/ds3100.md/machparam.h"
+# 22 "../Include/user/net.h"
+# 1 "../Include/user/netEther.h"
+# 174 "../Include/user/netEther.h"
+# 23 "../Include/user/net.h"
+# 1 "../Include/user/netInet.h"
+# 593 "../Include/user/netInet.h"
+# 24 "../Include/user/net.h"
+# 1 "../Include/user/netUltra.h"
+# 1 "/sprite/lib/include/ds3100.md/machparam.h"
+# 77 "/sprite/lib/include/ds3100.md/machparam.h"
+# 22 "../Include/user/netUltra.h"
+typedef struct Net_UltraAddress {
+    char		data[8];
+} Net_UltraAddress;
+typedef struct Net_UltraTLAddress {
+    unsigned char	addressSize;	
+    unsigned char	tsapSize;	
+    char		tsap[4];	
+    Net_UltraAddress	address;	
+    char		pad[2];		
+} Net_UltraTLAddress;
+typedef struct Net_UltraHeader {
+    unsigned char	cmd;		
+    unsigned char	status;		
+    unsigned short	reference;	
+    int			foo;		
+    Address		buffer;		
+    int			size;		
+    Net_UltraTLAddress	remoteAddress;	
+    Net_UltraTLAddress	localAddress;	
+    unsigned short	options;	
+    unsigned short	quality;	
+    unsigned int	pad3;
+} Net_UltraHeader;
+# 25 "../Include/user/net.h"
+# 1 "../Include/user/sprite.h"
+# 95 "../Include/user/sprite.h"
+# 26 "../Include/user/net.h"
+typedef union Net_Address {
+    Net_EtherAddress		ether;
+    Net_InetAddress		inet;
+    Net_UltraAddress		ultra;
+    struct { char data[8]; } 	generic;
+} Net_Address;
+typedef int Net_NetworkType;
+typedef union Net_Header {
+    Net_EtherHdr	etherHdr;	
+    struct {				
+	Net_EtherHdr	etherHdr;
+	Net_IPHeader	ipHdr;
+    } inetHdr;		
+} Net_Header;
+typedef struct Net_RouteInfo {
+    int			version;	
+    int			spriteID;	
+    int			interface;	
+    int			protocol;	
+    int			flags;		
+    int			refCount;	
+    int			routeID;	
+    int			maxBytes;	
+    int			minBytes;	
+    Net_NetworkType	netType;	
+    Net_Address		netAddress[2];	
+    char		name[100];	
+    char		hostname[100];	
+    char		machType[100];	
+    Net_Header		header;		
+} Net_RouteInfo;
+# 153 "../Include/user/net.h"
+typedef struct {
+    char    data[14];
+} Net_GenericAddress;
+typedef struct Net_SpriteRoute {
+    int		flags;		
+    int		spriteID;	
+    int		type;		
+    union {
+	Net_EtherHdr	etherHdr;	
+	char		data[14];	
+	struct {
+	    Net_EtherHdr	etherHdr;
+	    Net_IPHeader	ipHdr;
+	} inetHdr;			
+    } route;
+} Net_SpriteRoute;
+extern Net_InetAddress	Net_StringToInetAddr 	();
+extern ReturnStatus	Net_StringToAddr 
+	();
+extern char		*Net_InetAddrToString 
+	();
+extern char		*Net_AddrToString 
+	();
+extern unsigned int	Net_StringToNetNum 	();
+extern unsigned int	Net_InetAddrHostNum 	();
+extern unsigned int	Net_InetAddrNetNum 	();
+extern unsigned int	Net_InetAddrNetMask 	();
+extern Net_InetAddress	Net_MakeInetAddr 
+	();
+extern char	*Net_EtherAddrToString 
+	();
+extern void	Net_StringToEtherAddr 
+	();
+extern unsigned short	Net_InetChecksum 	();
+extern unsigned short	Net_InetChecksum2 
+	();
+extern unsigned int	Net_NetToHostInt 	();
+extern unsigned int	Net_HostToNetInt 	();
+extern unsigned short	Net_NetToHostShort 	();
+extern unsigned short	Net_HostToNetShort 	();
+# 226 "../Include/user/net.h"
+# 26 "../Include/net.h"
+# 1 "../Include/sync.h"
+# 987 "../Include/sync.h"
+# 27 "../Include/net.h"
+typedef struct {
+    Address		bufAddr;	
+    int			length;		
+    Sync_Semaphore	*mutexPtr;	
+    Boolean		done;		
+} Net_ScatterGather;
+typedef struct {
+    int	packetsRecvd;		
+    int	packetsSent;		
+    int	packetsOutput;		
+    int broadRecvd;		
+    int broadSent;		
+    int others;			
+    int overrunErrors;		
+    int crcErrors;		
+    int fcsErrors;		
+    int frameErrors;		
+    int rangeErrors;		
+    int collisions;		
+    int xmitCollisionDrop;	
+    int	xmitPacketsDropped;	
+    int	recvPacketsDropped;	
+    int matches;		
+    int recvAvgPacketSize;	
+    int recvAvgLargeSize;	
+    int recvAvgSmallSize;	
+    int sentAvgPacketSize;	
+    int sentAvgLargeSize;	
+    int sentAvgSmallSize;	
+    int	bytesSent;		
+    int	bytesReceived;		
+} Net_EtherStats;
+extern	Net_EtherStats	net_EtherStats;
+extern	void	Net_Init();
+extern  void    Net_Bin();
+extern	void	Net_Reset();
+extern	void	Net_Input();
+extern	ReturnStatus	Net_Output();
+extern	void	Net_OutputRawEther();
+extern	void	Net_RecvPoll();
+extern	void	Net_EtherOutputSync();
+extern	int	Net_Intr();
+extern	void	Net_GatherCopy();
+extern	ReturnStatus Net_InstallRouteStub();
+extern	ReturnStatus Net_InstallRoute();
+extern	void	Net_SpriteIDToName();
+extern	char *	Net_SpriteIDToMachType();
+extern	void	Net_RouteInit();
+extern	void	Net_NameToAddr();
+extern	void	Net_AddrToName();
+extern Net_Route *Net_IDToRoute();
+extern int	 Net_AddrToID();
+extern int Net_RouteMTU();
+extern int Net_MaxProtoHdrSize();
+extern Net_Route *Net_Arp();
+extern int	Net_RevArp();
+extern void	Net_HostPrint();	
+extern void	Net_HdrDestString();
+# 22 "../Include/rpc.h"
+# 1 "../Include/sys.h"
+# 75 "../Include/sys.h"
+# 23 "../Include/rpc.h"
+# 1 "/sprite/lib/include/status.h"
+# 217 "/sprite/lib/include/status.h"
+# 24 "../Include/rpc.h"
+# 1 "../Include/rpcCall.h"
+extern ReturnStatus RpcNull();
+extern ReturnStatus RpcEcho();
+extern ReturnStatus Fs_RpcOpen();		
+extern ReturnStatus Fs_RpcRead();		
+extern ReturnStatus Fs_RpcWrite();		
+extern ReturnStatus Fs_RpcClose();		
+extern ReturnStatus Fs_RpcRemove();		
+extern ReturnStatus Fs_Rpc2Path();		
+extern ReturnStatus Fs_RpcMakeDir();		
+extern ReturnStatus RpcGetTime();		
+extern ReturnStatus Fs_RpcPrefix();		
+extern ReturnStatus Fs_RpcGetAttr();		
+extern ReturnStatus Fs_RpcSetAttr();		
+extern ReturnStatus Fs_RpcGetAttrPath();	
+extern ReturnStatus Fs_RpcSetAttrPath();	
+extern ReturnStatus Fs_RpcGetIOAttr();		
+extern ReturnStatus Fs_RpcSetIOAttr();		
+# 182 "../Include/rpcCall.h"
+extern ReturnStatus Proc_RpcMigCommand();	
+extern ReturnStatus Proc_RpcRemoteCall();	
+extern ReturnStatus Fs_RpcStartMigration();	
+extern ReturnStatus Fs_RpcConsist();		
+extern ReturnStatus Fs_RpcDevOpen();		
+extern ReturnStatus Sync_RemoteNotifyStub();	
+extern ReturnStatus Proc_RpcRemoteWait();	
+extern ReturnStatus Fs_RpcSelectStub();		
+extern ReturnStatus Fs_RpcIOControl();		
+extern ReturnStatus Fs_RpcConsistReply();	
+extern ReturnStatus Fs_RpcBlockCopy();		
+extern ReturnStatus Fs_RpcMakeDev();		
+extern ReturnStatus Sig_RpcSend();		
+extern ReturnStatus Fs_RpcReopen();		
+extern ReturnStatus Fs_RpcDomainInfo();		
+extern ReturnStatus Fs_RpcDevReopen();		
+extern ReturnStatus Fs_RpcRecovery();		
+extern ReturnStatus Proc_RpcGetPCB();		
+extern ReturnStatus Fsio_RpcStreamMigClose();	
+extern ReturnStatus Fsio_RpcStreamMigCloseNew();
+# 26 "../Include/rpc.h"
+typedef struct Rpc_Storage {
+    Address	requestParamPtr;
+    int		requestParamSize;
+    Address	requestDataPtr;
+    int		requestDataSize;
+    Address	replyParamPtr;
+    int		replyParamSize;
+    Address	replyDataPtr;
+    int		replyDataSize;
+} Rpc_Storage;
+typedef struct {
+    Address	paramPtr;
+    Address	dataPtr;
+} Rpc_ReplyMem;
+extern int rpc_SpriteID;
+extern Boolean rpc_Tracing;
+extern Boolean rpc_NoTimeouts;
+ReturnStatus	Rpc_Call();
+void		Rpc_Reply();
+void		Rpc_ErrorReply();
+int		Rpc_FreeMem();
+ReturnStatus    Rpc_CreateServer();
+ReturnStatus	Rpc_Echo();
+ReturnStatus	Rpc_Ping();
+ReturnStatus	Rpc_EchoTest();
+ReturnStatus	Rpc_GetTime();
+ReturnStatus	Test_RpcStub();
+void		Rpc_Init();
+void		Rpc_Start();
+void		Rpc_MaxSizes();
+void		Rpc_Daemon();
+void		Rpc_Server();
+int		Rpc_Dispatch();
+void		Rpc_Timeout();
+void		Rpc_PrintTrace();
+ReturnStatus	Rpc_DumpTrace();
+void		Rpc_StampTest();
+void		Rpc_PrintCallCount();
+void		Rpc_PrintServiceCount();
+# 38 "fsLclAttributes.c"
+ReturnStatus
+FslclGetAttr(fileIDPtr, clientID, attrPtr)
+    register Fs_FileID		*fileIDPtr;	
+    int				clientID;	
+    register Fs_Attributes	*attrPtr;	
+{
+    if (fileIDPtr->type != 	1) {
+	panic( "FslclGetAttr, bad fileID type <%d>\n",
+	    fileIDPtr->type);
+	return(                   	0x00000005);
+    } else {
+	Fsio_FileIOHandle *handlePtr;
+	Boolean isExeced;
+	ReturnStatus status;
+	handlePtr =      (Fsio_FileIOHandle *)Fsutil_HandleFetch( fileIDPtr);
+	if (handlePtr == (Fsio_FileIOHandle *)		0xFFFFFFFF) {
+	    status = Fsio_LocalFileHandleInit(fileIDPtr, (char *)		0xFFFFFFFF, &handlePtr);
+	    if (status != 		0x00000000) {
+		bzero((Address)attrPtr, sizeof(Fs_Attributes));
+		return(status);
+	    }
+	}
+	Fsconsist_GetClientAttrs(handlePtr, clientID, &isExeced);
+	FslclAssignAttrs(handlePtr, isExeced, attrPtr);
+	     Fsutil_HandleReleaseHdr((Fs_HandleHeader *)handlePtr,  1);
+	return(		0x00000000);
+    }
+}
+void
+FslclAssignAttrs(handlePtr, isExeced, attrPtr)
+    register	Fsio_FileIOHandle	*handlePtr;
+    Boolean				isExeced;  
+    register	Fs_Attributes		*attrPtr;
+{
+    register Fsdm_FileDescriptor *descPtr = handlePtr->descPtr;
+    register Fscache_FileInfo *cacheInfoPtr = &handlePtr->cacheInfo;
+    attrPtr->serverID			= handlePtr->hdr.fileID.serverID;
+    attrPtr->domain			= handlePtr->hdr.fileID.	((int)(((unsigned)()>>8)&0377))
+    attrPtr->fileNumber			= handlePtr->hdr.fileID.	((int)(()&0377))
+    attrPtr->type			= descPtr->fileType;
+    attrPtr->permissions		= descPtr->permissions;
+    attrPtr->numLinks			= descPtr->numLinks;
+    attrPtr->uid			= descPtr->uid;
+    attrPtr->gid			= descPtr->gid;
+    attrPtr->userType			= descPtr->userType;
+    attrPtr->devServerID		= descPtr->devServerID;
+    attrPtr->devType			= descPtr->devType;
+    attrPtr->devUnit			= descPtr->devUnit;
+    attrPtr->createTime.seconds		= descPtr->createTime;
+    attrPtr->createTime.microseconds	= 0;
+    attrPtr->descModifyTime.seconds	= descPtr->descModifyTime;
+    attrPtr->descModifyTime.microseconds= 0;
+    if (cacheInfoPtr->attr.modifyTime > attrPtr->descModifyTime.seconds) {
+	attrPtr->descModifyTime.seconds = cacheInfoPtr->attr.modifyTime;
+    }
+    attrPtr->size			= cacheInfoPtr->attr.lastByte + 1;
+    if (cacheInfoPtr->attr.firstByte >= 0) {
+	attrPtr->size			-= cacheInfoPtr->attr.firstByte;
+    }
+    attrPtr->dataModifyTime.seconds	= cacheInfoPtr->attr.modifyTime;
+    attrPtr->dataModifyTime.microseconds= 0;
+    if (isExeced) {
+	attrPtr->accessTime.seconds	= fsutil_TimeInSeconds;
+    } else {
+	attrPtr->accessTime.seconds	= cacheInfoPtr->attr.accessTime;
+    }
+    attrPtr->accessTime.microseconds	= 0;
+    if (cacheInfoPtr->attr.lastByte > 0 && descPtr->numKbytes == 0) {
+	attrPtr->blocks			= cacheInfoPtr->attr.lastByte / 1024 +1;
+    } else {
+	attrPtr->blocks			= descPtr->numKbytes;
+    }
+    attrPtr->blockSize			= 	4096;
+    attrPtr->version			= descPtr->version;
+    attrPtr->userType			= descPtr->userType;
+}
+ReturnStatus
+FslclSetAttr(fileIDPtr, attrPtr, idPtr, flags)
+    Fs_FileID			*fileIDPtr;	
+    register Fs_Attributes	*attrPtr;	
+    register Fs_UserIDs		*idPtr;		
+    register int		flags;		
+{
+    register ReturnStatus	status = 		0x00000000;
+    Fsio_FileIOHandle		*handlePtr;
+    register Fsdm_FileDescriptor	*descPtr;
+    Fsdm_Domain			*domainPtr;
+    handlePtr =      (Fsio_FileIOHandle *)Fsutil_HandleFetch( fileIDPtr);
+    if (handlePtr == (Fsio_FileIOHandle *)		0xFFFFFFFF) {
+	printf(
+		"FslclSetAttr, no handle for %s <%d,%d,%d>\n",
+		Fsutil_FileTypeToString(fileIDPtr->type),
+		fileIDPtr->serverID, fileIDPtr->	((int)(((unsigned)()>>8)&0377)) fileIDPtr->	((int)(()&0377));
+	return(                	0x0004000c);
+    }
+    descPtr = handlePtr->descPtr;
+    if (descPtr == (Fsdm_FileDescriptor *)		0xFFFFFFFF) {
+	printf( "FslclSetAttr, NIL descPtr\n");
+	status = 		0x00000001;
+	goto exit;
+    }
+    if ((idPtr->user != 0) && (idPtr->user != descPtr->uid)) {
+	status =                      	0x00040011;
+	goto exit;
+    }
+    if (flags & 	0x04) {
+	if (attrPtr->uid >= 0 && descPtr->uid != attrPtr->uid) {
+	    if (idPtr->user != 0) {
+		status =                      	0x00040000;
+		goto exit;
+	    } else {
+		descPtr->uid = attrPtr->uid;
+	    }
+	}
+	if (attrPtr->gid >= 0 && descPtr->gid != attrPtr->gid) {
+	    register int g;
+	    for (g=0 ; g < idPtr->numGroupIDs; g++) {
+		if (attrPtr->gid == idPtr->group[g] || idPtr->user == 0) {
+		    descPtr->gid = attrPtr->gid;
+		    if (idPtr->user != 0) {
+			descPtr->permissions &= ~		02000;
+		    }
+		    break;
+		}
+	    }
+	    if (g >= idPtr->numGroupIDs) {
+		status =                      	0x00040000;
+		goto exit;
+	    }
+	}
+    }
+    if (flags & 	0x02) {
+	if (attrPtr->permissions & 		02000) {
+	    register int g;
+	    for (g=0 ; g < idPtr->numGroupIDs; g++) {
+		if (attrPtr->gid == idPtr->group[g] || idPtr->user == 0) {
+		    goto setMode;
+		}
+	    }
+	    status =                      	0x00040000;
+	    goto exit;		
+	}
+setMode:
+	descPtr->permissions = attrPtr->permissions;
+    }
+    if (flags & 	0x10) {
+	if (descPtr->fileType == 		4 ||
+		  descPtr->fileType == 	5) {
+	      descPtr->devServerID = attrPtr->devServerID;
+	      descPtr->devType = attrPtr->devType;
+	      descPtr->devUnit = attrPtr->devUnit;
+	}
+    }
+    if (flags & 	0x01) {
+	descPtr->accessTime       = attrPtr->accessTime.seconds;
+	descPtr->dataModifyTime   = attrPtr->dataModifyTime.seconds;
+	attrPtr->createTime.seconds = descPtr->createTime;
+    }
+    if (flags & 0x08) {
+	descPtr->userType    = attrPtr->userType;
+    }
+    descPtr->descModifyTime   = fsutil_TimeInSeconds;
+    domainPtr = Fsdm_DomainFetch(handlePtr->hdr.fileID.	((int)(((unsigned)()>>8)&0377)) 0);
+    if (domainPtr == (Fsdm_Domain *)		0xFFFFFFFF) {
+	status =             	0x0004001e;
+    } else {
+	status = Fsdm_FileDescStore(domainPtr, handlePtr->hdr.fileID.	((int)(()&0377))
+		 descPtr);
+	Fsdm_DomainRelease(handlePtr->hdr.fileID.	((int)(((unsigned)()>>8)&0377));
+    }
+    if (status == 		0x00000000) {
+	Fscache_UpdateCachedAttr(&handlePtr->cacheInfo, attrPtr, flags);
+    }
+exit:
+         Fsutil_HandleReleaseHdr((Fs_HandleHeader *)handlePtr,  1);
+    return(status);
+}

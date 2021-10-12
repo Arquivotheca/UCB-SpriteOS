@@ -1,0 +1,43 @@
+.(z C
+.(c
+.TS
+center, tab(;);
+| c || c | c | c | c | c |.
+.br
+_
+System;Cache;Cache;Writing;Consistency;Cache
+\^;Location;Size;Policy;Guarantees;Validation
+=
+NFS;Memory;Fixed;On close or;Sequential;Ask server on open
+[SAND85];\^;\^;30 sec. delay;\^;\^
+_
+RFS;Memory;Fixed;Write-through;Sequential,;Ask server on open
+[BACH87];\^;\^;\^;Concurrent;\^
+_
+Andrew;Disk;Fixed;On close;Sequential;Server calls client
+[HOWA87];\^;\^;\^;\^;when modified
+_
+Locus;Memory;Fixed;On close;Sequential,;Ask server on open
+[POPEK85];\^;\^;\^;Concurrent;\^
+_
+Apollo;Memory;Variable;Delayed or;Sequential;Ask server when lock
+[LEACH83];\^;\^;on unlock;\^;\^
+_
+CFS;Disk;Variable;On SModel;Not applicable;Not applicable
+[SCHR85];\^;\^;\^;\^;\^
+_
+Sprite;Memory;Variable;30 sec. delay;Sequential,;Ask server on open
+\^;\^;\^;\^;Concurrent;\^
+_
+.TE
+.)c
+.(q
+\fBTable 7\fR.  Comparison of file systems.  All of the systems but
+Apollo, Cedar and Sprite are variants of the UNIX operating system.
+The Apollo system delineates active use of a file by lock and unlock
+instead of open and close. The Cedar File System (CFS) only caches
+immutable files and provides a different type of cache consistency than
+the other systems.  SModel is a software tool that is used to move cached
+files that have been changed back to their file server.
+.)q
+.)z

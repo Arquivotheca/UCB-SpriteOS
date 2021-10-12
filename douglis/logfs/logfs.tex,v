@@ -1,0 +1,1631 @@
+head     1.3;
+access   ;
+symbols  ;
+locks    douglis:1.3; strict;
+comment  @@;
+
+
+1.3
+date     88.11.13.21.34.53;  author douglis;  state Exp;
+branches ;
+next     1.2;
+
+1.2
+date     88.11.11.15.34.52;  author douglis;  state Exp;
+branches ;
+next     1.1;
+
+1.1
+date     88.11.01.11.25.45;  author douglis;  state Exp;
+branches ;
+next     ;
+
+
+desc
+@paper now formats, but must be pruned by 50%
+@
+
+
+1.3
+log
+@just about there
+@
+text
+@% Master File: logfs.tex
+% Document Type: LaTeX
+\documentstyle[times,captions,proc]{article}
+\input{defs}
+\begin{document}
+\pagestyle{empty}
+%\setstretch{1}
+%\renewcommand{\baselinestretch}{0.9}\large\normalsize
+\title{Log-Structured File Systems\thanks{
+The work described here was supported in part by the
+National Science Foundation under Presidential Young
+Investigator Award No. ECS-8351961 and Grant No. MIP-8715235.
+}}
+%\title{Log-Structured File Systems}
+\author{Fred Douglis \hskip 1em plus .17fil John Ousterhout \\
+\\ %skip some space
+Computer Science Division \\
+Electrical Engineering and Computer Sciences \\
+University of California \\
+Berkeley, CA 94720
+}
+\maketitle
+% redefine copyrightspace not to print a "0"
+%\def\copyrightspace{\footnotetext[\empty]{\mbox{}\vrule height 97pt width 0pt}}
+% Actually, IEEE doesn't seem to care about extra space for the copyright.
+%\copyrightspace
+\begin{abstract}
+CPU speeds are improving at a dramatic rate, while disk speeds are
+not.  This technology shift suggests that many engineering and
+office applications may become so I/O-limited that they cannot benefit
+from further CPU improvements.  This paper discusses several
+techniques for improving I/O performance, including caches,
+battery-backed-up caches, and cache logging.  We then examine in
+particular detail an approach called {\em log-structured file
+systems\/}, where the file system's only representation on disk is in
+the form of an append-only log.  Log-structured file systems
+potentially provide order-of-magnitude improvements in write
+performance.  When log-structured file systems are combined with
+arrays of small disks (which provide high bandwidth) and large
+main-memory file caches (which satisfy most read accesses), we believe
+it will be possible to achieve 1000-fold improvements in I/O
+performance over today's systems.
+\end{abstract}
+\setlength{\parskip}{3pt}
+\section{Introduction}
+\label{intro}
+\hskip\parindent
+If a computer program or system consists of several components,
+and if some of the components are made much faster while leaving
+the other components unchanged, then the unimproved components
+are likely to become a performance bottleneck.
+%This notion was first
+%put forth by Gene Amdahl in the late 1960's, and has since
+%come to be known as ``Amdahl's Law''~\cite{amdahls-law}.
+%
+Recent technology trends suggest that disk output may become such a
+bottleneck in the near future, if it is not already.  Between 1985 and 1995, typical
+CPU speeds in engineering and office environments are likely
+to increase by factors of 100 to 1000.  Memory sizes will also increase
+substantially, although probably by a factor of less than 100.
+In contrast, disk speeds (particularly seek times) seem unlikely to
+improve by more than a factor of 2 or 3 in the same
+time period.  This shift will open up
+new CPU-intensive applications, but suggests that new I/O techniques
+will be needed to keep I/O from being a performance bottleneck.
+
+Fortunately, two technology trends offer hope for
+beating the I/O bottleneck: large memories and disk arrays.  First, as
+memories get larger and larger, it becomes possible to cache more
+and more file information in main memory and thereby eliminate many disk
+accesses.  Second, disks are becoming much cheaper and physically
+smaller.  This
+makes it practical to build disk systems containing tens or
+hundreds of drives (``disk arrays'').    
+In order to be as reliable as
+individual 
+disks, such disk arrays are likely to store data redundantly; for
+example, Patterson, et al., have proposed a method by which the parity
+for  a ``stripe'' across $N-1$ disks of an $N$-disk array is stored on
+the remaining 
+disk.  Writing any part of the stripe requires rewriting the parity,
+so for efficiency, the size of all writes should be multiples of the
+size of a stripe (typically one track on each disk)~\cite{pattrsn:raid}.  
+Disk arrays don't improve
+the performance of a single small access, but they offer much
+greater overall bandwidth if transfers are performed in much larger units
+than today's UNIX systems~\cite{mckusick:unix42}.
+
+
+This paper discusses how the technology trends may affect future engineering and office
+applications.  Our overall goal
+is to find ways of capitalizing on fast-moving technologies
+(CPU speed, memory size, disk array size) to compensate for
+slow-moving technologies (disk seek times) so that future systems
+will not be I/O-limited.  
+
+Section~\ref{scenario} uses information about
+file access patterns to compute a worst-case scenario for I/O
+requirements of the future.  Section~\ref{caching} discusses file caching;
+this is a well-known technique that is already implemented in
+several systems, but Section~\ref{caching}
+argues that write traffic limits
+the performance improvements of caching alone.
+Section~\ref{nonvol-cache} discusses ways to
+improve file caches by reducing 
+write traffic:  battery backup and cache logging.
+
+In Section~\ref{logfs} we make our most radical and detailed proposal, which
+is to restructure the file system so that its only representation
+on disk is in the form of a circular append-only log.
+Such a {\em log-structured file system\/}  eliminates almost all seeks
+during writes, and thus may improve writing performance by as much as an
+order of magnitude.  The logging approach also makes
+it easier to utilize the additional bandwidth provided by disk arrays,
+by writing large amounts of data sequentially even in systems in which
+file accesses are small.
+When combined with a large main-memory file cache, the cache will
+satisfy almost all of the read requests while the log-structured disks
+will handle writes efficiently.  Overall, we think that this approach
+can result in ten times better utilization of disk bandwidth than today's file
+systems;  if used with disk arrays containing hundreds of disks,
+three orders of magnitude total improvement in file system performance
+may be possible.  Log-structured file systems also have other advantages
+including faster crash recovery and integration of archival storage.
+
+Section~\ref{related} describes other work with similarities to log-structured
+file systems, and Section~\ref{concl} concludes the paper.
+
+\section{The File Access Problem}
+\hskip\parindent
+\label{scenario}
+
+In this section we attempt to predict how today's file systems
+will behave if the technology predictions of Section~\ref{intro}
+are accurate
+and if no changes are made in file system organization.  
+%Section~\ref{patterns}
+%discusses file access patterns, and Section~\ref{demands} estimates
+%the I/O demands that might be placed on a computing system of the
+%mid-1990's.
+%
+% \subsection{File Access Patterns}
+% \hskip\parindent
+% \label{patterns}
+% 
+% In order to understand the impact of technology changes on file system
+% performance, one must consider how file systems
+% are used by application programs.  We think that file access patterns
+% can be separated into three general classes:  scientific computing,
+% transaction processing, and engineering/office applications.  Of these
+% classes, the first two appear well-suited to disk arrays
+% while the third does not.
+% 
+% The first class of file usage, which we call ``scientific processing'',
+% is characterized by programs that read
+% and write very large files sequentially.  Many scientific applications
+% and some engineering and database applications fall into this category.
+% If sequential blocks of large files are spread evenly across
+% the disks of an array (``striped''), then all the disks can be used
+% simultaneously to read or write the
+% files~\cite{kim:disk-interleaving}.  If the files are large 
+% enough, then the cost of seeks will be small compared to the cost
+% of reading the data, and the file system's performance will scale
+% with the size of the array.  Thus if the CPU power
+% and number of disks in
+% an array scale at about the same rate (which appears likely for the
+% next several years), then scientific applications should be
+% able to scale smoothly in performance even though the disk latency does
+% not improve.
+% 
+% We use the term ``transaction processing'' to refer
+% to applications like airline reservations,
+% automatic tellers, and point-of-sale terminals.  These systems
+% typically handle large numbers of concurrent requests, each of
+% which makes a small number of disk accesses (for example, to
+% reserve a seat or make a deposit).
+% Transaction processing systems are usually measured by their
+% throughput in transactions per second, rather than by the
+% service time for individual transactions.
+% Different requests usually involve
+% different disk data, so it is possible to keep many disks busy
+% simultaneously.  This means that transaction processing systems
+% will also scale smoothly as long as the number
+% of disks in an array increases as fast as CPU power:  the speed
+% of an individual transaction will still be limited by latency,
+% but the system's overall throughput will increase.
+% 
+% The third class of file usage, ``engineering/office applications,''
+% consists of programs that access large numbers of small files, such
+% as the source files for a program or the font libraries for
+% a laser printer.  Most programs in UNIX environments fall into
+% this class.  These applications are similar to transaction processing
+% systems in that they make small requests.   However, they are different
+% from transaction processing in that there isn't much concurrency:
+% each application program makes a sequence of requests, and each CPU
+% typically runs only one or a few application programs at once.
+% Furthermore, the goal of increasing the CPU power in an engineering/office
+% environment is to make individual programs
+% run faster, not to increase the number of concurrent programs.
+% As a result, these applications do not appear to benefit from disk
+% arrays:  files are short enough that striping doesn't help (most of
+% the access cost is in the latency), and there isn't enough concurrency
+% to occupy the disks of a large array.
+% 
+% For the rest of this paper we will focus on engineering and office
+% applications.  This is partly because it is less obvious how to
+% take advantage of disk array technology for these applications than
+% for the others, and partly because we have
+% more experience with them than with the other applications.  However,
+% some of the results also apply to scientific applications.
+% 
+%
+%\section{How Many Disks per User?}
+%\hskip\parindent
+%\label{demands}
+Suppose that I/O rates generated by application programs scale evenly
+with CPU power.  Several recent studies, plus our own measurements,
+suggest that the average I/O traffic generated by
+a single user on a 1-MIP engineering workstation is about 2.5-10
+kbytes/sec.~\cite{lazowska:file-perf,ouster:bsd}.   In the environment
+of the mid 1990's with 100-MIP 
+workstations, each user might then generate 250-1000 kbytes/sec. of
+I/O traffic.
+
+The average file size in engineering/office environments is
+only 3-4 kbytes~\cite{ouster:bsd,satya:sizes}.  With today's file
+organizations (e.g. 4.3 BSD UNIX~\cite{mckusick:unix42}), two disk
+transfers are required 
+for each file access:  one to read or write file header information,
+and another to read or write the file's data.  Typical disks today
+can only make about 30-40 transfers per second.  Thus the
+effective disk bandwidth for a single disk is about
+\begin{center}
+((30-40 transfers/sec.) / (2 transfers/file)) * (3-4 kbytes/file) \\
+ $\approx$ 60 kbytes/sec.
+\end{center}
+
+If file system organization and average file sizes don't change
+over the next five years, then the above calculations suggest that
+future systems will need 4-16 disks per user
+to keep up with I/O demands.  This has two unpleasant implications.
+First, it suggests that disks would represent by far the greatest part
+of the cost of a computer system.  Second, it requires the operating
+system to organize the file system so that it can keep
+4-16 disks busy for each user:  if a user's data ends up all
+on a single disk, then the file system will not be able to keep up with
+the user's I/O demands.
+
+% Of course, it's possible that I/O access patterns will change as
+% CPU power increases.  For example, the extra CPU power of
+% future machines might be used primarily for managing the user interface
+% (graphics, speech recognition, etc.) and thereby require very little
+% additional I/O.  Or, average file sizes might increase and thereby
+% allow more efficient utilization of disk bandwidth;  this could happen
+% if, for example, future applications make heavy use of large images.
+% To the extent that these changes occur, I/O demands will be less
+% than we estimated above.
+% On the other hand, CPU power might increase to more than 100 MIPs
+% by the mid-1990s;  if it increases to 500 MIPs, then as many as
+% 20-80 disks per user might be required!  Overall, we think it is
+% plausible that disk requirements will be severe enough to present
+% difficult problems both in terms of cost and in terms of keeping
+% them all busy.
+
+\section{File Caching}
+\hskip\parindent
+\label{caching}
+
+File caching has been implemented in several systems to improve
+file I/O
+performance (e.g., ~\cite{mckusick:unix42,nelson:caching-in-sprite}).
+The idea in  
+file caching is to retain recently-accessed disk blocks
+in main memory, so that repeated accesses to the
+same information can be handled without additional disk transfers.
+Because of locality in file access patterns, file caching
+reduces disk I/O substantially:  typical systems today achieve
+80-90\% read hit rates with file caches of .5-5 Mbytes.
+File servers of the future are likely to have file caches
+with hundreds of Mbytes;  this should be enough to hold all the files
+used by groups of dozens of users over periods of days or weeks (see~\cite{ouster:bsd} for supporting evidence).  As a result,
+almost all read requests should be satisfied in the file cache.
+
+Unfortunately, about 1/3 of file I/O (measured by either files accessed
+or bytes transferred) is writes~\cite{ouster:bsd}, and most of this data must
+be written to disk.
+One possible approach is to place
+newly-written data in the cache and delay writes to disk for a while;
+some of the newly-written data will be deleted before they are written
+to disk, and disk I/O requirements will be reduced correspondingly (for
+example, \cite{ouster:bsd} measured that 15-20\% of all newly-written bytes are
+deleted within 30 seconds;  in recent measurements of our
+current system, we found that 40\% or more of all new bytes lived less
+than 30 seconds and 90\% lived less than a day).  However, the cache
+contents may
+be lost in a system crash or power failure.  In order to provide
+reasonable assurances of file integrity, writes to disk probably cannot
+be delayed more than a few seconds or minutes.  Thus the write traffic
+will limit the overall performance improvements from caching to about
+a factor of three or four.
+
+Using the estimates of the previous section, caching should
+reduce disk requirements to 1-5 per user, assuming
+100-MIP workstations.  The low end of this range might be tolerable,
+but the high end would still result in the disk drives being the
+greatest part of a workstation's cost.
+
+Although file caching appears unlikely to solve all the I/O
+problems by itself, it changes the nature of disk I/O in two
+ways.
+First, it shifts the balance of disk I/O from mostly reads to mostly
+writes.  Second, caches provide a buffer for bursts
+of I/O (and I/O is notoriously bursty).  Bursts of reads will mostly be
+satisfied in the cache;  bursts of writes can be buffered in the cache,
+with the actual disk I/O performed asynchronously without requiring the
+writing process to wait.
+
+At this point, two interesting issues emerge:
+\begin{enumerate}
+\item Disk traffic in the future will become more and more dominated
+by writes, and most of the data written will never be read back (it
+will live in the file cache until deleted or overwritten).  The main
+reason for performing disk I/O is as a safety precaution in case
+the cache contents are lost.
+\item Seeks limit disk performance.  If files are only 3-4 kbytes long
+and two transfers are required per file, then only 3\% of the
+raw disk bandwidth can actually be utilized.
+If files continue to be small on average, then
+the only hope for improving disk bandwidth is to reduce the
+number of seeks to much less than one per file.
+\end{enumerate}
+
+Further improvements in file system performance may be obtained by addressing
+either of these issues.  One general approach is to improve the
+reliability of the cache so that its contents can survive crashes
+and power failures.  This would make it unnecessary to write
+data to disk until it is replaced in the cache.    The next section suggests possible ways to
+improve cache reliability.  The second general approach is to
+change the disk organization so that many file accesses may be handled
+with a single seek.  Section~\ref{logfs} introduces log-structured file systems
+as an approach along this line.
+
+\section{Reliable Caches}
+\hskip\parindent
+\label{nonvol-cache}
+
+One way to
+make file caches more reliable is to store them in
+memory with battery backup, or on detachable ``silicon disks''.  
+This would allow the contents of the
+caches to survive power outages.
+Another way to improve the reliability of file caches is to use
+one or more disks as a ``cache log'', which would hold a backup copy
+of cached blocks.  As blocks in 
+the cache are modified, their new contents could be written out
+to the backup disk in a sequential stream.  Either of these two
+approaches could be used to reduce the rate of nonsequential disk
+I/O substantially.
+
+If file caches
+become so reliable that information need not 
+be written through to disk, then the primary role of the file system's
+disks would be as an 
+archival storage 
+area for infrequently-accessed data.  In such an environment, we
+wonder whether current disk organizations are still appropriate.
+Perhaps it would make more sense to organize the disk structures around
+their archival function; i.e., with support for mass storage and
+version retention, and with enough
+redundancy to eliminate the tape backups required in today's systems.
+
+
+\section{A Log-Structured File System}
+\hskip\parindent
+\label{logfs}
+One attractive possibility is to merge the cache log with
+the main file disks.  We call this a {\em log-structured file
+system\/}, 
+because the file system's representation on disk would
+consist of nothing but a log.  As files are modified, both file
+data and header information are appended to the log in a sequential
+stream, without seeks.  As with the cache-logging approach described
+above, this allows the file system to utilize the full bandwidth of
+a disk array, even if individual files are small (they can be
+collected into large blocks before being written to the log).
+Unlike the cache-logging approach, though, it uses only a single
+representation of information on disk.
+
+In addition to their potential for improved disk bandwidth utilization,
+log-structured file systems have other attractive
+properties:
+\begin{itemize}
+\item {\bf Fast recovery}. Log-structured file systems offer the possibility
+of much faster crash recovery than traditional random-access file systems.
+File systems that perform update-in-place, such as UNIX
+file systems, can leave the on-disk structures inconsistent if a power-fail
+or system crash occurs during a complex update.  As part of
+rebooting the operating system must scan all of the disk maps and free
+lists in order to detect and repair these inconsistencies.
+In contrast, all of the recently-changed information in a
+log-structured file system is at the head of the log;  this results in
+cleaner failure modes.
+\item {\bf Versioning}. The append-only nature of the log means that
+old versions of files are retained on disk.  With a little extra
+bookkeeping effort, it should be possible to make these old versions
+available to users.  Old versions of files could potentially be retained
+permanently 
+in slower mass storage, along with files that have been unreferenced
+for an extended period.
+\end{itemize}
+
+A number of difficult issues must be resolved to make
+log-structured file systems practical; unfortunately, space permits
+discussion  of only the most important of these issues: random
+retrieval from the log, and log wrap-around.  Section~\ref{retrieval}
+describes 
+an approach that allows files to be retrieved from the log
+as quickly as today's UNIX systems, and  Section~\ref{wrap} discusses
+log wrap-around. 
+
+\begin{figure*}[t]
+ \begin{center}
+\fbox{ \vbox{
+  \pspicture{/sprite2/users/douglis/sprite/logfs/f1.ps}{4in}}}
+\caption{The derivation of a log-structured file system from
+a traditional one.  Each figure shows the addition of a block to an
+existing file (``before'' is above and ``after'' is below).
+(a) shows a traditional file system with separate
+map and data areas;  a new data block is allocated and
+the map is updated in place.  In (b) the data area has been made into
+a log:  each new data block gets added at the end of the log, but map
+entries are still updated in place.  In (c) the whole disk is a log.
+The map array is treated
+like a file whose location is determined by a super-map;  when a file
+is modified, a new copy of its map is appended to the head of the log
+and the super-map is modified to show the location of that map.
+In (d) the super-map
+is also written to disk to permit fast recovery after crashes.}
+\label{derivation}
+\end{center}
+\normalsize
+\end{figure*}
+
+\subsection{Random Retrieval}
+\hskip\parindent
+\label{retrieval}
+Although we expect caches to reduce disk reads drastically,
+a log-structured file system must still provide a mechanism for
+retrieving information from the log.  Most systems using typical
+database logging techniques would
+require the log to be scanned sequentially to recover information from
+it.  This would result in read performance thousands of times worse than
+today's file systems;  even a very small number of reads could ruin the
+overall performance of such a system.
+Thus a random-access retrieval mechanism seems essential if a
+log-structured file system is to provide improved overall performance.
+
+In a traditional file system such as 4.3 BSD UNIX~\cite{mckusick:unix42}
+there are two steps in locating a file.  First, its textual
+name must be translated into an internal identifier for the file.
+Second, given the internal identifier, the blocks of the file
+must be located.  Name-to-identifier translation is accomplished
+by reading directory files (starting from a root or
+working directory whose identifier is known), so the whole
+problem boils down to locating the blocks of a file, given its identifier.
+Most systems accomplish this by using a map for each file, which describes
+where the file's blocks are located.
+For example, UNIX file systems place map information in a few
+fixed locations on disk.  The internal identifier used to identify a
+file indicates where its map is located.
+
+Unfortunately, the log approach doesn't permit maps in
+fixed locations, since this would require seeks to modify the
+maps whenever files are created, modified, or deleted.  Instead,
+all new or modified information, whether data
+or map, must be written at the head of the log.
+Thus the key to providing random retrieval is to design a floating
+map structure that is integrated with the rest of the log.  The
+paragraphs below describe one solution to this problem.
+It is not the only possible solution (see~\cite{gait:ofc,garfinkel:cdfs,finlayson:log-files} for other examples),
+but it illustrates the feasibility of
+random retrieval in a log-structured file system.
+
+Figure~\ref{derivation} illustrates in three steps how a traditional
+file system 
+with a single fixed-location map can be turned into a log-structured
+file system with floating maps.  Figure~\ref{derivation}(a) shows a traditional
+disk, with a map array in one portion of the disk and file data in
+another.  Figure~\ref{derivation}(b) shows the first step towards a log-structured file
+system.  New data blocks are now allocated sequentially from the 
+head of the log;  old data blocks are not re-used after deletion
+(but Section~\ref{wrap} below discusses how they might be re-used when the log
+wraps around).  In Figure~\ref{derivation}(b), however, the map array is still in a
+fixed location and must be updated in place whenever the file
+structure changes.
+
+Figure~\ref{derivation}(c) shows the second step towards a log-structured
+file system.  The map array is now treated as a special file:  the
+data blocks of this special file contain the maps.  By treating
+the map array as a file, its blocks can float just like any other
+file:  when a map entry is modified, its block of the
+map file is rewritten at the head
+of the log.  An additional ``super-map'' gives the location
+of each block in the map file.  Each reference to a map entry must
+consult the super-map to locate the entry on disk, but the super-map
+can be cached in memory just like all other file information,
+so no extra disk accesses are required.
+
+The final step consists of occasionally writing the super-map to the
+head of the log.  This
+is illustrated in Figure~\ref{derivation}(d).  The super-map should contain information
+that identifies it unambiguously as such.  After a system crash, all
+that is needed to recover the file system is to search back through
+the log to the most recent copy of the super-map.  The super-map should
+be written often enough that this is a short search.  Then the log
+entries after the super-map can be reprocessed to regenerate the
+system state at the time of the crash.  Writing the super-map to disk
+is something like an atomic file system commit:  it encapsulates
+the state of the system at a particular point in time.
+
+The culmination of all these steps is a file system
+with read performance nearly identical to current UNIX file
+systems.  At the same
+time, it makes possible the performance advantages that come from
+using a log approach to write data.
+
+\subsection{Log Wrap-Around}
+\hskip\parindent
+\label{wrap}
+
+The second major issue in building a log-structured file system
+is how to handle wrap-around.  No matter how large the log is, it
+will eventually fill up.  By this time most of the information in
+the log will no longer be ``alive'':  most of the files will have
+been deleted or overwritten.  The issue,
+then, is how to recover the 
+space that is no longer used while continuing to access the disk
+as a log.
+
+The issues in dealing with log wrap-around are similar to the issues
+in garbage collection.
+One possibility is the stop-and-copy approach:  stop the
+system and copy all the live
+information in the log to one end, leaving the free space all together
+at the other end.  Although some write-once file systems use this
+approach~\cite{gait:ofc,garfinkel:cdfs}, it seems infeasible to us because
+it would result in lengthy down-times for compaction.  Because
+logs of practical size might wrap around in less than a day, it is
+unreasonable to expect  that
+compaction could  be carried out only at night.
+
+% \begin{figure*}[t]
+%  \begin{center}
+% \fbox{ \vbox{
+%   \pspicture{/sprite2/users/douglis/sprite/logfs/f2.ps}{4in}}}
+% \caption{Incremental compaction in a log-structured file
+% system.  New data is appended to the log from left-to-right.
+% In (a) the log has just filled up;  among the oldest
+% blocks in the log, only a few are still alive.  In (b) the live
+% information is compacted to the head of the log, leaving empty
+% space for new log information.
+% In (c) new information is appended to the log, regenerating the
+% situation in (a).}
+% \label{compaction}
+% \end{center}
+% \normalsize
+% \end{figure*}
+
+An alternative is to compact the log incrementally and
+continuously, so that the log is continually wrapping on itself.
+Before each new portion of the log is written,
+the old information occupying the space must be examined.
+Dead information may be discarded, but live information must be
+saved by copying it, skipping it, or archiving it.
+
+One possible approach is to compact the live information by
+copying it to the head of the log.
+This approach will result in extra
+expense for long-lived files that get recopied every time the log
+wraps past them, even though they aren't being used.  A second
+approach is to leave the live information in place and add new
+information around it.  This approach might result in extra overhead
+to skip over the live information, and it would cause
+the disk to become fragmented,
+so it is probably a bad idea except for very large blocks of live
+information.
+A third
+approach is to move some or all of the live information to another
+storage area.  For example, there might be a hierarchy of logs where
+information gets archived from log to log as the logs wrap.
+This approach produces a result similar to garbage collectors
+based on generation scavenging~\cite{ungar:gen-scav}.
+It offers the possibility of integrating archival storage (such as
+optical disks or digital video-cassettes)
+into the system as the most senior level in the log
+hierarchy.
+
+% Log wrapping introduces an overhead factor of two in disk bandwidth
+% utilization:  each log block must be read (to recover live information)
+% before it is written.  A disk seek might also be required to
+% reposition the disk heads before writing.  However the distance of
+% such seeks will be small, and the log can be written in very large
+% blocks, so the seek will be amortized over a large amount of data.
+ 
+% \subsection{Disk Utilization}
+% \hskip\parindent
+% \label{utilization}
+% 
+% The third problem in implementing a log-structured file system
+% is disk space utilization.
+% Log wrap-around introduces a time-space
+% tradeoff between the efficiency of disk bandwidth utilization and
+% the efficiency of disk space utilization.  Figure~\ref{util-fig}
+% illustrates the problem with some hypothetical scenarios.
+% In general, higher disk space utilization implies that more
+% information will still be alive when the log wraps around it,
+% which means that more of the disk's bandwidth will be used
+% to copy that information and less bandwidth will be available
+% to write out new information.
+% \begin{figure*}[t]
+%  \begin{center}
+% \fbox{ \vbox{
+%   \pspicture{/sprite2/users/douglis/sprite/logfs/f3.ps}{4in}}}
+% \caption{Some hypothetical scenarios for disk space utilization
+% in a log-structured file system.
+% In each figure, the x-axis corresponds to location in the log:  \bf 0\/\rm  corresponds to the information just written, and \bf Wrap\/\rm  corresponds to the oldest information in the log,
+% which is about to be overwritten.
+% The y-axis indicates the fraction of the information at that position
+% in the log that is still in use:  older information is more likely to
+% have been deleted.  The total disk space utilization is the ratio of the
+% area under the curve to the area of the dotted rectangle.  The work
+% required during wrapping is closely related to the height of the
+% curve at the \bf Wrap\/\rm  point.  In (a) most information has been deleted
+% by the time the log wraps on it;  this results in low overhead during
+% log wrapping, but poor disk utilization.  In (b) the disk space is
+% almost fully utilized, but most of the disk bandwidth will be used to
+% recopy information at the log head.  (c) shows an ideal but
+% unrealistic situation
+% where files live until just before they are wrapped upon, then die
+% at the last second so that they need not be dealt with at wrapping
+% time.}
+% \label{util-fig}
+% \end{center}
+% \normalsize
+% \end{figure*}
+% 
+% Two factors determine the precise nature of the tradeoff.  The
+% first is the distribution of file lifetimes, which is more like
+% Figure~\ref{util-fig}(a) than Figure~\ref{util-fig}(c).  This factor
+% is outside the control 
+% of the file system.  The second factor is overall disk space
+% utilization, which is under the file system's control.
+% The file system can control space utilization by setting a
+% threshold and refusing to allocate new files whenever
+% the space utilization exceeds the threshold (for example,
+% in 4.3 BSD UNIX, the threshold is 90\%).  This makes
+% it possible to select any of a range of scenarios between the
+% curves in Figure~\ref{util-fig}(a) and Figure~\ref{util-fig}(b).  Table I shows the
+% range of tradeoffs that will apply if file lifetimes are
+% exponentially-distributed.  For example, the second line in
+% the table indicates that if users are willing to pay twice as much
+% for disk storage (i.e., they only use half the available space),
+% then they should be able to improve performance by a
+% factor of 10 (40\% bandwidth utilization instead of 3\% in today's
+% non-log-structured file systems).
+% 
+% \begin{table}
+%  \begin{center}
+%   \begin{tabular}{|l|l|l|}
+% \hline
+% \multicolumn{1}{|c|}{Live}&\multicolumn{1}{c|}{Bandwidth}&\multicolumn{1}{c|}{Space} \\
+% \multicolumn{1}{|c|}{Fraction}&\multicolumn{1}{c|}{Utilization}&\multicolumn{1}{c|}{Utilization}\\
+% \hline
+% .1&.45&.39\\
+% .2&.40&.50\\
+% .3&.35&.58\\
+% .4&.30&.65\\
+% .5&.25&.72\\
+% .6&.20&.78\\
+% .7&.15&.84\\
+% .8&.10&.90\\
+% .9&.05&.95\\
+% 	 \hline
+% \end{tabular}
+% \caption{The tradeoff between disk space utilization and
+% disk bandwidth utilization.  The first column lists the
+% fraction of information still alive when the log wraps on it.
+% The second column lists the fraction of raw disk bandwidth that
+% can be utilized to write new information
+% (this assumes that half the bandwidth is used to read back the old
+% contents of the log;  of the remaining half, some is used to rewrite
+% live information and the rest is used to write new information).
+% The third column contains disk space utilization, computed under the
+% assumption of exponentially-distributed file lifetimes.
+% }
+% \label{util-tradeoffs}
+%  \end{center}
+% 
+% \end{table}
+
+\section{Related Work}
+\hskip\parindent
+\label{related}
+The database community has used logging techniques for many years,
+both to reduce disk I/O during transaction processing and as a reliability
+and crash-recovery tool.  However, in databases the log is
+a supplement to the random-access representation of the database,
+not a replacement for it as in a log-structured file system.
+
+Logging approaches have begun to see some use in general-purpose
+file systems, but the motivation has usually been reliability or
+the limitations of write-once media.  In contrast, our motivation
+for logging is to achieve high performance with read-write media.
+At least three recent projects have used logging as part of
+a file system for write-once media:
+Swallow~\cite{svobodova:sosp-swallow}, CDFS~\cite{garfinkel:cdfs}, and 
+the Optical File Cabinet~\cite{gait:ofc}.  The Swallow system also included
+a generational approach to handle media with different characteristics,
+and the CDFS and the Optical File Cabinet papers describe mechanisms for
+random-access retrieval from their logs.  These systems assumed
+infinite storage capacity or write-once media, so they did not address
+wrap-around issues.
+
+Finlayson and Cheriton have recently implemented a system providing
+append-only log files and propose them as a general-purpose construct~\cite{finlayson:log-files}.
+Finlayson and Cheriton's system allows retrieval from the log with
+cost proportional to the logarithm of the log size (in comparison to
+the constant cost of the mechanism in Section~\ref{retrieval}).  However,
+Finlayson and Cheriton required all files to be append-only,
+rather than the more general UNIX-like model we have assumed, and
+they also assumed infinite storage capacity
+and did not have to address log wrap-around issues.
+
+One project where logging has been used to improve performance is
+Hagmann's work on the Cedar File
+System~\cite{hagmann:cedar-file-system}.  He used logs for file 
+maps in order to provide high reliability of map information without
+performance degradation.  However, Hagmann used logs only for the
+map information, so his mechanisms did not reduce seeks for file data.
+Furthermore, in Hagmann's work the log was a supplement to the
+normal on-disk structures, not a replacement for it.
+
+\section{Summary and Conclusions}
+\hskip\parindent
+\label{concl}
+
+If CPU speeds increase by a factor of 100-1000 between 1985 and
+1995, then corresponding increases in I/O speeds must be found so
+that applications can scale smoothly in performance.
+We have described several possible solutions to this problem
+and think that log-structured file systems offer a particularly
+intriguing alternative for engineering and office applications.
+Log-structured file systems can make use of disk arrays
+to provide efficient writing, even for small files, and work well
+with main-memory file caches, which provide efficient reading.
+As a result, we think that overall I/O performance improvements of a factor of
+1000 are feasible.  Most of the improvement will come from having a
+hundred or so disks in an array;  this provides the potential for a
+hundred-fold improvement in bandwidth or operations per second, if the
+operating system can keep all of the disks busy.  Log-structured file
+systems will
+allow all of the disks to be utilized, and also provide about
+ten-times better bandwidth utilization of each disk than today's file
+systems.
+
+
+
+
+% Even if one of the other approaches, such as file caches with battery
+% backup, proves better than log-structured file systems, we think that
+% the nature of I/O to disk is changing enough to justify new disk
+% organizations.  Logging approaches offer easier recovery and
+% versioning and better locality than most of today's file systems,
+% so some of the logging techniques may be applicable as a supplement
+% to other approaches.
+% 
+\section{Acknowledgments}
+\hskip\parindent
+
+Garth Gibson, Doug Johnson, Randy Katz, Mike Nelson,
+Mike Stonebraker, and Herv\'e Touati provided comments on
+early drafts of this paper, which substantially improved the
+presentation.
+
+%The work described here was supported in part by the
+%National Science Foundation under Presidential Young
+%Investigator Award No. ECS-8351961 and Grant No. MIP-8715235.
+%
+\small
+\bibliography{os,sosp11}
+\bibliographystyle{ieeetr}
+\end{document}
+
+@
+
+
+1.2
+log
+@after changing point size, cutting down text, but before reinstating 
+random retrieval section.
+@
+text
+@d421 23
+d449 8
+a456 7
+retrieving information from the log quickly.  
+In a traditional file system such as 4.3 BSD UNIX~\cite{mckusick:unix42},
+to retrieve a file one must read the {\em file map\/} for the file,
+given an internal identifier 
+for the file.  The map describes
+where the file's blocks are located; in UNIX, file maps are stored in a few
+fixed locations on disk.  
+d458 14
+a471 23
+% 
+% \begin{figure*}[t]
+%  \begin{center}
+% \fbox{ \vbox{
+%   \pspicture{/sprite2/users/douglis/sprite/logfs/f1.ps}{4in}}}
+% \caption{The derivation of a log-structured file system from
+% a traditional one.  Each figure shows the addition of a block to an
+% existing file (``before'' is above and ``after'' is below).
+% (a) shows a traditional file system with separate
+% map and data areas;  a new data block is allocated and
+% the map is updated in place.  In (b) the data area has been made into
+% a log:  each new data block gets added at the end of the log, but map
+% entries are still updated in place.  In (c) the whole disk is a log.
+% The map array is treated
+% like a file whose location is determined by a super-map;  when a file
+% is modified, a new copy of its map is appended to the head of the log
+% and the super-map is modified to show the location of that map.
+% }
+% \label{derivation}
+% \end{center}
+% \normalsize
+% \end{figure*}
+ 
+d478 24
+a501 5
+map structure that is integrated with the rest of the log.  One
+possible solution is to treat the array of file maps itself as a
+special file:  the
+data blocks of this special file contain the maps.  When a map entry
+is modified, its block of the 
+d503 5
+a507 1
+of the log.  
+d509 4
+a512 4
+An additional ``super-map'' (cached in memory and written
+to disk periodically for reliability) gives the location
+of each block in the map file.  
+After a system crash, all
+d521 6
+d598 6
+a603 6
+Log wrapping introduces an overhead factor of two in disk bandwidth
+utilization:  each log block must be read (to recover live information)
+before it is written.  A disk seek might also be required to
+reposition the disk heads before writing.  However the distance of
+such seeks will be small, and the log can be written in very large
+blocks, so the seek will be amortized over a large amount of data.
+d780 1
+a780 1
+Garth Gibson, Doug Johnson, Mike Nelson, Randy Katz,
+@
+
+
+1.1
+log
+@Initial revision
+@
+text
+@d3 1
+a3 1
+\documentstyle[11pt,captions,proc]{article}
+d7 1
+d14 1
+d23 4
+a26 1
+\copyrightspace
+d46 1
+d52 14
+a65 3
+This notion was first
+put forth by Gene Amdahl in the late 1960's, and has since
+come to be known as ``Amdahl's Law''~\cite{amdahls-law}.
+d67 1
+a67 17
+Recent technology trends suggest that disk input and output may become such a
+bottleneck in the near future.  CPU speeds are increasing
+dramatically along with memory sizes and speeds, but the speeds
+of disk drives are barely improving at all.  Without new file system
+techniques, it seems likely that the performance of computers
+in the 1990's will be limited by the disks they use for file
+storage.  For example, suppose that an application program today
+spends 10\% of its time waiting for disk I/O.  If CPU speed improves
+by a factor of 10 without any disk improvements, then the
+application will only run about 5 times faster and will spend about
+50\% of its time waiting for I/O.  If CPU speed improves by another
+factor of 10, still without disk improvements, then the application
+will only run about twice again as fast, and will spend about 90\% of its
+time waiting for I/O.  The hundred-fold overall improvement in CPU speed
+will only result in a ten-fold improvement in application speed.
+
+Fortunately, there are two technology trends that offer hope for
+d74 11
+a84 1
+hundreds of drives (``disk arrays'').  Disk arrays don't improve
+d86 2
+a87 2
+greater overall bandwidth and the possibility of many concurrent
+accesses.
+d89 3
+a91 3
+This paper is a discussion of the technology trends related
+to I/O, the problems they may pose for future engineering and office
+applications, and a set of possible solutions.  Our overall goal
+d95 1
+a95 1
+will not be I/O-limited.
+d97 1
+a97 2
+Section~\ref{tech-trends} considers the technology trends in more detail, with
+special emphasis on disk arrays.  Section~\ref{scenario} uses information about
+d104 1
+a104 1
+Sections~\ref{backup} and~\ref{cache-logging} discuss two ways to
+d110 1
+a110 1
+of information on disk is in the form of a circular append-only log.
+d112 5
+a116 3
+during writes, and thus may improve writing performance by an
+order of magnitude or more.  The logging approach also makes
+it easier to utilize the additional bandwidth provided by disk arrays.
+d124 1
+a124 2
+including faster crash recovery and automatic clustering of files written
+at the same time.
+a128 65
+The success of the new techniques described in this paper may not be
+determined for some time.  We have not implemented a log-structured
+file system (yet), and the hardware for which it is most suitable
+will not exist for several years.  We cannot even say for sure that
+I/O will prove to be the bottleneck we suggest.  Nonetheless, we hope
+that, by exposing the issues early, we can encourage
+researchers to experiment with these and other approaches to
+high-performance I/O.  With luck, an acceptable
+solution will have been demonstrated before an I/O bottleneck ever
+manifests itself.
+
+\section{Technology Trends}
+\hskip\parindent
+\label{tech-trends}
+
+When some technologies advance more rapidly than others,
+changes occur in the basic tradeoffs of system design, offering
+interesting problems and alternatives to system builders.
+We call such a change a {\em technology shift\/}.
+Engineering and office computing environments have witnessed
+at least two major technology shifts in recent
+years.  The first shift occurred between
+1975 and 1985, when memory sizes increased enormously while CPU
+and disk speeds hardly changed.  This
+opened up new memory-intensive application areas such as bit-map
+graphics and laser printing, and made it possible to improve
+I/O performance by caching files in main memory.  The second
+technology shift is underway now.  Between 1985 and 1995, typical
+CPU speeds in engineering and office environments are likely
+to increase by factors of 100 to 1000.  Memory sizes will also increase
+substantially, although probably by a factor of less than 100.
+In contrast, disk speeds (particularly seek times) seem unlikely to
+improve by more than a factor of 2 or 3 in the same
+time period.  This shift will open up
+new CPU-intensive applications, but suggests that new I/O techniques
+will be needed to keep I/O from being a performance bottleneck.
+
+Although disk drives have not improved much in performance, they
+have improved radically in cost and storage density.
+The trend in recent years is towards disk drives that
+are physically smaller and much cheaper, yet still
+have performance and capacity comparable to the bulkier
+drives they replace.  We are now seeing
+the advent of disk arrays, where large high-performance reliable
+disk systems are created by combining many small inexpensive disks~\cite{pattrsn:raid}.
+By 1995, we predict that disk arrays with hundreds or even thousands
+of disks will be standard products.
+
+Disk arrays offer at least two potential performance advantages.
+First, a disk array permits much greater overall bandwidth than a single
+disk, if the array is organized to transfer to/from all its disks
+in parallel.
+Second, a disk array permits many more independent accesses per second,
+if there is enough work to keep many of the disks busy simultaneously.
+Unfortunately, disk arrays do not improve the basic disk latency
+for a given access;  if an application makes sequential accesses
+to small unrelated pieces of data then it will not run any faster
+with a disk array than with a single disk.
+
+Thus, the key question that this paper addresses is:
+how can we take advantage of the technologies that are
+improving most rapidly (CPU speed, memory size, disk array size),
+and use them to compensate for technologies that are not
+improving as rapidly (seek times)?
+
+d134 1
+a134 1
+will behave if the technology predictions of Section~\ref{tech-trends}
+d136 80
+a215 78
+and if no changes are made in file system organization.  Section~\ref{patterns}
+discusses file access patterns, and Section~\ref{demands} estimates
+the I/O demands that might be placed on a computing system of the
+mid-1990's.
+
+\subsection{File Access Patterns}
+\hskip\parindent
+\label{patterns}
+
+In order to understand the impact of technology changes on file system
+performance, one must consider how file systems
+are used by application programs.  We think that file access patterns
+can be separated into three general classes:  scientific computing,
+transaction processing, and engineering/office applications.  Of these
+classes, the first two appear well-suited to disk arrays
+while the third does not.
+
+The first class of file usage, which we call ``scientific processing'',
+is characterized by programs that read
+and write very large files sequentially.  Many scientific applications
+and some engineering and database applications fall into this category.
+If sequential blocks of large files are spread evenly across
+the disks of an array (``striped''), then all the disks can be used
+simultaneously to read or write the
+files~\cite{kim:disk-interleaving}.  If the files are large 
+enough, then the cost of seeks will be small compared to the cost
+of reading the data, and the file system's performance will scale
+with the size of the array.  Thus if the CPU power
+and number of disks in
+an array scale at about the same rate (which appears likely for the
+next several years), then scientific applications should be
+able to scale smoothly in performance even though the disk latency does
+not improve.
+
+We use the term ``transaction processing'' to refer
+to applications like airline reservations,
+automatic tellers, and point-of-sale terminals.  These systems
+typically handle large numbers of concurrent requests, each of
+which makes a small number of disk accesses (for example, to
+reserve a seat or make a deposit).
+Transaction processing systems are usually measured by their
+throughput in transactions per second, rather than by the
+service time for individual transactions.
+Different requests usually involve
+different disk data, so it is possible to keep many disks busy
+simultaneously.  This means that transaction processing systems
+will also scale smoothly as long as the number
+of disks in an array increases as fast as CPU power:  the speed
+of an individual transaction will still be limited by latency,
+but the system's overall throughput will increase.
+
+The third class of file usage, ``engineering/office applications,''
+consists of programs that access large numbers of small files, such
+as the source files for a program or the font libraries for
+a laser printer.  Most programs in UNIX environments fall into
+this class.  These applications are similar to transaction processing
+systems in that they make small requests.   However, they are different
+from transaction processing in that there isn't much concurrency:
+each application program makes a sequence of requests, and each CPU
+typically runs only one or a few application programs at once.
+Furthermore, the goal of increasing the CPU power in an engineering/office
+environment is to make individual programs
+run faster, not to increase the number of concurrent programs.
+As a result, these applications do not appear to benefit from disk
+arrays:  files are short enough that striping doesn't help (most of
+the access cost is in the latency), and there isn't enough concurrency
+to occupy the disks of a large array.
+
+For the rest of this paper we will focus on engineering and office
+applications.  This is partly because it is less obvious how to
+take advantage of disk array technology for these applications than
+for the others, and partly because we have
+more experience with them than with the other applications.  However,
+some of the results also apply to scientific applications.
+
+\section{How Many Disks per User?}
+\hskip\parindent
+\label{demands}
+d249 15
+a263 15
+Of course, it's possible that I/O access patterns will change as
+CPU power increases.  For example, the extra CPU power of
+future machines might be used primarily for managing the user interface
+(graphics, speech recognition, etc.) and thereby require very little
+additional I/O.  Or, average file sizes might increase and thereby
+allow more efficient utilization of disk bandwidth;  this could happen
+if, for example, future applications make heavy use of large images.
+To the extent that these changes occur, I/O demands will be less
+than we estimated above.
+On the other hand, CPU power might increase to more than 100 MIPs
+by the mid-1990s;  if it increases to 500 MIPs, then as many as
+20-80 disks per user might be required!  Overall, we think it is
+plausible that disk requirements will be severe enough to present
+difficult problems both in terms of cost and in terms of keeping
+them all busy.
+d265 1
+a265 1
+\section{Solution \#1: File Caching}
+d271 1
+a271 1
+performance~\cite{mckusick:unix42,howard:scale-and-performance,nelson:caching-in-sprite,schroeder:caching-in-cedar}.
+d312 1
+a312 3
+writes.  Almost all of the reads are satisfied by the cache, whereas
+most writes must eventually go to disk;  the result is that disk transfers
+will consist primarily of writes.  Second, caches provide a buffer for bursts
+d337 2
+a338 7
+data to disk until it is replaced in the cache.  Since cache lifetimes
+will be much longer than average file lifetimes, almost all files would
+be deleted or overwritten before being replaced in the cache, so
+disk I/O rates would be
+reduced drastically.  Sections~\ref{backup} and~\ref{cache-logging}
+below suggest two possible ways for 
+improving cache reliability.  The second general approach is to
+d343 1
+a343 1
+\section{Solution \#2:  Caches with Battery Backup}
+d345 1
+a345 1
+\label{backup}
+d347 12
+a358 8
+One way to make file caches more reliable is to store them in
+memory with battery backup.  This would allow the contents of the
+caches to survive power outages.  However, the battery backup
+is only the first of several steps needed
+to ensure the reliability of cache data.  In addition, the operating
+system would have to recover the contents
+of the file cache during reboot, and it would have to leave
+enough information around during normal operation to make this possible.
+d360 5
+a364 30
+Even so, battery backup would not be sufficient by itself:  the file
+cache would have to be able to survive operating system crashes as
+well as power outages.
+We hypothesize that most system crashes are of the ``fail-stop''
+kind, where little or no damage has been done to the system
+before it halts itself for a reboot.  If this is so, then it should
+be possible to build a file system that can
+recover the contents of the file cache during reboot.
+Unfortunately, there is very little data available on the failure
+modes of general-purpose operating systems;  without such data,
+we cannot be confident that cache recovery is possible.
+
+Another problem with battery backup is reconfigurability.  Suppose
+a file server suffers a hardware failure requiring weeks to repair.
+Even assuming that the battery backup could last that long, it might
+be unacceptable for the data in the file cache to be unavailable during
+such a long repair period.  Ideally, it should be possible to plug the
+cache memory card(s) into a different CPU and continue operation, just
+as disks can be moved in an emergency in today's systems.  This suggests
+that the best organization for a battery-backup cache might be as
+a detachable ``silicon disk''.  If the silicon disk were accessed like
+a very fast I/O device instead of like memory, then it would also be
+less likely to be corrupted during a system crash.  If RAMs become
+sufficiently cheap and capacious, perhaps silicon disks will replace
+magnetic disks altogether.
+
+If file caches become so reliable that information need not
+be written through to disk, then there would be very little disk
+traffic left:  almost all information would live and die in the
+cache.  The primary role of the disk would be as an archival storage
+d368 2
+a369 1
+their archival function, e.g. with better versioning and enough
+a371 13
+\section{Solution \#3:  Cache Logging}
+\hskip\parindent
+\label{cache-logging}
+Another way to improve the reliability of file caches is to use
+a disk or array to hold a backup copy of cached blocks.  As blocks in
+the cache are modified, their new contents could be written out
+to the backup disk in a sequential stream.  The disk could be
+written in full-cylinder units, with only track-to-track seeks
+except for one long seek after each complete
+pass over the disk.  Thus the disk would operate at nearly its
+full bandwidth.
+The cache could be reconstructed from the log disk after crashes and
+power failures.
+d373 1
+a373 15
+Cache logging is the simplest of the solutions described
+in this paper, and could probably be added to existing systems
+without much difficulty.  It would provide the same benefits as
+battery-backed-up cache memory, without the difficulties of ensuring
+cache integrity after crashes.  Nonetheless, cache logging
+seems wasteful.  If combined with a traditional file system
+structure, it would result in three levels of ``permanent'' storage:
+the cache backup disk, the real disk, and the tape backup.  Information
+would rarely be read from any of these three levels;  is it really
+necessary to have all three?  In addition, cache logging would
+probably leave the main file storage disks nearly idle;  if disk
+performance is a problem then it would be better if the combined
+bandwidth of all the disks in the system could be fully utilized.
+
+\section{Solution \#4:  A Log-Structured File System}
+d376 1
+a376 1
+Our most exotic proposal is to merge the cache log with
+d390 1
+a390 1
+log-structured file systems have several other attractive
+a399 3
+Disk repair times can already be as high as a half hour or more for UNIX
+systems with a few Gigabytes of file storage;  as file systems
+become larger, these times will increase.
+d402 1
+a402 13
+cleaner failure modes.  It should be possible to organize the log so
+that only a few blocks need to be examined near the head of the log
+to recover from crashes.
+\item {\bf Temporal locality}. In a log-structured file system, files that
+are written at about the same time will also be stored in about the
+same place on disk.  This means that such groups of files can potentially
+be retrieved from disk with a single seek followed by one long read.
+If files written at the same time also tend to be read later in the
+same groups (which seems likely to us), then this will provide yet
+another boost in the performance of log-structured file systems.
+As a special case of this phenomenon, a large file written all at once
+will be stored perfectly contiguously on disk.  This suggests that scientific
+applications will run well using a log-structured file system.
+d406 4
+a409 3
+available to users for
+recovery from certain kinds of user errors (e.g. an ``undelete''
+command could be provided to recover from accidental deletions).
+d412 5
+a416 5
+There are three difficult issues that must be resolved to make
+log-structured file systems practical.  The subsections below
+describe the problems and some possible solutions.
+The first issue is how to handle the occasional retrievals that
+will be required from the log;  Section~\ref{retrieval} describes
+d418 2
+a419 7
+as quickly as today's best file systems.  The second issue is how to
+manage log wrap-around;  Section~\ref{wrap} discusses some possible solutions
+to this problem.  The third issue is how to achieve efficient disk space
+utilization;  this is discussed in Section~\ref{utilization}.
+Finally, Section~\ref{logfs-summary} 
+summarizes the performance advantages and disadvantages of
+log-structured file systems.
+d421 1
+a421 1
+\subsection{Random Retrieval from a Log-Structured File System}
+d426 7
+a432 8
+retrieving information from the log.  Most previous uses of
+logging
+require the log to be scanned sequentially to recover information from
+it.  This would result in read performance thousands of times worse than
+today's file systems;  even a very small number of reads could ruin the
+overall performance of such a system.
+Thus a random-access retrieval mechanism seems essential if a
+log-structured file system is to provide improved overall performance.
+d434 23
+a456 14
+In a traditional file system such as 4.3 BSD UNIX~\cite{mckusick:unix42}
+there are two steps in locating a file.  First, its textual
+name must be translated into an internal identifier for the file.
+Second, given the internal identifier, the blocks of the file
+must be located.  Name-to-identifier translation is accomplished
+by reading directory files (starting from a root or
+working directory whose identifier is known), so the whole
+problem boils down to locating the blocks of a file, given its identifier.
+Most systems accomplish this by using a map for each file, which describes
+where the file's blocks are located.
+For example, UNIX file systems place map information in a few
+fixed locations on disk.  The internal identifier used to identify a
+file indicates where its map is located.
+
+d463 5
+a467 46
+map structure that is integrated with the rest of the log.  The
+paragraphs below describe one solution to this problem.
+It is not the only possible solution (see~\cite{gait:ofc,garfinkel:cdfs} for other examples),
+but it illustrates the feasibility of
+random retrieval in a log-structured file system.
+\begin{figure*}[t]
+ \begin{center}
+\fbox{ \vbox{
+  \pspicture{/sprite2/users/douglis/sprite/logfs/f1.ps}{4in}}}
+\caption{The derivation of a log-structured file system from
+a traditional one.  Each figure shows the addition of a block to an
+existing file (``before'' is above and ``after'' is below).
+(a) shows a traditional file system with separate
+map and data areas;  a new data block is allocated and
+the map is updated in place.  In (b) the data area has been made into
+a log:  each new data block gets added at the end of the log, but map
+entries are still updated in place.  In (c) the whole disk is a log.
+The map array is treated
+like a file whose location is determined by a super-map;  when a file
+is modified, a new copy of its map is appended to the head of the log
+and the super-map is modified to show the location of that map.
+In (d) the super-map
+is also written to disk to permit fast recovery after crashes.}
+\label{derivation}
+\end{center}
+\normalsize
+\end{figure*}
+
+Figure~\ref{derivation} illustrates in three steps how a traditional
+file system 
+with a single fixed-location map can be turned into a log-structured
+file system with floating maps.  Figure~ref{derivation}(a) shows a traditional
+disk, with a map array in one portion of the disk and file data in
+another.  Figure~\ref{derivation}(b) shows the first step towards a log-structured file
+system.  New data blocks are now allocated sequentially from the 
+head of the log;  old data blocks are not re-used after deletion
+(but Section~\ref{wrap} below discusses how they might be re-used when the log
+wraps around).  In Figure~\ref{derivation}(b), however, the map array is still in a
+fixed location and must be updated in place whenever the file
+structure changes.
+
+Figure~\ref{derivation}(c) shows the second step towards a log-structured
+file system.  The map array is now treated as a special file:  the
+data blocks of this special file contain the maps.  By treating
+the map array as a file, its blocks can float just like any other
+file:  when a map entry is modified, its block of the
+d469 1
+a469 5
+of the log.  An additional ``super-map'' gives the location
+of each block in the map file.  Each reference to a map entry must
+consult the super-map to locate the entry on disk, but the super-map
+can be cached in memory just like all other file information,
+so no extra disk accesses are required.
+d471 4
+a474 4
+The final step consists of occasionally writing the super-map to the
+head of the log.  This
+is illustrated in Figure~\ref{derivation}(d).  The super-map should contain information
+that identifies it unambiguously as such.  After a system crash, all
+d483 1
+a483 7
+The culmination of all these steps is a file system
+with read performance nearly identical to our current file
+systems.  At the same
+time, it makes possible the performance advantages that come from
+using a log approach to write data.
+
+\section{Log Wrap-Around}
+d491 2
+a492 4
+been deleted or overwritten.  If a log takes hours or days to wrap
+around, most of the information in the log will be dead (according
+to our measurements, 90\% will be dead if the log takes one day to
+wrap around).  The issue, then, is how to recover the
+d501 6
+a506 4
+at the other end.  This approach seems infeasible to us because
+it would result in lengthy down-times for compaction, and because
+logs of practical size might wrap around in less than a day, so that
+compaction could not necessarily be carried out at night.
+d508 16
+a523 16
+\begin{figure*}[t]
+ \begin{center}
+\fbox{ \vbox{
+  \pspicture{/sprite2/users/douglis/sprite/logfs/f2.ps}{4in}}}
+\caption{Incremental compaction in a log-structured file
+system.  New data is appended to the log from left-to-right.
+In (a) the log has just filled up;  among the oldest
+blocks in the log, only a few are still alive.  In (b) the live
+information is compacted to the head of the log, leaving empty
+space for new log information.
+In (c) new information is appended to the log, regenerating the
+situation in (a).}
+\label{compaction}
+\end{center}
+\normalsize
+\end{figure*}
+d527 1
+a527 1
+Before each new portion of log is written,
+d533 1
+a533 1
+copying it to the head of the log (see Figure~\ref{compaction}).
+d543 1
+a543 1
+The third
+a553 14
+One of the most important issues in handling log wrap-around
+is how to identify the files that are still live.  This must be
+accomplished with information in main memory or with information
+read back from the tail of the log;  if seeks were required to
+retrieve information from disk, much of
+the performance advantage of logging would be lost.
+Since file maps are cached in main memory,
+the maps for most files will probably be available in memory at
+the time when liveness determination is made.  If this turns out
+not to be the case, then some other data structure will have
+to be maintained in memory,
+such as a map of free and used log blocks, so that liveness
+can be determined without disk accesses.
+
+d560 96
+a655 135
+
+\subsection{Disk Utilization}
+\hskip\parindent
+\label{utilization}
+
+The third problem in implementing a log-structured file system
+is disk space utilization.
+Log wrap-around introduces a time-space
+tradeoff between the efficiency of disk bandwidth utilization and
+the efficiency of disk space utilization.  Figure~\ref{util-fig}
+illustrates the problem with some hypothetical scenarios.
+In general, higher disk space utilization implies that more
+information will still be alive when the log wraps around it,
+which means that more of the disk's bandwidth will be used
+to copy that information and less bandwidth will be available
+to write out new information.
+\begin{figure*}[t]
+ \begin{center}
+\fbox{ \vbox{
+  \pspicture{/sprite2/users/douglis/sprite/logfs/f3.ps}{4in}}}
+\caption{Some hypothetical scenarios for disk space utilization
+in a log-structured file system.
+In each figure, the x-axis corresponds to location in the log:  \bf 0\/\rm  corresponds to the information just written, and \bf Wrap\/\rm  corresponds to the oldest information in the log,
+which is about to be overwritten.
+The y-axis indicates the fraction of the information at that position
+in the log that is still in use:  older information is more likely to
+have been deleted.  The total disk space utilization is the ratio of the
+area under the curve to the area of the dotted rectangle.  The work
+required during wrapping is closely related to the height of the
+curve at the \bf Wrap\/\rm  point.  In (a) most information has been deleted
+by the time the log wraps on it;  this results in low overhead during
+log wrapping, but poor disk utilization.  In (b) the disk space is
+almost fully utilized, but most of the disk bandwidth will be used to
+recopy information at the log head.  (c) shows an ideal but
+unrealistic situation
+where files live until just before they are wrapped upon, then die
+at the last second so that they need not be dealt with at wrapping
+time.}
+\label{util-fig}
+\end{center}
+\normalsize
+\end{figure*}
+
+Two factors determine the precise nature of the tradeoff.  The
+first is the distribution of file lifetimes, which is more like
+Figure~\ref{util-fig}(a) than Figure~\ref{util-fig}(c).  This factor
+is outside the control 
+of the file system.  The second factor is overall disk space
+utilization, which is under the file system's control.
+The file system can control space utilization by setting a
+threshold and refusing to allocate new files whenever
+the space utilization exceeds the threshold (for example,
+in 4.3 BSD UNIX, the threshold is 90\%).  This makes
+it possible to select any of a range of scenarios between the
+curves in Figure~\ref{util-fig}(a) and Figure~\ref{util-fig}(b).  Table I shows the
+range of tradeoffs that will apply if file lifetimes are
+exponentially-distributed.  For example, the second line in
+the table indicates that if users are willing to pay twice as much
+for disk storage (i.e., they only use half the available space),
+then they should be able to improve performance by a
+factor of 10 (40\% bandwidth utilization instead of 3\% in today's
+non-log-structured file systems).
+
+\begin{table}
+ \begin{center}
+  \begin{tabular}{|l|l|l|}
+\multicolumn{1}{|c|}{Live}&\multicolumn{1}{c|}{Bandwidth}&\multicolumn{1}{c|}{Space} \\
+\multicolumn{1}{|c|}{Fraction}&\multicolumn{1}{c|}{Utilization}&\multicolumn{1}{c|}{Utilization}\\
+\hline
+.1&.45&.39\\
+.2&.40&.50\\
+.3&.35&.58\\
+.4&.30&.65\\
+.5&.25&.72\\
+.6&.20&.78\\
+.7&.15&.84\\
+.8&.10&.90\\
+.9&.05&.95\\
+	 \hline
+\end{tabular}
+\caption{The tradeoff between disk space utilization and
+disk bandwidth utilization.  The first column lists the
+fraction of information still alive when the log wraps on it.
+The second column lists the fraction of raw disk bandwidth that
+can be utilized to write new information
+(this assumes that half the bandwidth is used to read back the old
+contents of the log;  of the remaining half, some is used to rewrite
+live information and the rest is used to write new information).
+The third column contains disk space utilization, computed under the
+assumption of exponentially-distributed file lifetimes.
+}
+\label{util-tradeoffs}
+ \end{center}
+
+\end{table}
+
+\subsection{Performance Comparisons}
+\hskip\parindent
+\label{performance-comparisons}
+
+By its very nature a log-structured file system will outperform other
+file systems for writes.  In looking for weaknesses of the approach,
+it thus makes most sense to look at reads that miss in the file
+cache.  For small files, a log-structured file system will have
+read performance at least as good as today's file systems (as shown
+in Section~\ref{dunno} above).  In the
+worst case, one seek will be required for the file map and one
+for the file data.  With a little cleverness in the log
+management, it should be possible to write
+the file map close to the file data so they can both be
+retrieved with a single seek.  This would result in 2x better
+performance than current file systems.
+
+For large-file reads, there are two cases to consider.
+The simplest case is files that are written all-at-once.  These
+files will be contiguous in the log, which allows them to be
+read at least as efficiently as today's best file systems (particularly
+if the file map is written next to the data in the log).
+Random-access reads to such a file will require seeks, but no
+more in a log-structured file system than in a traditional file
+system.
+
+The second case for large files consists of those
+that are written piece-wise, either by
+gradually appending to the files or by updating them in
+random-access mode.  The logging approach permits such
+piece-wise writes and does not require the whole file to
+be rewritten, but the new data for the file
+will go at the end of the log.  This will not be adjacent on
+disk to other data written to the file previously.
+If the file is later read sequentially from one end to the
+other, many seeks will be required.
+In comparison, a more traditional file system
+can keep the file's data contiguous on disk even under this
+sort of access pattern.
+a656 18
+However, the {\em overall\/} performance for large piece-wise-updated
+files is not necessarily worse
+in a log-structured file system than a traditional file system.
+A log-structured file system performs the writes of the
+pieces with essentially zero seeks, but requires seeks for sequential
+reads.  A traditional file system requires seeks for each of
+the writes, but can read back the whole file with one seek.  If the
+file is written more often than it is read (or if the cache satisfies
+most read requests), then the log-structured
+file system will have better overall performance.  Or, if the units
+of reading correspond to the units of writing, so that the file isn't
+actually read sequentially, then again the log-structured file system
+will have better performance (no seeks to write and one to read, vs.
+one to write and one to read).  The only scenario where a
+log-structured file system is worse is for a file written in pieces,
+but read in larger blocks, which isn't accessed often enough to
+stay in the cache, yet has more read traffic than write traffic.
+
+d671 2
+a672 1
+a file system for write-once media:  Swallow~\cite{svobodova:sosp-swallow}, CDFS~\cite{garfinkel:cdfs}, and
+d688 1
+a688 1
+so they did not have to address log wrap-around issues.
+a708 3
+In comparison to today's file systems,
+they use up more of a cheap resource (disk bandwidth), but much
+less of an expensive resource (seeks).
+a721 7
+Even if one of the other approaches, such as file caches with battery
+backup, proves better than log-structured file systems, we think that
+the nature of I/O to disk is changing enough to justify new disk
+organizations.  Logging approaches offer easier recovery and
+versioning and better locality than most of today's file systems,
+so some of the logging techniques may be applicable as a supplement
+to other approaches.
+a722 8
+Of course, the real proof is in the implementation.  Section 7
+pointed out several problems and possible solutions, but there
+are probably other problems that we haven't foreseen.  The next
+step is to implement a prototype log-structured file system and
+analyze its behavior.  We plan to do so, and encourage others
+to try similar techniques or different approaches to beating the
+I/O bottleneck, so that when 1000-MIP machines become available
+they will not spend all of their time waiting for I/O.
+d724 9
+d737 1
+a737 1
+Mike Stonebraker, and Herve Touati provided comments on
+d741 5
+a745 1
+
+@

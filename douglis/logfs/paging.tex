@@ -1,0 +1,36 @@
+ \begin{table}[h]
+ \begin{center}
+ \begin{tabular} {|c||l r|l r||l r|l r|}
+	 \hline
+	 \hline
+    Number of dirty  &\multicolumn{2}{c|}{Time to} &
+    \multicolumn{2}{c||}{Added cost per} &
+    \multicolumn{2}{c|}{Time to} &
+    \multicolumn{2}{c|}{Added cost per} \\
+    8K-byte heap pages&\multicolumn{2}{c|}{migrate} &
+    \multicolumn{2}{c||}{dirty page} &
+    \multicolumn{2}{c|}{page in} &
+    \multicolumn{2}{c|}{paged-in page} \\
+	 \hline
+   ~~1 	&&	0.19s	&&	N/A&	& 0.01s     &&  N/A\\
+ \hline
+  ~51 	&&	0.89s	&&	14ms&	&  0.70s && 14ms \\
+ \hline
+  101 	&&	1.61s	&&	14ms&	&  1.46s && 15ms\\
+ \hline
+  151 	&&	2.34s	&&	14ms&	&  2.24s && 15ms\\
+ \hline
+  201 	&&	3.11s	&&	15ms&	&  3.04s && 15ms\\
+	 \hline
+	 \hline
+ \end{tabular}
+ \caption{Effect of dirty  pages on time to migrate.  The cost per
+ dirty page is calculated by subtracting the cost of migration when
+ only one heap  page is dirty
+  and dividing by the difference in the
+ number of pages. Each process had no open files.
+}
+ \label{paging}
+ \end{center}
+ \end{table}
+

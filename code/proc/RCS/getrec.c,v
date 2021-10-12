@@ -1,0 +1,111 @@
+head     1.1;
+branch   ;
+access   ;
+symbols  ;
+locks    ; strict;
+comment  @ * @;
+
+
+1.1
+date     90.12.01.22.24.14;  author shirriff;  state Exp;
+branches ;
+next     ;
+
+
+desc
+@@
+
+
+
+1.1
+log
+@Initial revision
+@
+text
+@/*
+ * Routines to get trace records.
+ */
+#include <stdio.h>
+#include <sprite.h>
+#include <sysStats.h>
+#include <kernel/sospRecord.h>
+#include <getrec.h>
+
+#define ItraceRecCount file->traceRecCount
+#define InumRecs file->numRecs
+
+long startSec, startUsec;
+
+/*
+ * Get the header.
+ * Return 0 for success, -1 for failure.
+ */
+int
+getHeader(file, hdr, internal)
+traceFile *file;
+Sys_TracelogHeader *hdr;
+int *internal;
+{
+    int status;
+    status =fread(hdr, sizeof(Sys_TracelogHeader), 1, file->stream);
+    if (status == 0) {
+	return -1;
+    }
+    if (hdr->lostRecords>0) {
+	fprintf(stderr,"*** Lost %d records\n", hdr->lostRecords);
+    }
+    ItraceRecCount = 0;
+    InumRecs = hdr->numRecs;
+    startSec = hdr->bootTime[0];
+    startUsec = hdr->bootTime[1];
+}
+
+/*
+ * Get the next record.
+ * Return 0 for success, -1 for failure.
+ */
+int
+getNextRecord(file,buf,internal)
+traceFile *file;
+char *buf;
+int *internal;
+{
+    int status;
+    int recordLen;
+    Sys_TracelogHeader hdr;
+    Sys_TracelogRecord *tracePtr = (Sys_TracelogRecord *)buf;
+    /*
+    printf("traceRecCount %d, numRecs: %d\n", ItraceRecCount, InumRecs);
+    */
+    if (ItraceRecCount == InumRecs) {
+	if (getHeader(file,&hdr,internal)<0) {
+	    return -1;
+	}
+    }
+    status = fread(buf,sizeof(int),1,file->stream);
+    if (status==0) {
+	if (ItraceRecCount == InumRecs) {
+	    return -1;
+	} else {
+	    fprintf(stderr,"Too early end of log at %d instead of %d\n",
+		   ItraceRecCount, InumRecs);
+	    exit(-1);
+	}
+    }
+    ItraceRecCount++;
+    if (ItraceRecCount > InumRecs) {
+	fprintf(stderr,"Warning: too many records in log\n");
+    }
+    recordLen = tracePtr->recordLen&TRACELOG_BYTEMASK;
+    if (recordLen <=0 || recordLen > 500) {
+	fprintf(stderr,"Record too long: %d\n", recordLen);
+	exit(-1);
+    }
+    status = fread(buf+sizeof(int), recordLen-sizeof(int), 1, file->stream);
+    if (status==0) {
+	fprintf(stderr,"Truncated record\n");
+	exit(-1);
+    }
+    return 0;
+}
+@

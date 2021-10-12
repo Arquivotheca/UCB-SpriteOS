@@ -1,0 +1,14 @@
+The files in this ftp directory have been moved to the ucb/TAM subdirectory
+on ftp.cs.berkeley.edu 
+			Thorsten von Eicken
+			(tve@cs.berkeley.edu)
+			Tue Oct  6 10:33:31 PDT 1992
+
+ 237 -rw-rw-r--  1 tve        242139 Mar  9  1992 asplos91.ps
+  81 -rw-r--r--  1 tve         82157 Jul 11 01:01 cmam-2-1-patch.tar.Z
+ 585 -rw-r--r--  1 tve        598467 Jul 11 00:59 cmam-2-1.tar.Z
+ 101 -rw-r--r--  1 tve        102499 Jul 14 17:48 cmam-2-1a-patch.tar.Z
+ 887 -rw-rw-r--  1 tve        908272 Mar  9  1992 fpca91.ps
+ 412 -rw-r--r--  1 tve        421888 Jun 17 15:06 isca92-slides.tar
+ 259 -rw-rw-r--  1 tve        265125 Mar 28  1992 isca92.ps
+ 170 -rw-r--r--  1 tve        174002 Mar  9  1992 spaa90.ps

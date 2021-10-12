@@ -1,0 +1,3 @@
+#!/bin/csh -fx
+# scale by 0.94, translate up by 300 units
+/usr/local/gr2ps -s .75 .75 -t 0 300 -1 18 -2 22 -3 28 -4 38 $*

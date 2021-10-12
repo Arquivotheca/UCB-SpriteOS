@@ -1,0 +1,1570 @@
+#!/bin/sh
+# This is a shell archive, meaning:
+# 1. Remove everything above the #!/bin/sh line.
+# 2. Save the resulting text in a file.
+# 3. Execute the file with /bin/sh (not csh) to create the files:
+#	copyright.h
+#	list.h
+#	scheduler.h
+#	switch.h
+#	synch.h
+#	synchlist.h
+#	system.h
+#	thread.h
+#	utility.h
+#	list.cc
+#	main.cc
+#	scheduler.cc
+#	synch.cc
+#	synchlist.cc
+#	system.cc
+#	test1.cc
+#	thread.cc
+#	utility.cc
+#	switch.s
+# This archive created: Wed Sep 16 17:24:30 1992
+export PATH; PATH=/bin:$PATH
+if test -f 'copyright.h'
+then
+	echo shar: over-writing existing file "'copyright.h'"
+fi
+cat << \SHAR_EOF > 'copyright.h'
+/*
+Copyright (c) 1992 The Regents of the University of California.
+All rights reserved.
+
+Permission to use, copy, modify, and distribute this software and its
+documentation for any purpose, without fee, and without written agreement is
+hereby granted, provided that the above copyright notice and the following
+two paragraphs appear in all copies of this software.
+
+IN NO EVENT SHALL THE UNIVERSITY OF CALIFORNIA BE LIABLE TO ANY PARTY FOR
+DIRECT, INDIRECT, SPECIAL, INCIDENTAL, OR CONSEQUENTIAL DAMAGES ARISING OUT
+OF THE USE OF THIS SOFTWARE AND ITS DOCUMENTATION, EVEN IF THE UNIVERSITY OF
+CALIFORNIA HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+THE UNIVERSITY OF CALIFORNIA SPECIFICALLY DISCLAIMS ANY WARRANTIES,
+INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
+AND FITNESS FOR A PARTICULAR PURPOSE.  THE SOFTWARE PROVIDED HEREUNDER IS
+ON AN "AS IS" BASIS, AND THE UNIVERSITY OF CALIFORNIA HAS NO OBLIGATION TO
+PROVIDE MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
+*/
+
+#ifdef MAIN
+static char *copyright = "Copyright (c) 1992 The Regents of the University of California.  All rights reserved.";
+#endif
+SHAR_EOF
+if test -f 'list.h'
+then
+	echo shar: over-writing existing file "'list.h'"
+fi
+cat << \SHAR_EOF > 'list.h'
+// list.h -- routines to manage LISP-like lists
+//
+// Copyright (c) 1992 The Regents of the University of California.
+// All rights reserved.  See copyright.h for copyright notice and limitation 
+// of liability and disclaimer of warranty provisions.
+
+#include "copyright.h"
+
+#ifndef LIST_H
+#define LIST_H
+
+#include "utility.h"
+
+typedef struct listElt {
+   struct listElt *next;
+   int key;
+   void *item;
+} ListElement;
+
+class List {
+  public:
+    List();
+    ~List();
+
+    void Prepend(void *item); 	// Put item at the beginning of the list
+    void Append(void *item); 	// Put item at the end of the list
+    void *Remove(); 	 	// Take item off the front of the list
+
+    void Mapcar(VoidFunctionPtr func);	// Lisp-like mapcar
+
+    // Routines to keep list in order (sorted by key)
+    void SortedInsert(void *item, int sortKey);	// Put item into list
+    void *SortedRemove(int *keyPtr); 	  	// Take first item off list
+
+    bool IsEmpty() { return (first == NULL) ? TRUE : FALSE; }
+
+  private:
+    ListElement *first;  	// Head of the list
+    ListElement *last;
+};
+
+#endif
+SHAR_EOF
+if test -f 'scheduler.h'
+then
+	echo shar: over-writing existing file "'scheduler.h'"
+fi
+cat << \SHAR_EOF > 'scheduler.h'
+// scheduler.h -- the thread scheduler -- routines to manage the ready queue.
+//
+// Copyright (c) 1992 The Regents of the University of California.
+// All rights reserved.  See copyright.h for copyright notice and limitation 
+// of liability and disclaimer of warranty provisions.
+
+#include "copyright.h"
+
+#ifndef SCHEDULER_H
+#define SCHEDULER_H
+
+#include "list.h"
+#include "thread.h"
+
+class Scheduler {
+  public:
+    Scheduler() { readyList = new List; } 
+
+    void ReadyToRun(Thread* thread);	 // Put thread on ready list
+    
+    		// Dequeue thread from ready list, if any, and return thread.
+    Thread* FindNextToRun();
+    
+    void Run(Thread* nextThread);	// Cause nextThread to start running
+
+    void Print();			// print contents of ready list
+    
+  private:
+    List *readyList;  		// queue of threads that are available to run
+};
+
+#endif
+SHAR_EOF
+if test -f 'switch.h'
+then
+	echo shar: over-writing existing file "'switch.h'"
+fi
+cat << \SHAR_EOF > 'switch.h'
+/* switch.h:  Machine dependent routines for kernel context switching.
+ *
+ * This file supports the pmax mips architecture.
+ */
+/*
+ Copyright (c) 1992 The Regents of the University of California.
+ All rights reserved.  See copyright.h for copyright notice and limitation 
+ of liability and disclaimer of warranty provisions.
+ */
+
+#include "copyright.h"
+
+#ifndef SWITCH_H
+#define SWITCH_H
+
+/* These are the offsets from the beginning of the Thread object, in bytes,
+   used in switch.s */
+#define SP 0
+#define S0 4
+#define S1 8
+#define S2 12
+#define S3 16
+#define S4 20
+#define S5 24
+#define S6 28
+#define S7 32
+#define FP 36
+#define PC 40
+
+#define InitialPC	s0
+#define InitialArg	s1
+#define WhenDonePC	s2
+#define StartupPC	s3
+
+/* These definitions are used in Thread::AllocateStack(). */
+#define PCState		(PC/4-1)
+#define FPState		(FP/4-1)
+#define InitialPCState	(S0/4-1)
+#define InitialArgState	(S1/4-1)
+#define WhenDonePCState	(S2/4-1)
+#define StartupPCState	(S3/4-1)
+
+/* If you have problems with stack overflow, make this larger, but
+ * be sure you really need the extra space.
+ */
+#define StackSize	(4 * 1024)	/* in words */
+
+#endif
+SHAR_EOF
+if test -f 'synch.h'
+then
+	echo shar: over-writing existing file "'synch.h'"
+fi
+cat << \SHAR_EOF > 'synch.h'
+// synch.h -- synchronization primitives.  
+//
+// These objects take names as arguments when they are created; this
+// is purely for debugging.
+//
+// Copyright (c) 1992 The Regents of the University of California.
+// All rights reserved.  See copyright.h for copyright notice and limitation 
+// of liability and disclaimer of warranty provisions.
+
+#include "copyright.h"
+
+#ifndef SYNCH_H
+#define SYNCH_H
+
+#include "thread.h"
+#include "list.h"
+
+class Semaphore {
+  public:
+    Semaphore(char* semaphoreName, int val); 	// Constructor
+    
+    char* getName() { return name;}
+    
+    void P();	 // wait until semaphore value is > 0, then decrement
+
+    void V();	 // increment semaphore value, waking up anyone who is waiting
+    
+  private:
+    char* name;        // useful for debugging
+    int value;         // value must be >= 0
+    List *queue;       // threads who are waiting until value > 0
+};
+
+class Lock {
+  public:
+    Lock(char* lockName);  // Constructor
+
+    char* getName() { return name; }
+
+    void Acquire(); // wait until lock is free, then grab lock for ourselves
+
+    void Release(); // relinquish lock, waking up any one who is waiting
+
+  private:
+    char* name;
+    // plus some other stuff you'll need to define
+};
+
+class Condition {
+  public:
+    Condition(char* conditionName);
+  
+    char* getName() { return (name); }
+    
+    // Go to sleep.  Relinquish the processor, releasing conditionLock.
+    // Re-acquire the lock on wakeup.
+    void Wait(Lock *conditionLock);
+
+    // Wake up a thread (if any) who is waiting on the condition. 
+    // conditionLock must be held when called.
+    void Signal(Lock *conditionLock);
+
+    // Wake up all threads waiting on the condition. 
+    // conditionLock must be held when called.
+    void Broadcast(Lock *conditionLock);
+
+  private:
+    char* name;
+    // plus some other stuff you'll need to define
+};
+#endif
+SHAR_EOF
+if test -f 'synchlist.h'
+then
+	echo shar: over-writing existing file "'synchlist.h'"
+fi
+cat << \SHAR_EOF > 'synchlist.h'
+// synchlist.h -- synchronize accesses to a list
+//
+// Copyright (c) 1992 The Regents of the University of California.
+// All rights reserved.  See copyright.h for copyright notice and limitation 
+// of liability and disclaimer of warranty provisions.
+
+#include "copyright.h"
+
+#ifndef SYNCHLIST_H
+#define SYNCHLIST_H
+
+#include "utility.h"
+#include "list.h"
+#include "synch.h"
+
+// these functions are the same as for List, except for synchronization
+class SynchList {
+  public:
+    SynchList();
+    ~SynchList();
+
+    void Append(void *item);	// and wake up any one who is waiting
+    void *Remove();		// and sleep if list is empty
+    void Mapcar(VoidFunctionPtr func);
+
+  private:
+    List *list;
+    Lock *lock;
+    Condition *listEmpty;
+};
+
+#endif
+SHAR_EOF
+if test -f 'system.h'
+then
+	echo shar: over-writing existing file "'system.h'"
+fi
+cat << \SHAR_EOF > 'system.h'
+// system.h -- routines for starting up and halting Nachos
+//     plus, all the global variables in Nachos 
+//
+// Copyright (c) 1992 The Regents of the University of California.
+// All rights reserved.  See copyright.h for copyright notice and limitation 
+// of liability and disclaimer of warranty provisions.
+
+#include "copyright.h"
+
+#ifndef SYSTEM_H
+#define SYSTEM_H
+
+  // Initialize is called before doing anything.
+extern void Initialize(int argc, char **argv);
+  // Cleanup is called by Interrupt::Halt to shut everything down
+extern void Cleanup();	 
+
+class Thread;
+class Scheduler; 
+class Interrupt;
+class Statistics;
+class Timer;
+
+extern Thread* currentThread;	// the thread we are running now
+extern Thread* threadToBeDestroyed;  // the thread that just finished
+extern Scheduler* scheduler;	// the ready list
+extern Interrupt *interrupt;	// interrupt status
+extern Statistics* stats;	// performance metrics
+extern Timer *timer;
+
+#ifdef HW2
+class SynchDisk;
+class FileSystem;
+
+extern SynchDisk   *synchDisk;
+extern FileSystem  *fileSystem;
+#endif
+
+#ifdef HW3
+class Machine;
+
+extern Machine* machine;	// user program memory and registers
+#endif
+
+#ifdef HW5
+class PostOffice;
+
+extern PostOffice* postOffice;
+#endif
+
+#endif
+SHAR_EOF
+if test -f 'thread.h'
+then
+	echo shar: over-writing existing file "'thread.h'"
+fi
+cat << \SHAR_EOF > 'thread.h'
+// thread.h -- Interface for users of threads.
+// 
+//  To fork a thread, we must first allocate a data structure for it
+//  "t = new Thread" and then do the fork "t->fork(f, arg)"
+//
+// Copyright (c) 1992 The Regents of the University of California.
+// All rights reserved.  See copyright.h for copyright notice and limitation 
+// of liability and disclaimer of warranty provisions.
+
+#include "copyright.h"
+
+#ifndef THREAD_H
+#define THREAD_H
+
+#include "utility.h"
+#ifdef HW3		// ignore until homework 3
+#include "addrspace.h"
+#endif
+
+enum ThreadStatus { JUST_CREATED, RUNNING, READY, BLOCKED };
+
+#define MachineStateSize 10   // "callee save" registers --  8 GP, FP, and RA
+
+//  Every thread has:
+//     an execution stack for activation records ("stackTop" and "stack")
+//     space to save registers while blocked 
+//     a "status" (running/ready/blocked)
+class Thread {
+  public:
+    Thread(char* threadName);	// name for convenience
+    ~Thread(); 
+
+    void Fork(VoidFunctionPtr func, int arg); 	// make thread run (*func)(arg)
+    void Yield();  // relinquish the processor if any other thread is runnable
+    void Sleep();  // put the thread to sleep and relinquish the processor
+    void Finish();  // the thread is done executing
+    
+    void CheckOverflow();   // make sure thread hasn't overflowed its stack
+    void setStatus(ThreadStatus st) { status = st; }
+    char* getName() { return (name); }
+    void Print() { printf("%s, ", name); }
+
+  private:
+    // These first two members MUST be in these positions for SWITCH.
+    int* stackTop;			 // the stack pointer
+    int machineState[MachineStateSize];  // all registers except for stackTop
+    
+    int* stack; 	 // bottom of the stack (NULL if the main thread)
+    ThreadStatus status;
+    char* name;
+
+    // allocate a stack for this thread -- used internally by Fork()
+    void StackAllocate(VoidFunctionPtr func, int arg);
+
+#ifdef HW3		// ignore until homework 3
+  public:
+    AddrSpace *space;
+#endif
+};
+
+extern void ThreadPrint(int arg);	 // dummy to call Thread::Print
+
+// Magical machine-dependent routines, defined in switch.s
+
+extern "C" {
+// First frame on thread execution stack; 
+//   enable interrupts, call "func", and when that returns, call ThreadFinish()
+void ThreadRoot();
+
+// Stop running oldThread and start running newThread
+void SWITCH(Thread *oldThread, Thread *newThread);
+}
+
+#endif
+SHAR_EOF
+if test -f 'utility.h'
+then
+	echo shar: over-writing existing file "'utility.h'"
+fi
+cat << \SHAR_EOF > 'utility.h'
+// utility.h -- some useful stuff
+//
+// Copyright (c) 1992 The Regents of the University of California.
+// All rights reserved.  See copyright.h for copyright notice and limitation 
+// of liability and disclaimer of warranty provisions.
+
+#include "copyright.h"
+
+#ifndef UTILITY_H
+#define UTILITY_H
+
+// Wrap everything that is actually C with an extern "C" block.
+// This prevents the internal forms of the names from being
+// changed by the C++ compiler.
+extern "C" {
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+
+void abort();
+}
+
+#define min(a,b)  (((a) < (b)) ? (a) : (b))
+#define max(a,b)  (((a) > (b)) ? (a) : (b))
+
+// Boolean values.  This is the same definition as in the g++ library.
+typedef enum { FALSE = 0, TRUE = 1 } bool;
+
+// This declares the type "VoidFunctionPtr" to be a "pointer to a
+// function taking an integer argument and returning nothing".  With
+// such a function pointer (say it is "func"), we can call it like this:
+//	(*func) (17);
+typedef void (*VoidFunctionPtr)(int arg); 
+
+// Enable selected debug messages.
+//   '+' -- turn on all debug messages
+//   't' -- thread system
+//   's' -- semaphores, locks, and conditions
+//   'i' -- interrupt emulation
+//   'm' -- machine emulation
+//   'd' -- disk emulation (in homework 2)
+//   'f' -- file system (in homework 2)
+//   'a' -- address spaces (in homework 3)
+//   'n' -- network emulation (in homework 5)
+extern void DebugInit (char* flags);
+
+// Is this debug flag enabled?
+extern bool DebugIsEnabled(char flag);
+
+// Print debug message if flag is enabled
+extern void DEBUG (char flag, char* format, ...);
+
+// If the condition is false, print a message and dump core. 
+//
+// Useful for documenting assumptions in the code.
+#define ASSERT(condition)						      \
+    if (!(condition)) {							      \
+	fprintf(stderr, "Assertion failed: line %d, file \"%s\"\n",	      \
+		__LINE__, __FILE__);					      \
+	abort();							      \
+    }
+
+// From here down are some routines used to simplify the emulation software
+#ifdef HW2
+// open/read/write/lseek/close, and check for error
+extern int Open(char *name, int flags, int mode);
+extern void Read(int fd, char *buffer, int nBytes);
+extern void Write(int fd, char *buffer, int nBytes);
+extern void Lseek(int fd, int offset, int whence);
+extern void Close(int fd);
+#endif
+
+#ifdef HW3
+// Check file to see if there are any characters to be read without waiting
+extern bool PollFile(int fd);
+#endif
+
+#endif
+SHAR_EOF
+if test -f 'list.cc'
+then
+	echo shar: over-writing existing file "'list.cc'"
+fi
+cat << \SHAR_EOF > 'list.cc'
+// list.cc -- Routines to manage a list of "things".
+// 
+//  NOTE: Mutual exclusion must be provided by the caller (cf. synchlist.cc).
+//
+// Copyright (c) 1992 The Regents of the University of California.
+// All rights reserved.  See copyright.h for copyright notice and limitation 
+// of liability and disclaimer of warranty provisions.
+
+#include "copyright.h"
+
+#include "list.h"
+
+// Initialize the list to empty
+List::List()
+{ 
+    first = last = NULL; 
+}
+
+List::~List()
+{ 
+    while (Remove() != NULL);	 // delete all the elements on the list
+}
+
+// Append something to the list
+void
+List::Append(void *item)
+{
+    ListElement *element = new ListElement;
+
+    element->item = item;
+    element->next = NULL;
+    if (first == NULL) {	// list is empty
+	first = element;
+	last = element;
+    } else {			// else put it after last
+	last->next = element;
+	last = element;
+    }
+}
+
+// Prepend something to the list
+void
+List::Prepend(void *item)
+{
+    ListElement *element = new ListElement;
+
+    element->item = item;
+    element->next = NULL;
+    if (first == NULL) {	// list is empty
+	first = element;
+	last = element;
+    } else {			// else put it before first
+	element->next = first;
+	first = element;
+    }
+}
+
+// insert something at the appropriate place
+void
+List::SortedInsert(void *item, int sortKey)
+{
+    ListElement *element = new ListElement;
+    ListElement *ptr;
+
+    element->item = item;
+    element->key = sortKey;
+    element->next = NULL;
+    if (first == NULL) {	// list is empty 
+        first = element;
+        last = element;
+    } else if (sortKey < first->key) {	// item goes on front of list
+	element->next = first;
+	first = element;
+    } else {		// look for first elt in list bigger than item
+        for (ptr = first; ptr->next != NULL; ptr = ptr->next) {
+            if (sortKey < ptr->next->key) {
+		element->next = ptr->next;
+	        ptr->next = element;
+		return;
+	    }
+	}
+	last->next = element;		// item goes at end of list
+	last = element;
+    }
+}
+
+// Remove from the front of the list, if anything is on the list.
+void *
+List::SortedRemove(int *keyPtr)
+{
+    ListElement *element = first;
+    void *thing;
+
+    if (first == NULL) 
+	return NULL;
+
+    thing = first->item;
+    if (first == last) {	// list had one item, now has none 
+        first = NULL;
+	last = NULL;
+    } else {
+        first = element->next;
+    }
+    if (keyPtr != NULL)
+        *keyPtr = element->key;
+    delete element;
+    return thing;
+}
+
+// Same as SortedRemove, but ignore the key
+void *
+List::Remove()
+{
+    return SortedRemove(NULL);
+}
+
+// Apply func to every element in the list.  
+void
+List::Mapcar(VoidFunctionPtr func)
+{
+    for (ListElement *ptr = first; ptr != NULL; ptr = ptr->next) {
+       DEBUG('l', "In mapcar, about to invoke %x(%x)\n", func, ptr->item);
+       (*func)((int)ptr->item);
+    }
+}
+SHAR_EOF
+if test -f 'main.cc'
+then
+	echo shar: over-writing existing file "'main.cc'"
+fi
+cat << \SHAR_EOF > 'main.cc'
+// main.cc -- entry point into the operating system
+//
+// Most of this file is not needed until later assignments.
+//
+// Copyright (c) 1992 The Regents of the University of California.
+// All rights reserved.  See copyright.h for copyright notice and limitation 
+// of liability and disclaimer of warranty provisions.
+
+#define MAIN
+#include "copyright.h"
+#undef MAIN
+
+#include "utility.h"
+#include "system.h"
+#include "thread.h"
+#ifdef HW2
+#include "filesys.h"
+#endif
+
+extern void ThreadTest(void), Copy(char *unixFile, char *nachosFile);
+extern void Print(char *file), PerformanceTest(void);
+extern void StartProcess(char *file), ConsoleTest(char *in, char *out);
+extern void MailTest(int networkID);
+
+extern "C" {
+// int atoi(char *str);
+}
+
+// Usage: nachos -d <debugflags> -rs <random seed #>
+//		-f -cp <unix file> <nachos file>
+//		-p <nachos file> -r <nachos file>
+//		-l -D -t
+//		-s -x <nachos file> -c <consoleIn> <consoleOut>
+//              -n <network reliability> -m <machine id>
+//              -o <other machine id>
+//
+// HW1
+//    -d causes certain debugging messages to be printed (cf. utility.h)
+//    -rs causes Yield to occur at random (but repeatable) spots
+//
+//  HW2
+//    -f causes the physical disk to be formatted
+//    -cp copies a file from UNIX to Nachos
+//    -p prints a Nachos file to stdout
+//    -r removes a Nachos file from the file system
+//    -l lists the contents of the Nachos directory
+//    -D prints the contents of the entire file system 
+//    -t tests the performance of the Nachos file system
+//
+//  HW3 and HW4
+//    -s causes user programs to be executed in single-step mode
+//    -x runs a user program
+//    -c tests the console
+//
+//  HW5
+//    -n sets the network reliability
+//    -m sets this machine's host id (needed for the network)
+//    -o runs a simple test of the Nachos network software
+//
+//  NOTE -- flags are ignored until the relevant assignment
+int
+main(int argc, char **argv)
+{
+    DEBUG('t', "Entering main");
+    (void) Initialize(argc, argv);
+    
+#ifndef HW2
+    ThreadTest();
+#else
+    argc--; argv++;
+    while (argc > 0) {
+	if (!strcmp(*argv, "-cp")) { 		// copy from UNIX to Nachos
+	    ASSERT(argc > 2);
+	    Copy(*(argv + 1), *(argv + 2));
+	    argc -= 2; argv += 2;
+	} else if (!strcmp(*argv, "-p")) {	// print a Nachos file
+	    ASSERT(argc > 1);
+	    Print(*++argv);
+	    argc--;
+	} else if (!strcmp(*argv, "-r")) {	// remove Nachos file
+	    ASSERT(argc > 1);
+	    fileSystem->Remove(*++argv);
+	    argc--;
+	} else if (!strcmp(*argv, "-l")) {	// list Nachos directory
+            fileSystem->List();
+	} else if (!strcmp(*argv, "-D")) {	// print entire filesystem
+            fileSystem->Print();
+	} else if (!strcmp(*argv, "-t")) {	// performance test
+            PerformanceTest();
+	}
+#ifdef HW3
+        else if (!strcmp(*argv, "-x")) {        // run a user program
+	    ASSERT(argc > 1);
+            StartProcess(*++argv);
+            argc--;
+        } else if (!strcmp(*argv, "-c")) {      // test the console
+	    ASSERT(argc > 2);
+            ConsoleTest(*(argv + 1), *(argv + 2));
+            argc -= 2; argv += 2;
+	}
+#ifdef HW5
+        else if (!strcmp(*argv, "-o")) {
+	    ASSERT(argc > 1);
+            sleep(2); 	// give the user time to start up another nachos
+            MailTest(atoi(*++argv));
+            argc--;
+        }
+#endif
+#endif
+	argc--; argv++;
+    }
+#endif
+    
+    currentThread->Finish();
+    
+    return(0);		 // Not reached...
+}
+SHAR_EOF
+if test -f 'scheduler.cc'
+then
+	echo shar: over-writing existing file "'scheduler.cc'"
+fi
+cat << \SHAR_EOF > 'scheduler.cc'
+// scheduler.cc -- thread scheduling routines.
+//
+// Assumes interrupts are already disabled, to provide mutual exclusion.
+// NOTE: We can't use Locks to provide mutual exclusion, since
+// if we needed to wait for a Lock, we'd end up calling FindNextToRun(),
+// and that would put us in an infinite loop.
+//
+// Very simple implementation -- no priorities, straight FIFO.
+//
+// Copyright (c) 1992 The Regents of the University of California.
+// All rights reserved.  See copyright.h for copyright notice and limitation 
+// of liability and disclaimer of warranty provisions.
+
+#include "copyright.h"
+
+#include "scheduler.h"
+#include "thread.h"
+#include "system.h"
+#include "list.h"
+
+// Put thread on ready list
+void
+Scheduler::ReadyToRun (Thread *thread)
+{
+    DEBUG('t', "Putting thread %s on ready list.\n", thread->getName());
+
+    thread->setStatus(READY);
+    readyList->Append((void *)thread);
+}
+
+// Dequeue thread from ready list, and return it.  If none, return NULL.
+Thread *
+Scheduler::FindNextToRun ()
+{
+    return (Thread *)readyList->Remove();
+}
+
+// Cause nextThread to start running.
+void
+Scheduler::Run (Thread *nextThread)
+{
+    Thread *oldThread = currentThread;
+    
+#ifdef HW3	// ignore until running user programs in homework 3
+    if (currentThread->space != NULL)
+        currentThread->space->SaveState();
+#endif
+    
+    oldThread->CheckOverflow();
+
+    currentThread = nextThread;
+    currentThread->setStatus(RUNNING);
+    
+    DEBUG('t', "Switching from thread \"%s\" to thread \"%s\"\n",
+	  oldThread->getName(), nextThread->getName());
+    
+    /* This is the asm routine defined in switch.s.  You may have to think
+     * a bit to figure out what happens after this, both from the point
+     * of view of the thread and from the perspective of the "outside world".
+     */
+    SWITCH(oldThread, nextThread);
+    
+    DEBUG('t', "Now in thread \"%s\"\n", currentThread->getName());
+
+    if (threadToBeDestroyed != NULL) {
+        delete threadToBeDestroyed;
+	threadToBeDestroyed = NULL;
+    }
+    
+#ifdef HW3
+    if (currentThread->space != NULL)
+        currentThread->space->RestoreState();
+#endif
+}
+
+void 
+Scheduler::Print()
+{
+    printf("Ready list contents:\n");
+    readyList->Mapcar((VoidFunctionPtr) ThreadPrint);
+}
+SHAR_EOF
+if test -f 'synch.cc'
+then
+	echo shar: over-writing existing file "'synch.cc'"
+fi
+cat << \SHAR_EOF > 'synch.cc'
+// synch.cc -- Thread synchronization routines -- semaphores, locks 
+//   and condition variables.
+//
+// Semaphores disable/enable interrupts for mutual exclusive 
+//   access to the queue of threads waiting for the semaphore.
+//
+// Copyright (c) 1992 The Regents of the University of California.
+// All rights reserved.  See copyright.h for copyright notice and limitation 
+// of liability and disclaimer of warranty provisions.
+
+#include "copyright.h"
+
+#include "synch.h"
+#include "utility.h"
+#include "thread.h"
+#include "scheduler.h"
+#include "interrupt.h"
+#include "system.h"
+
+// Semaphores ---------------------------------------------------------- 
+
+// Initialize a new Semaphore.
+Semaphore::Semaphore(char* semaphoreName, int val)
+{
+    name = semaphoreName;
+    value = val;
+    queue = new List;
+}
+
+// Block until semaphore value > 0; then decrement it and return.
+void
+Semaphore::P ()
+{
+    IntStatus oldLevel = interrupt->SetLevel(IntOff);
+    
+    // Between when a thread is woken and when it starts to run,
+    // another thread may have P()'ed that semaphore.  Thus, the thread 
+    // checks each time to see if the semaphore is still available.
+    while (value == 0) {
+	queue->Append((void *)currentThread);
+	currentThread->Sleep();
+    }
+    value--;
+    (void) interrupt->SetLevel(oldLevel);
+}
+
+// Increment semaphore value; wake up a waiting thread, if any.
+void
+Semaphore::V ()
+{
+    Thread *thread;
+    IntStatus oldLevel = interrupt->SetLevel(IntOff);
+
+    value++;
+    thread = (Thread *)queue->Remove();
+    if (thread != NULL)
+	scheduler->ReadyToRun(thread);
+    (void) interrupt->SetLevel(oldLevel);
+}
+
+// Dummy functions -- so we can compile our later assignments 
+// Note -- without a correct implementation of Condition::Wait(), 
+// the test case in HW5 won't work!
+Lock::Lock(char* lockName) {}
+void Lock::Acquire() {}
+void Lock::Release() {}
+Condition::Condition(char* conditionName) { }
+void Condition::Wait(Lock* conditionLock) { }
+void Condition::Signal(Lock* conditionLock) { }
+void Condition::Broadcast(Lock* conditionLock) { }
+SHAR_EOF
+if test -f 'synchlist.cc'
+then
+	echo shar: over-writing existing file "'synchlist.cc'"
+fi
+cat << \SHAR_EOF > 'synchlist.cc'
+// synchlist.cc -- make synchronized accesses to a list
+//
+// Implemented in "monitor"-style -- surround each procedure with a
+// lock acquire and release pair, using condition signal and wait for
+// synchronization.
+//
+// Copyright (c) 1992 The Regents of the University of California.
+// All rights reserved.  See copyright.h for copyright notice and limitation 
+// of liability and disclaimer of warranty provisions.
+
+#include "copyright.h"
+
+#include "synchlist.h"
+
+SynchList::SynchList()
+{
+    list = new List(); 
+    lock = new Lock("list lock"); 
+    listEmpty = new Condition("list empty cond");
+}
+
+SynchList::~SynchList()
+{ 
+    delete list; 
+    delete lock;
+    delete listEmpty;
+}
+
+void
+SynchList::Append(void *item)
+{
+    lock->Acquire();
+    list->Append(item);
+    listEmpty->Signal(lock);
+    lock->Release();
+}
+
+// wait if nothing is on the list
+void *
+SynchList::Remove()
+{
+    void *item;
+
+    lock->Acquire();
+    while ((item = list->Remove()) == NULL)
+	listEmpty->Wait(lock);
+    lock->Release();
+    ASSERT(item != NULL);
+    return item;
+}
+
+void
+SynchList::Mapcar(VoidFunctionPtr func)
+{ 
+    lock->Acquire(); 
+    list->Mapcar(func);
+    lock->Release(); 
+}
+SHAR_EOF
+if test -f 'system.cc'
+then
+	echo shar: over-writing existing file "'system.cc'"
+fi
+cat << \SHAR_EOF > 'system.cc'
+// system.cc -- Nachos initialize and stop routines
+//
+// Copyright (c) 1992 The Regents of the University of California.
+// All rights reserved.  See copyright.h for copyright notice and limitation 
+// of liability and disclaimer of warranty provisions.
+
+#include "copyright.h"
+
+#include <signal.h>
+#include "system.h"
+#include "thread.h"
+#include "scheduler.h"
+#include "interrupt.h"
+#include "stats.h"
+#include "timer.h"
+
+extern "C" {
+void srandom(int seed);
+// int atoi(char *str);
+void exit();
+}
+
+Thread *currentThread;	// the thread we are running now
+Thread *threadToBeDestroyed;  // the thread that just finished
+Scheduler *scheduler;	// the ready list
+Interrupt *interrupt;	// interrupt status
+Statistics *stats;	// performance metrics
+Timer *timer;
+
+#ifdef HW2
+#include "synchdisk.h"
+#include "filesys.h"
+
+SynchDisk   *synchDisk;
+FileSystem  *fileSystem;
+#endif
+
+#ifdef HW3
+#include "machine.h"
+
+Machine *machine;	// user program memory and registers
+#endif
+
+#ifdef HW5
+#include "post.h"
+
+PostOffice *postOffice;
+#endif
+
+// Very primitive implementation of time-slicing 
+static void
+TimeOut(int dummy)
+{
+    if (interrupt->getStatus() != IdleMode)
+	interrupt->YieldOnReturn();
+}
+
+// Parse the command line arguments, and initialize all global data structures
+void
+Initialize(int argc, char **argv)
+{
+    char* debugArgs = "";
+    bool randomYield = FALSE;
+    bool format = FALSE;	// hw2 -- format disk
+    bool debugUserProg = FALSE;	// hw3 -- single step user program
+    double rely = 1;		// hw5 -- network reliability
+    int netname = 0;		// hw5 -- UNIX socket name
+    
+    argc--; argv++;
+    while (argc > 0) {
+	if (!strcmp(*argv, "-d")) {
+	    ASSERT(argc > 1);
+	    debugArgs = *++argv;
+	    argc--;
+	} else if (!strcmp(*argv, "-rs")) {
+	    ASSERT(argc > 1);
+	    srandom(atoi(*++argv));
+	    randomYield = TRUE;
+	    argc--;
+#ifdef HW2
+	} else if (!strcmp(*argv, "-f")) {
+	    format = TRUE;
+#endif
+#ifdef HW3
+	} else if (!strcmp(*argv, "-s")) {
+	    debugUserProg = TRUE;
+#endif
+#ifdef HW5
+	} else if (!strcmp(*argv, "-l")) {
+	    ASSERT(argc > 1);
+	    rely = atof(*++argv);
+	    argc--;
+	} else if (!strcmp(*argv, "-m")) {
+	    ASSERT(argc > 1);
+	    netname = atoi(*++argv);
+	    argc--;
+#endif
+	}
+	argc--; argv++;
+    }
+
+    DebugInit(debugArgs);
+    stats = new Statistics();
+    interrupt = new Interrupt();
+    scheduler = new Scheduler();
+    if (randomYield)	// only start the timer if we need it
+	timer = new Timer(TimeOut, 0, randomYield);
+
+    threadToBeDestroyed = NULL;
+    // Bootstrap by creating a thread to represent the thread we're
+    // running in as the UNIX process.
+    currentThread = new Thread("main");
+    currentThread->setStatus(RUNNING);
+
+    interrupt->Enable();
+    signal(SIGINT, Cleanup);
+    
+#ifdef HW3
+    machine = new Machine(debugUserProg);
+#endif
+    
+#ifdef HW2
+    synchDisk = new SynchDisk("DISK");
+    fileSystem = new FileSystem(format);
+#endif
+
+#if HW5
+    postOffice = new PostOffice(netname, rely, 10);
+#endif
+}
+
+// Nachos is halting; stop everything
+void
+Cleanup()
+{
+    printf("\nCleaning up...\n");
+#ifdef HW5
+    delete postOffice;
+#endif
+    
+#ifdef HW3
+    delete machine;
+#endif
+
+#ifdef HW2
+    delete fileSystem;
+    delete synchDisk;
+#endif
+    
+    delete timer;
+    delete scheduler;
+    delete interrupt;
+    
+    exit(0);
+}
+SHAR_EOF
+if test -f 'test1.cc'
+then
+	echo shar: over-writing existing file "'test1.cc'"
+fi
+cat << \SHAR_EOF > 'test1.cc'
+// test1.cc -- simple test case for homework 1
+//
+// Copyright (c) 1992 The Regents of the University of California.
+// All rights reserved.  See copyright.h for copyright notice and limitation 
+// of liability and disclaimer of warranty provisions.
+
+#include "copyright.h"
+
+#include "utility.h"
+#include "thread.h"
+#include "system.h"
+
+// A simple test case for our thread system
+void
+SimpleThread(int which)
+{
+    int num;
+    
+    for (num = 0; num < 5; num++) {
+	printf("*** thread %d looped %d times\n", which, num);
+        currentThread->Yield();
+    }
+}
+
+void
+ThreadTest()
+{
+    DEBUG('t', "Entering SimpleTest");
+
+    Thread *t = new Thread("forked thread");
+
+    t->Fork(SimpleThread, 1);
+    SimpleThread(0);
+}
+
+SHAR_EOF
+if test -f 'thread.cc'
+then
+	echo shar: over-writing existing file "'thread.cc'"
+fi
+cat << \SHAR_EOF > 'thread.cc'
+// thread.cc -- thread management routines to fork/finish/switch threads
+//
+// Copyright (c) 1992 The Regents of the University of California.
+// All rights reserved.  See copyright.h for copyright notice and limitation 
+// of liability and disclaimer of warranty provisions.
+
+#include "copyright.h"
+
+#include "utility.h"
+#include "thread.h"
+#include "scheduler.h"
+#include "interrupt.h"
+#include "switch.h"
+#include "synch.h"
+#include "system.h"
+
+#define STACK_FENCEPOST 0xdeadbeef	 // for detecting stack overflows
+
+// the constructor
+Thread::Thread(char* threadName)
+{
+    name = threadName;
+    stackTop = NULL;
+    stack = NULL;
+    status = JUST_CREATED;
+#ifdef HW3
+    space = NULL;
+#endif
+}
+
+// the destructor
+Thread::~Thread()
+{
+    DEBUG('t', "Deleting thread \"%s\"\n", name);
+    if (stack != NULL)
+	delete stack;
+}
+
+// Invoke (*func)(arg), allowing caller and callee to execute concurrently.
+//
+// Initialize the thread stack to run the procedure, and then put
+// the thread on the ready queue.
+void 
+Thread::Fork(VoidFunctionPtr func, int arg)
+{
+    DEBUG('t', "Forking thread \"%s\" with func = 0x%x, arg = %d\n",
+	  name, (int) func, arg);
+    
+    StackAllocate(func, arg);
+
+    IntStatus oldLevel = interrupt->SetLevel(IntOff);
+    scheduler->ReadyToRun(this);	/* assumes interrupts off */
+    (void) interrupt->SetLevel(oldLevel);
+}    
+
+// Check stack for overflow.  Because the compiler won't do it for us.
+//
+// NOTE! -- your program may crash if the stack overflows, before this
+// catches the problem (since this is only called when the thread sleeps).
+// If you get bizarre results (such as seg faults where there is no code)
+// then you *may* need to increase the stack size.  You can avoid stack
+// overflows by not putting large data structures on the stack.
+// This is a bad idea: void foo() { int bigArray[10000]; ... }
+void
+Thread::CheckOverflow()
+{
+    if (stack != NULL)
+	ASSERT(*stack == STACK_FENCEPOST);
+}
+
+// Called by a thread when it's done executing. 
+//
+// NOTE: we don't de-allocate the thread data structure or the execution
+//  stack, because we're running in the thread and on the stack right now!
+//  Instead, we set threadToBeDestroyed, so that Scheduler::Run() will
+//  call the destructor.
+void
+Thread::Finish ()
+{
+    (void) interrupt->SetLevel(IntOff);
+    ASSERT(this == currentThread);
+    
+    DEBUG('t', "Finishing thread \"%s\"\n", getName());
+    
+    threadToBeDestroyed = currentThread;
+    Sleep(); 	
+    // not reached
+}
+
+// Relinquish the processor if any other thread is ready to run.
+// Similar to Thread::Sleep(), but a little different.
+void
+Thread::Yield ()
+{
+    Thread *nextThread;
+    IntStatus oldLevel = interrupt->SetLevel(IntOff);
+    
+    ASSERT(this == currentThread);
+    
+    DEBUG('t', "Yielding thread \"%s\"\n", getName());
+    
+    nextThread = scheduler->FindNextToRun();
+    if (nextThread != NULL) {
+	scheduler->ReadyToRun(this);
+	scheduler->Run(nextThread);
+    }
+    (void) interrupt->SetLevel(oldLevel);
+}
+
+// Put the current thread to sleep, relinquishing processor to a ready
+// thread.  Idle the machine if there are no ready threads.
+//
+// Assumes interrupts are already disabled.
+void
+Thread::Sleep ()
+{
+    Thread *nextThread;
+    
+    ASSERT(this == currentThread);
+    
+    DEBUG('t', "Sleeping thread \"%s\"\n", getName());
+
+    status = BLOCKED;
+    while ((nextThread = scheduler->FindNextToRun()) == NULL)
+	interrupt->Idle();	// no one to run, wait for an interrupt
+        
+    scheduler->Run(nextThread); // returns when we've been signalled
+}
+
+// We have to do this because pointers to member functions are strange.
+static void ThreadFinish()    { currentThread->Finish(); }
+static void InterruptEnable() { interrupt->Enable(); }
+void ThreadPrint(int arg){ Thread *t = (Thread *)arg; t->Print(); }
+
+// Allocate and return an execution stack, building an initial
+//   call frame that will enable interrupts, invoke "func" with arg 
+//   as its one parameter, and call Thread::Finish() when "func" returns.
+void
+Thread::StackAllocate (VoidFunctionPtr func, int arg)
+{
+    stack = new int[StackSize];
+    stackTop = stack + StackSize;
+    
+    *stack = STACK_FENCEPOST;
+    
+    machineState[PCState] = (int) ThreadRoot;
+    machineState[StartupPCState] = (int) InterruptEnable;
+    machineState[InitialPCState] = (int) func;
+    machineState[InitialArgState] = arg;
+    machineState[WhenDonePCState] = (int) ThreadFinish;
+}
+
+SHAR_EOF
+if test -f 'utility.cc'
+then
+	echo shar: over-writing existing file "'utility.cc'"
+fi
+cat << \SHAR_EOF > 'utility.cc'
+// utility.cc -- miscellaneous routines
+//
+// Copyright (c) 1992 The Regents of the University of California.
+// All rights reserved.  See copyright.h for copyright notice and limitation 
+// of liability and disclaimer of warranty provisions.
+
+#include "copyright.h"
+
+#include "utility.h"
+#include <stdarg.h>
+
+static char *enableFlags = NULL; // controls which DEBUG messages are printed 
+
+// Select which debug messages are to be printed
+void
+DebugInit (char *flags)
+{
+    enableFlags = flags;
+}
+
+bool
+DebugIsEnabled(char flag)
+{
+    return (enableFlags && (strchr(enableFlags, flag) ||
+			    strchr(enableFlags, '+')));
+}
+
+// Print debug message if flag is enabled, or if the + wildcard flag is given
+void 
+DEBUG (char flag, char *format, ...)
+{
+    if (DebugIsEnabled(flag)) {
+	va_list ap;
+	// You will get an unused variable message here -- ignore it.
+	va_start(ap, format);
+	vfprintf(stdout, format, ap);
+	va_end(ap);
+	fflush(stdout);
+    }
+}
+
+// From here down are some routines used to simplify the emulation software
+
+#ifdef HW2
+
+extern "C" {
+// int open(char *name, int flags, int mode);
+// int read(int filedes, char *buf, int numBytes);
+// int write(int filedes, char *buf, int numBytes);
+// int lseek(int filedes, int offset, int whence);
+// int close(int filedes);
+// int select(int numBits, void *readFds, void *writeFds, void *exceptFds, struct timeval *timeout);
+}
+
+// open file and check for error
+int
+Open(char *name, int flags, int mode)
+{
+    int fd = open(name, flags, mode);
+
+    ASSERT(fd >= 0); 
+    return fd;
+}
+
+// read from file and check for error
+void
+Read(int fd, char *buffer, int nBytes)
+{
+    int retVal = read(fd, buffer, nBytes);
+    ASSERT(retVal == nBytes);
+}
+
+// write file and check for error
+void
+Write(int fd, char *buffer, int nBytes)
+{
+    int retVal = write(fd, buffer, nBytes);
+    ASSERT(retVal == nBytes);
+}
+
+// lseek and check for error
+void 
+Lseek(int fd, int offset, int whence)
+{
+    int retVal = lseek(fd, offset, whence);
+    ASSERT(retVal >= 0);
+}
+
+// close file and check for error
+void 
+Close(int fd)
+{
+    int retVal = close(fd);
+    ASSERT(retVal >= 0); 
+}
+#endif
+
+#ifdef HW3
+extern "C" {
+#include <sys/types.h>
+#include <time.h>
+#include <sys/socket.h>
+#include <sys/file.h>
+}
+
+#include "interrupt.h"
+#include "system.h"
+
+// Check file/socket to see if we can read any characters without waiting
+bool
+PollFile(int fd)
+{
+    int rfd = (1 << fd), wfd = 0, xfd = 0, retVal;
+    struct timeval pollTime;
+
+    pollTime.tv_sec = 0;
+    if (interrupt->getStatus() == IdleMode)
+        pollTime.tv_usec = 20000;              // let other machine run
+    else
+        pollTime.tv_usec = 0;                 // simple poll
+    retVal = select(32, &rfd, &wfd, &xfd, &pollTime);
+    ASSERT((retVal == 0) || (retVal == 1));
+    if (retVal == 0)
+	return FALSE;                 // no character waiting to be read
+    return TRUE;
+}
+#endif
+
+SHAR_EOF
+if test -f 'switch.s'
+then
+	echo shar: over-writing existing file "'switch.s'"
+fi
+cat << \SHAR_EOF > 'switch.s'
+/* switch.s -- Machine dependent routines.  DO NOT TOUCH THESE! */
+/*
+ Copyright (c) 1992 The Regents of the University of California.
+ All rights reserved.  See copyright.h for copyright notice and limitation 
+ of liability and disclaimer of warranty provisions.
+ */
+
+#include "copyright.h"
+
+#define ASSEMBLER
+
+#include "asm.h"
+#include "switch.h"
+
+        .text   
+        .align  2
+
+LEAF(ThreadRoot)
+	jal	StartupPC
+	move	a0, InitialArg
+	jal	InitialPC			/* call procedure */
+	jal 	WhenDonePC			/* when we're done, clean up */
+
+	# NOT REACHED
+	END(ThreadRoot)
+
+	# a0 -- pointer to old Thread
+	# a1 -- pointer to new Thread
+LEAF(SWITCH)
+	sw	sp, SP(a0)		# save new stack pointer
+	sw	s0, S0(a0)
+	sw	s1, S1(a0)
+	sw	s2, S2(a0)
+	sw	s3, S3(a0)
+	sw	s4, S4(a0)
+	sw	s5, S5(a0)
+	sw	s6, S6(a0)
+	sw	s7, S7(a0)
+	sw	fp, FP(a0)		# save return address
+	sw	ra, PC(a0)		# save return address
+	
+	lw	sp, SP(a1)		# t0 contains new sp
+	lw	s0, S0(a1)
+	lw	s1, S1(a1)
+	lw	s2, S2(a1)
+	lw	s3, S3(a1)
+	lw	s4, S4(a1)
+	lw	s5, S5(a1)
+	lw	s6, S6(a1)
+	lw	s7, S7(a1)
+	lw	fp, FP(a1)
+	lw	ra, PC(a1)		# save return address	
+
+	j	ra
+	END(SWITCH)
+SHAR_EOF
+#	End of shell archive
+exit 0

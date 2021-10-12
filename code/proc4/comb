@@ -1,0 +1,29 @@
+#!/bin/nawk -f
+BEGIN {
+    field = 3;
+    for (i=1;i<ARGC;i++) {
+	if (i==1) {
+	    for (nlines=0;;nlines++) {
+		if ((getline < ARGV[i]) <= 0) break;
+		line[nlines] = $0;
+		label[nlines] = $1;
+		field = NF;
+		results[$1,i] = $field;
+	    }
+	} else {
+	    for (;;) {
+		if ((getline < ARGV[i]) <= 0) break;
+		field = NF;
+		results[$1,i] = $field;
+	    }
+	}
+	close ARGV[i];
+    }
+    for (j=0;j<nlines;j++) {
+	printf("%s:  ", line[j]);
+	    for (i=1;i<ARGC;i++) {
+		printf(",%s", results[label[j],i]);
+	    }
+	printf("\n");
+    }
+}

@@ -1,0 +1,113 @@
+\documentstyle{article}
+	
+\begin{document}
+
+\begin{center}
+{\large {\bf NACHOS}}
+
+% \vspace{.2in}
+% Tom Anderson\\
+% Wayne Christopher\\
+% Steven Procter
+% \vspace{.2in}
+% Computer Science 162\\
+% April 1, 1992
+
+\vspace{.5in}
+Assignment \#4: Virtual Memory \\
+Due date: Thursday, April 2, 5:00 p.m. \\
+\end{center}
+
+\vspace{.2in}
+
+The fourth phase of Nachos is to support virtual memory.
+We provide no new code for this assignment; your job is
+to modify your implementation for assignment 3 to provide
+the abstraction of an (almost) unlimited virtual memory size
+to each user program.  
+
+The illusion of unlimited memory is provided by the operating system
+by using main memory as a cache for the disk.
+Page tables were used in assignment 3 to simplify memory 
+allocation and to isolate failures from one address space from 
+affecting other programs.  For this assignment, page tables 
+serve a few more purposes: the valid bit in the page table entry tells
+the hardware which virtual pages are in memory and which are stored on disk,
+and the hardware sets the use bit in the page table entry whenever
+a page is referenced and the dirty bit whenever the page is modified.
+
+When a program references a page that is not resident in memory
+(detected by when the page table entry is not valid), the hardware
+generates a {\em page fault} exception, trapping to the kernel.
+The operating system kernel then reads the page in from disk,
+sets the page table entry to point to the new page, and then resumes 
+the execution of the user program.  Of course, the kernel must  
+first find space in memory for the incoming page, potentially
+writing some other page back to disk, if it has been modified.
+
+As with any caching system, performance depends on the policy
+used to decide which things are kept in memory and which
+are only stored on disk.  
+On a page fault, the kernel must decide which page to replace;
+ideally, it will throw out a page that will not referenced for 
+a long time, keeping pages in memory those that are soon to be 
+referenced.  Another consideration is that if the replaced page 
+has been modified, the page must be first saved to disk before the needed
+page can be brought in; many virtual memory systems (such as UNIX)
+avoid this extra overhead by writing modified pages to disk in 
+advance, so that any subsequent page faults can be completed more quickly.
+
+While there are many similarities between virtual memory and disk
+block caching, there are some important differences.
+Program references and file access patterns display both temporal 
+locality (references are likely to be to locations referenced
+in the recent past) and spatial locality (referenced locations are likely
+to be near other recently referenced locations).  However, while
+files are commonly read or written sequentially, program
+references are less easy to characterize, since instructions, data
+and the stack all have non-sequential access pattern.
+Thus, while read-ahead may be a good idea for optimizing a file cache,
+it would probably work less well for a virtual memory system.
+
+There are two parts to this assignment; each is weighted equally.
+If your file system is not working, you may use UNIX instead, but
+20\% of your grade will be based on whether you use
+your file system.  
+
+\begin{description}
+\item{1.}
+Implement virtual memory.  For this, you will need routines
+to move a page from disk to memory and from memory to disk.
+We recommend that you use a Nachos file as backing store.
+In order to find
+unreferenced pages to throw out on page faults, you will need
+to keep track of all of the pages in the system which are currently
+in use.  A simple way to do this is to keep a ``core map'', which
+is basically a reverse page table -- instead of translating virtual
+page numbers to physical pages, a core map translates physical page numbers
+to the virtual pages that are stored there.
+
+\item{2.}
+Optimize the performance of your virtual memory system
+in running the ``perftest'' user program.  This program 
+exercises the virtual memory system by multiplying
+two large matrices together.
+
+For this assignment, you may alter the test program to use
+a different implementation of matrix multiply, if that helps 
+performance, provided that it still correctly multiplies the matrices 
+together!
+
+One further twist: the combination of the disk cache and the main
+memory size must be no more than 48 pages (or disk sectors).  
+Currently, the main memory size is 32 pages; you may increase this
+if you do not have a disk cache.  As in assignment 2, space taken
+by meta-data such as open file descriptors, the bitmap, etc. must be 
+added to the disk cache size, if they are stored permanently in memory.
+Berkeley Sprite, by the way, keeps a common pool of memory that is shared by
+the virtual memory system and by the file system.  One way of doing
+this in Nachos is to use Machine::mainMemory as the space for the file cache.
+
+\end{description}
+
+\end{document}

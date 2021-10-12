@@ -1,0 +1,5 @@
+The official Berkeley distribution area for Tcl and Tk has moved
+to ftp.cs.berkeley.edu in the directory /ucb/tcl.  If you are
+interested in extensions such as XF, Tcl-DP, expect, TclX, or
+BLT, check the contributed archive on ftp.aud.alcatel.com in
+/tcl;  it also mirrors the Berkeley distributions.

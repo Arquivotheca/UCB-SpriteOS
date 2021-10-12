@@ -1,0 +1,148 @@
+#include <stdio.h>
+#include <signal.h>
+#include <sprite.h>
+#include <sysStats.h>
+#include <kernel/sospRecord.h>
+#include <time.h>
+#include <status.h>
+
+int handleSig();
+
+long startSec;
+long startUsec;
+
+Boolean whoa = FALSE;
+int debug = 0;
+
+int totalNumRecords = 0;
+int totalLostRecords = 0;
+
+main(argc,argv)
+int argc;
+char **argv;
+{
+    int status;
+    int numBufs = 10;
+    int bufSize = 200;
+    int *buf;
+    int args[2];
+    int i;
+    char *dataPtr;
+    Sys_TracelogHeaderKern *traceHdr;
+    Sys_TracelogRecord *tracePtr;
+    int flags;
+    int len;
+    int first = 1;
+    int nobuffer = 0;
+
+    signal(SIGINT, handleSig);
+
+    while (argc>1 && argv[1][0]=='-') {
+	if (argv[1][1]=='d') {
+	    debug++;
+	} else if (argv[1][1]=='n') {
+	    nobuffer++;
+	} else if (argv[1][1]=='i') {
+	    argc--;
+	    argv++;
+	    initHash(argv[1]);
+	} else if (argv[1][1]=='o') {
+	    Sys_Stats(SYS_TRACELOG_STATS, SYS_TRACELOG_OFF, 0);
+	    printf("Tracing disabled\n");
+	    exit();
+	} else {
+	    usage();
+	}
+	argc--;
+	argv++;
+    }
+    if (argc==3) {
+	sscanf(argv[1],"%d",&numBufs);
+	sscanf(argv[2],"%d",&bufSize);
+    } else if (argc != 1) {
+	usage();
+    }
+    printf("%d buffers of %d bytes\n", numBufs, bufSize);
+    args[0] = numBufs;
+    if (nobuffer) {
+	args[0] = -numBufs;
+    }
+    args[1] = bufSize;
+    buf = (int *)malloc(bufSize+256);
+    if (buf == NULL) {
+	perror("Malloc failed");
+	exit(1);
+    }
+    if (debug) {
+	fprintf(stderr,"buf = %x\n", buf);
+    }
+    Sys_Stats(SYS_TRACELOG_STATS, SYS_TRACELOG_RESET, args);
+    Sys_Stats(SYS_TRACELOG_STATS, SYS_TRACELOG_ON, args);
+    whoa = FALSE;
+    while (!whoa) {
+	buf[1] = 0;
+	status = Sys_Stats(SYS_TRACELOG_STATS, SYS_TRACELOG_DUMP, buf);
+	if (status == GEN_ABORTED_BY_SIGNAL) {
+	    whoa = TRUE;
+	} else if (status != SUCCESS) {
+	    fprintf(stderr,"*** status from Sys_Stats = %d\n", status);
+	}
+	traceHdr = (Sys_TracelogHeaderKern *)buf;
+	if (debug) {
+	    printf("Record is %d bytes (%d recs) long\n", traceHdr->numBytes,
+		traceHdr->numRecs);
+	}
+	if (first && buf[1] > 0) {
+	    printf("From %d (%s) %32.32s\n", traceHdr->machineID,
+		    traceHdr->machineType, traceHdr->kernel);
+	    startSec = traceHdr->bootTime[0];
+	    startUsec = traceHdr->bootTime[1];
+	    first = 0;
+	}
+	dataPtr = ((char *)buf) + sizeof(Sys_TracelogHeaderKern);
+	if (traceHdr->lostRecords>0) {
+	    printf("*** Lost %d records\n", traceHdr->lostRecords);
+	    totalLostRecords += traceHdr->lostRecords;
+	}
+	for (i=0;i<buf[1];i++) {
+	    totalNumRecords++;
+	    tracePtr = (Sys_TracelogRecord *)dataPtr;
+	    len = tracePtr->recordLen&TRACELOG_BYTEMASK;
+	    if (debug>1) {
+		int *ip = (int *)dataPtr;
+		printf("%d bytes at %d ", len, tracePtr->time[0]);
+		printf("%x %x %x %x\n", ip[0], ip[1], ip[2], ip[3]);
+	    }
+	    if (len>300) {
+		fprintf(stderr,"recordLen too big: %d\n", len);
+		exit(-1);
+	    }
+	    flags = tracePtr->recordLen>>16;
+	    dorec(tracePtr);
+	    dataPtr += len;
+	    if ((len&3)!= 0) {
+		fprintf(stderr,"Danger: Unaligned record: %d\n", len);
+	    }
+	}
+    }
+    Sys_Stats(SYS_TRACELOG_STATS, SYS_TRACELOG_OFF, 0);
+    printf("Handled %d records, lost %d records\n",
+	    totalNumRecords, totalLostRecords);
+    donerecs();
+
+}
+
+handleSig()
+{
+    whoa = TRUE;
+#if 0
+    Sys_Stats(SYS_TRACELOG_STATS, SYS_TRACELOG_OFF, 0);
+    exit();
+#endif
+}
+
+usage()
+{
+    fprintf(stderr,"Usage: sosptrace [-d] [-off] [-nobuffer] [numBufs bufSize]\n");
+    exit();
+}

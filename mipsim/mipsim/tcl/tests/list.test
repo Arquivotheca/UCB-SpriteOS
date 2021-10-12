@@ -1,0 +1,54 @@
+# This file contains contains a collection of tests for the "list"
+# command in Tcl.  If everything is OK then it finishes silently.
+# If a problem is detected then it generates a Tcl error with a
+# cryptic message.  To trace the error you'll have to read through
+# the commands in this file.
+#
+# $Header: /sprite/src/lib/tcl/tests/RCS/list.test,v 1.4 90/11/09 16:09:33 ouster Exp $ (Berkeley)
+
+proc check {a b num} {
+    if {[string compare $a $b] != 0} {
+	error [format {List error %s: wanted "%s", got "%s"} $num $b $a]}
+}
+
+# First, a bunch of individual tests
+
+check [list a b c] {a b c} 1.1
+check [list {a b} c] {{a b} c} 1.2
+check [list \{a b c] {\{a b c} 1.3
+check [list a{}} b{} c}] "a{}} b{} c}" 1.4
+check [list a\[ b\] ] "{a\[} b\\]" 1.5
+check [list c\  d\t ] "{c } {d\t}" 1.6
+check [list e\n f\$ ] "{e\n} {f\$}" 1.7
+check [list g\; h\\] {{g;} h\\} 1.8
+check [list a\[} b\]} ] "a\\\[} b\\\]}" 1.9
+check [list c\} d\t} ] "c} d\\t}" 1.10
+check [list e\n} f\$} ] "e\\n} f\\$}" 1.11
+check [list g\;} h\\}] "g\\;} {h\\}}" 1.12
+check [list a {{}} b] {a {{}} b} 1.13
+check [list a b xy\\] "a b xy\\\\" 1.14
+
+# For the next round of tests create a list and then pick it apart
+# with "index" to make sure that we get back exactly what went in.
+
+proc lcheck {a b c num} {
+    set d [list $a $b $c]
+    check [index $d 0] $a [format %s.1 $num]
+    check [index $d 1] $b [format %s.2 $num]
+    check [index $d 2] $c [format %s.3 $num]
+}
+lcheck a b c 2.1
+lcheck "a b" c\td e\nf 2.2
+lcheck {{a b}} {} {  } 2.3
+lcheck \$ \$ab ab\$ 2.4
+lcheck \; \;ab ab\; 2.5
+lcheck \[ \[ab ab\[ 2.6
+lcheck \\ \\ab ab\\ 2.7
+lcheck {"} {"ab} {ab"} 2.8
+lcheck {a b} { ab} {ab } 2.9
+lcheck a{ a{b \{ab 2.10
+lcheck a} a}b }ab 2.11
+lcheck a\\} {a \}b} {a \{c} 2.12
+
+check [catch list msg] 1 3.1
+check $msg {not enough args:  should be "list arg [arg ...]"} 3.2

@@ -1,0 +1,61 @@
+BYTE	dolookup.c	/^#define BYTE(n) ((n)>>2)$/
+CHECKLRU	dolookup.c	/^#define CHECKLRU(x) if ((x)<0 || (x)>=NUM_LRU_LIST/
+DIFF_FD	dolookup.c	/^#define DIFF_FD(x,y) (((x)[0]!=(y)[0])||((x)[1]!=(/
+GET_MACHINEINFO	dolookup.c	/^#define GET_MACHINEINFO(mi,n) ((mi[BYTE(n)]>>POS(n/
+Hash_CreateEntry	Hash_CreateEntry.c	/^Hash_CreateEntry(tablePtr, key, newPtr)$/
+Hash_DeleteEntry	Hash_DeleteEntry.c	/^Hash_DeleteEntry(tablePtr, hashEntryPtr)$/
+Hash_InitTable	Hash_InitTable.c	/^Hash_InitTable(tablePtr, numBuckets, keyType)$/
+ID_NUM	dolookup.c	/^#define ID_NUM(n) ((n<0)?(int *)mypanic():&data[10/
+MAX	dolookup.c	/^#define MAX(a,b) ((a)>(b)?(a):(b))$/
+MAXHIT	dolookup.c	/^#define MAXHIT(h,l) ((l)<0?9999:((h)>(l)?(h):(l)))/
+Mmain	main.c	/^main(argc,argv)$/
+NLRU	dolookup.c	/^#define NLRU(x) 0$/
+POS	dolookup.c	/^#define POS(n) (((n)+(n))&6)$/
+RebuildTable	Hash_CreateEntry.c	/^RebuildTable(tablePtr)$/
+SECS	getrec.c	/^#define SECS(day,hour,min) ((((day-1)*24+(hour))*6/
+SET_MACHINEINFO	dolookup.c	/^#define SET_MACHINEINFO(mi,n,v) mi[BYTE(n)] = (mi[/
+SWAP4	getrec.c	/^#define SWAP4(x) ((((x)>>24)&0xff)|(((x)>>8)&0xff0/
+abort	dolookup.c	/^void abort() { printf("%s",1); }$/
+accessDir	dolookup.c	/^accessDir(function, dirIDName, entryIDName, currHo/
+addTime	getrec.c	/^static void addTime(a,b,res)$/
+checkRecord	getrec.c	/^checkRecord(tracePtr)$/
+collectHashStatistics	dolookup.c	/^collectHashStatistics(namePtr)$/
+copyTime	getrec.c	/^#define copyTime(to,from) (to)[0]=(from)[0];(to)[1/
+doclose	dolookup.c	/^doclose(data, machine)$/
+dogetattr	dolookup.c	/^dogetattr(data, machine)$/
+dolookup	dolookup.c	/^dolookup(data, machine)$/
+doneID	dolookup.c	/^doneID(namePtr)$/
+donerecs	dolookup.c	/^donerecs()$/
+doopen	dolookup.c	/^doopen(data, machine)$/
+dorec	process.c	/^dorec(tracePtr, machine)$/
+dosetattr	dolookup.c	/^dosetattr(data, machine)$/
+dumpHash	dolookup.c	/^dumpHash()$/
+dumpLRU	dolookup.c	/^void dumpLRU(LRU)$/
+dumpRec	getrec.c	/^dumpRec(tracePtr)$/
+error	dolookup.c	/^#define error(x) fprintf(stderr,"%19.19s: %s", cti/
+filetype	process.c	/^char *filetype(x)$/
+freeIDIfDone	dolookup.c	/^freeIDIfDone(namePtr)$/
+garbageCollect	dolookup.c	/^garbageCollect()$/
+getHeader	getrec.c	/^getHeader(file, hdr)$/
+getIDname	dolookup.c	/^getIDname(fileID)$/
+getNextRecord	getrec.c	/^getNextRecord(file,buf)$/
+getNextRecordMerge	getrec.c	/^getNextRecordMerge(buf)$/
+getNextRecordNew	getrec.c	/^getNextRecordNew(file,buf)$/
+getNextRecordOld	getrec.c	/^getNextRecordOld(file,buf)$/
+hashID	dolookup.c	/^hashID(id)$/
+if	doproc3.c	/^if (0) then$/
+initHash	dolookup.c	/^initHash()$/
+initRead	getrec.c	/^initRead(name,argc,argv, retHdr)$/
+loadHash	dolookup.c	/^loadHash(name, type)$/
+migrateChildren	getrec.c	/^migrateChildren(new)$/
+mypanic	dolookup.c	/^#define mypanic() printf("%s",1)$/
+newID	dolookup.c	/^newID(fileID, force, name, type)$/
+openTraceFile	getrec.c	/^openTraceFile(index)$/
+opname	process.c	/^char *opname(x)$/
+printLookupStats	dolookup.c	/^printLookupStats()$/
+searchLRU	dolookup.c	/^searchLRU(namePtr, machine, pos, LRU)$/
+status	process.c	/^char *status(x)$/
+subTime	getrec.c	/^static void subTime(a,b,res)$/
+swapBuf	getrec.c	/^swapBuf(buf, len)$/
+timeLess	getrec.c	/^#define timeLess(a,b) (((a)[0]<(b)[0])||((a)[0]==(/
+usage	getrec.c	/^usage(name)$/

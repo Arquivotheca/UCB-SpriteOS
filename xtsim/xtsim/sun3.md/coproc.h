@@ -1,0 +1,37 @@
+/*
+ * coproc.h --
+ *
+ * Copyright 1990 Regents of the University of California
+ * Permission to use, copy, modify, and distribute this
+ * software and its documentation for any purpose and without
+ * fee is hereby granted, provided that the above copyright
+ * notice appear in all copies.  The University of California
+ * makes no representations about the suitability of this
+ * software for any purpose.  It is provided "as is" without
+ * express or implied warranty.
+ *
+ * $Header: /sprite/lib/forms/RCS/proto.h,v 1.5 90/01/12 12:03:25 douglis Exp $ SPRITE (Berkeley)
+ */
+
+#ifndef COPROC_H
+#define COPROC_H
+
+#include <setjmp.h>
+#include "types.h"
+
+#define STACKSIZE	2048
+#define WARNSTACKLIMIT	 512 
+#define FP_OFF 13
+#define SP_OFF 14
+
+typedef struct {
+    jmp_buf	env;
+    WORD	sp[STACKSIZE];
+} COPROCtype;
+
+#define CreateCoproc(p) (!_setjmp((p)->env) ? CreateCoproc2(p) : 0)
+
+extern COPROCtype *CreateCoproc2();
+extern void SwitchCoproc();
+
+#endif COPROC_H

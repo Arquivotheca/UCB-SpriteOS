@@ -1,0 +1,30 @@
+#!/bin/nawk -f
+BEGIN {
+    datafield = 5;
+    FS = "\t";
+    for (i=1;i<ARGC;i++) {
+	if (i==1) {
+	    for (nlines=0;;nlines++) {
+		if ((getline < ARGV[i]) <= 0) break;
+		label[nlines] = $1;
+		results[$1,i] = $datafield
+	    }
+	} else {
+	    for (;;) {
+		if ((getline < ARGV[i]) <= 0) break;
+		results[$1,i] = $datafield
+	    }
+	}
+	close ARGV[i];
+    }
+    for (j=0;j<nlines;j++) {
+	printf("%s ", label[j]);
+	t = 0;
+	t2 = 0;
+	for (i=1;i<ARGC;i++) {
+	    t += results[label[j],i];
+	    t2 += results[label[j],i]*results[label[j],i];
+	}
+	printf("%f +- %f\n", t/(ARGC-1), sqrt((t2-t*t/(ARGC-1))/(ARGC-2)));
+    }
+}

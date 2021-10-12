@@ -1,0 +1,24 @@
+#!/bin/nawk -f
+BEGIN {
+    out=0;
+}
+    { if ($1 == "##file") {
+	out = 1; file = $2;
+	append = 0;
+     } else if ($1 == "##end") {
+	 out = 0; close (file);
+     } else if ($1 == "##append") {
+	 append = 1;
+	out = 1; file = $2;
+     } else {
+	 if (out) {
+	     if (append!=1) {
+		 print $0 > file;
+	     } else {
+		 print $0 >> file;
+	     }
+	 } else {
+	     print $0;
+	 }
+     }
+    }

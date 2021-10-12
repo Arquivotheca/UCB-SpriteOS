@@ -1,0 +1,57 @@
+#!/bin/nawk -f
+BEGIN {
+    cx = -.171733; cy = .653333;
+    err= 10000;
+
+    for (x=-2;x<2;x+=0.001) {
+	y = cy/(1-2*x);
+	ex = (x*x-y*y)-x+cx;
+	ey = (2*x*y)-y+cy;
+	e = ex*ex+ey*ey;
+	if (e<err) {
+	    err=e;
+	    bestx = x;
+	    besty = y;
+	}
+    }
+    printf("Best: %f %f: err %f\n", bestx, besty, err);
+    printf("Sol at r %f, t %f\n", sqrt(bestx*bestx+besty*besty),atan2(besty,bestx));
+    r = sqrt((1-4*cx)*(1-4*cx)+(-4*cy)*(-4*cy));
+    t = atan2(-4*cy,1-4*cx);
+    rx = sqrt(r)*cos(t/2);
+    ry = sqrt(r)*sin(t/2);
+    printf("Roots: %f, %f  %f,%f\n", (1+rx)/2,ry/2,(1-rx)/2,-ry/2);
+    x = (1+rx)/2;
+    y = ry/2;
+    ex = (x*x-y*y)-x+cx;
+    ey = (2*x*y)-y+cy;
+    e = ex*ex+ey*ey;
+    printf("R: %f\n", e);
+
+    err = 100000;
+    for (x=-2;x<2;x+=0.001) {
+	y = cy/(1+2*x);
+	ex = (x*x-y*y)-x+cx;
+	ey = -(2*x*y)-y+cy;
+	e = ex*ex+ey*ey;
+	if (e<err) {
+	    err=e;
+	    bestx = x;
+	    besty = y;
+	}
+    }
+    printf("Best: %f %f: err %f\n", bestx, besty, err);
+    printf("Sol at r %f, t %f\n", sqrt(bestx*bestx+besty*besty),atan2(besty,bestx));
+
+    r = sqrt((1+4*cx)*(1+4*cx)+(-4*cy)*(-4*cy));
+    t = atan2(+4*cy,1+4*cx);
+    rx = sqrt(r)*cos(t/2);
+    ry = sqrt(r)*sin(t/2);
+    printf("Roots: %f, %f  %f,%f\n", (1+rx)/2,ry/2,(1-rx)/2,-ry/2);
+    r = sqrt((1-4*cx)*(1-4*cx)+(-4*cy)*(-4*cy));
+    t = atan2(-4*cy,1-4*cx);
+    rx = sqrt(r)*cos(t/2);
+    ry = sqrt(r)*sin(t/2);
+    printf("Roots: %f, %f  %f,%f\n", (1+rx)/2,ry/2,(1-rx)/2,-ry/2);
+    exit;
+}

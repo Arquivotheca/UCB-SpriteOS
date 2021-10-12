@@ -1,0 +1,11 @@
+.(z
+.GS
+pointscale on
+width 6.0i
+file util.g
+.GE
+.(q
+\fBFigure 3\fR.  Client caching reduces server loading by a
+factor of 2-5 (measured on Sun-3's with variable-size client caches).
+.)q
+.)z

@@ -1,0 +1,21 @@
+This directory contains various files for Fred Douglis, former
+member of the Sprite project.  
+
+README			- this file
+
+amsp.ps.Z		- paper comparing Amoeba & Sprite, as a single
+			  postscript file.  A somewhat earlier version
+			  of this paper is also
+			  available as Report IR-230, Department
+			  of Mathematics and Computer Science,
+			  Vrije Universiteit, Amsterdam, December 1990.
+			  (Vrije Universiteit, De Boelelaan 1081a,
+			  1081 HV Amsterdam, The Netherlands)
+amsp.tar.Z		- tar file containing previous paper as separate
+			  postscript files, to avoid problems
+			  printing on a laserwriter.
+mig.ps.Z		- paper on transparent process migration,
+			  to appear in Software Practice & Experience.
+logfs.tar.Z		- ancient COMPCON paper, requested by someone.
+			  Don't read this -- read Mendel's SOSP13 paper!
+thesis.ps.gz		- gzipped'd copy of my thesis, requested by someone.

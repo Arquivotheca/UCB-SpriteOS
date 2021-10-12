@@ -1,0 +1,521 @@
+
+\documentstyle[fullpage]{article}
+
+\newcommand{\putfig}[3]%
+{\begin{figure}%
+\centerline{%
+\psfig{figure=#1.ps,width=#3}}%
+\caption{#2}%
+\label{fig:#1}%
+\end{figure}}
+
+\input{psfig}
+
+\title{A Quick Introduction to C++}
+\author{Wayne A. Christopher}
+\date{CS 162, Spring 1992}
+
+\begin{document}
+
+\maketitle
+
+\begin{quote}
+``There are two ways of constructing a software design: one way is to
+make it so simple that there are {\em obviously} no deficiencies and
+the other way is to make it so complicated that there are no {\em
+obvious} deficiencies.'' \\ \hbox{} \hfill C. A. R. Hoare, ``The Emperor's
+Old Clothes'', CACM Feb. 1981
+\end{quote}
+
+The CS 162 project is written in a subset of C++, and you will be
+expected to understand and modify this code.  Since you have already
+used C in previous classes, we hope that it will be easy for you to
+make the change to C++.
+
+The best way to learn a language is to read clear programs in that
+language.  We have tried to make the code for the first assignment as
+readable as possible, so you should look over it as you read this
+introduction.  Of course, your TA's will answer any questions you may
+have.
+
+You should not need to buy a book on C++ for this class, but if you
+are curious or expect to use the language more in the future, there is
+a large selection at Cody's and other bookstores.  Be sure to get one
+that describes Version 2.0 of the language -- our compiler (GNU C++)
+is not up to this level yet, but it's close.  The one most likely to
+be technically complete is by the author of C++, Bjarne Stroustrup.
+The {\bf Annotated Reference Manual} by Stroustrup and Ellis is a bit
+out of date but is very good if you want to know the motivation behind
+the design of the language.  Other books may be more readable -- if
+you have any opinions, please tell us.
+
+To a large extent, C++ is a superset of C, and most carefully written
+ANSI C will compile as C++.  There are a few major caveats though:
+\begin{enumerate}
+\item All functions must be declared before they are used, rather than
+defaulting to type {\tt int}.
+\item All function declarations and definition headers must use
+new-style declarations, e.g.,
+\begin{verbatim}
+extern int foo(int a, char* b);
+\end{verbatim}
+The form {\tt extern int foo();} means that {\tt foo} takes {\it no}
+arguments, rather than arguments of an unspecified type and number.
+\item If you need to link C object files together with C++, when you
+declare the C functions for the C++ files, they must be done like
+\begin{verbatim}
+extern "C" int foo(int a, char* b);
+\end{verbatim}
+Otherwise the C++ compiler will
+alter the name in a strange manner.
+\item There are a number of new keywords, which you may not use as
+identifiers -- some common ones are {\tt new}, {\tt delete}, {\tt
+const}, and {\tt class}.
+\end{enumerate}
+
+\section{Basic Concepts}
+
+Before giving examples of C++ features, we will first go over some of
+the basic concepts of object-oriented languages.  If this discussion
+seems a bit obscure, it will become clearer once we have some concrete
+examples to talk about.
+\begin{enumerate}
+\item {\bf Classes and objects}.  A class defines a set of objects, or
+{\em instances} of that class.
+One declares a class in a way similar to a C {\em structure}, and then
+creates objects of that class.  A class defines two aspects of the
+objects: the {\em data} they contain, and the {\em behavior} they
+have.
+\item {\bf Member functions}.  These are functions which are
+considered part of the object and are declared in the class
+definition.  They are often referred to as {\em methods} of the class.
+In addition to member functions, a class's behavior is also defined
+by:
+\begin{enumerate}
+\item What to do when you create a new object (the {\bf constructor}
+for that object).
+\item What to do when you delete an object (the {\bf destructor} for
+that object).
+\end{enumerate}
+\item {\bf Private and public members}.  A public member of a class is
+one that can be read or written by anybody, in the case of a data
+member, or called by anybody, in the case of a member function.  A
+private member can only be read, written, or called by a member
+function of that class.
+\end{enumerate}
+
+Classes are used for two main reasons: (1) it makes it much easier to
+organize your programs if you can group together data with the
+functions that manipulate that data, and (2) the use of private
+members makes it possible to do {\em information hiding}, so that you
+can be more confident about the way information flows in your
+programs.
+
+\section{Classes}
+
+C++ classes similar to C structures in many ways.  In fact, a C++
+struct is really a class that has only public data members.
+In the following explanation of how classes work, we will use a stack
+class as an example.
+
+\begin{enumerate}
+\item {\bf Member functions.}   Here is a (partial) example of a class
+with a member function and some data members:
+\begin{verbatim}
+class Stack {
+  public:
+    void Push(int i); // Push an integer, checking for overflow.
+    int top;          // Index of the top of the stack.
+    int stack[10];    // The elements of the stack.
+};
+
+void
+Stack::Push(int i)
+{
+    if (top == 10) {
+        fprintf(stderr, "Error: Stack overflow\n");
+        exit(1);
+    }
+    
+    stack[top++] = i;
+}
+\end{verbatim}
+This class has two data members, {\tt top} and {\tt stack}, and one
+member function,
+{\tt Push}.  The notation {\em class}::{\em function} denotes the
+{\em function} member of the class {\em class}.  (In the style we use,
+most function names are capitalized.)  The function is defined beneath
+it.
+
+In actual usage, the definition of {\tt class Stack} would typically
+go in the file {\tt stack.h} and the definitions of the member
+functions, like {\tt Stack::Push}, would go in the file {\tt
+stack.cc}.
+
+If we have a pointer to a {\tt Stack} object called {\tt s}, we can
+access the {\tt top} element as {\tt s->top}, just as in C.  However,
+in C++ we can also call the member function using the following syntax:
+\begin{verbatim}
+s->Push(17);
+\end{verbatim}
+Of course, as in C, {\tt s} must point to a valid {\tt Stack} object.
+
+Inside a member function, one may refer to the members of the class
+by their names alone.  In other words, the class definition
+creates a scope that includes the member function definitions.
+
+Note that if you are inside a member function, you can get a pointer
+to the object you were called on by using the variable {\tt this}.
+If you want to call another member function on the same object, you
+do not to use the {\tt this} pointer, however.  Let's extend the Stack
+example to illustrate this, by adding a {\tt Full()} function.
+\begin{verbatim}
+class Stack {
+  public:
+    void Push(int i); // Push an integer, checking for overflow.
+    int Full();       // Returns non-0 if the stack is full, 0 otherwise.
+    int top;          // Index of the lowest unused position.
+    int stack[10];    // A pointer to an array that holds the contents.
+};
+
+int
+Stack::Full()
+{
+    return (top == 10);
+}
+\end{verbatim}
+Now we can rewrite {\tt Push} this way:
+\begin{verbatim}
+void
+Stack::Push(int i)
+{
+    if (Full()) {
+        fprintf(stderr, "Error: Stack overflow\n");
+        exit(1);
+    }
+    
+    stack[top++] = i;
+}
+\end{verbatim}
+We could have written the line with {\tt Full()} this way also:
+\begin{verbatim}
+    if (this->Full()) {
+\end{verbatim}
+but in a member function, the \verb+this->+ is implicit.
+
+The purpose of member functions is to encapsulate the functionality of
+a type of object along with the data that the object contains.  A
+member function does not take up space in an object of the class.
+
+\item {\bf Private members.}  One can declare some
+members of a class to be {\it private}, or hidden to all but
+the member functions of that class, and some {\it public}, or open to
+everybody.  Both data and function members can be either public or
+private.
+
+In our stack example, note that once we have the {\tt Full()}
+function, we really don't need to look at the {\tt top} or {\tt stack}
+members outside of the class.  Thus we can rewrite the class as
+follows:
+\begin{verbatim}
+class Stack {
+  public:
+    void Push(int i); // Push an integer, checking for overflow.
+    int Full();       // Returns non-0 if the stack is full, 0 otherwise.
+  private:
+    int top;          // Index of the top of the stack.
+    int stack[10];    // The elements of the stack.
+};
+\end{verbatim}
+Before, given a pointer to a {\tt Stack} object, say {\tt s}, any part
+of the program could access {\tt s->top}, in potentially bad ways.
+Now, since the {\tt top} member is private, only a member function,
+such as {\tt Full()}, can access it.  If any other part of the
+program attempts to use {\tt s->top} the compiler will report an error.
+
+You can have alternating {\tt public:} and {\tt private:} sections in
+a class.  Before you specify either of these, class members are
+private, thus the above example could have been written:
+\begin{verbatim}
+class Stack {
+    int top;          // Index of the top of the stack.
+    int stack[10];    // The elements of the stack.
+  public:
+    void Push(int i); // Push an integer, checking for overflow.
+    int Full();       // Returns non-0 if the stack is full, 0 otherwise.
+};
+\end{verbatim}
+Which form you prefer is a matter of style.
+
+In many cases, it is best to make all data members of a class private
+and define {\em accessor functions} to read and write them.  This adds
+to the modularity of the system, since you can redefine how the data
+members are stored without changing how you access them.
+
+\item {\bf Constructors and the operator new.}  In C, in
+order to create a new object of type {\tt Stack}, one might write:
+\begin{verbatim}
+struct Stack* s = (struct Stack *) malloc(sizeof (struct Stack));
+InitStack(s, 17);
+\end{verbatim}
+The {\tt InitStack()} function might take the second argument as the
+size of the stack to create, and use {\tt malloc()} again to get an
+array of 17 integers.
+
+The way this is done in C++ is as follows:
+\begin{verbatim}
+Stack* s = new Stack(17);
+\end{verbatim}
+The {\tt new} function takes the place of {\tt malloc()}.  To
+specify how the object should be initialized, one declares a {\it
+constructor} function as a member of the class, with the name being
+the class name:
+\begin{verbatim}
+class Stack {
+  public:
+    Stack(int sz);    // Constructor:  initialize variables, allocate space.
+    void Push(int i); // Push an integer, checking for overflow.
+    int Full();       // Returns non-0 if the stack is full, 0 otherwise.
+  private:
+    int size;         // The maximum capacity of the stack.
+    int top;          // Index of the lowest unused position.
+    int* stack;       // A pointer to an array that holds the contents.
+};
+
+Stack::Stack(int sz)
+{
+    size = sz;
+    top = 0;
+    stack = new int[size];   // Let's get an array of integers.
+}
+\end{verbatim}
+There are a few things going on here, so we will describe them one at
+a time.
+
+The {\tt new} operator automatically calls the constructor for the
+object when it creates it.  If you declare a {\tt Stack} as an
+automatic variable inside a function, the constructor will also be
+called.  In this example, we create two stacks of different sizes, one
+by declaring it as an automatic variable, and one by using new.
+\begin{verbatim}
+void
+test()
+{
+    Stack stack1(17);
+    Stack* stack2 = new Stack(23); 
+}
+\end{verbatim}
+Note there are two ways of providing arguments to constructors: with
+{\tt new}, you put the argument list after the class name, and with
+variables declared as above, you put them after the variable name.
+
+The {\tt stack1} object is deallocated when the {\tt test} function
+returns.  The object pointed to by {\tt stack2} remains, however,
+until disposed of using {\tt delete}, described below.  In this
+example it is inaccessible outside of {\tt test}, and in a language
+like Lisp it would be garbage collected, but we could have returned
+{\tt stack2} as a value, for instance.
+
+One final twist to the {\tt new} operator is how one allocates arrays.
+The constructor above allocates an array of size {\tt size} of
+integers.  To get an array of 10 {\tt int}s, one would use:
+\begin{verbatim}
+int* nums = new int[10];
+\end{verbatim}
+
+Note that you can use {\tt new} and {\tt delete} (described below)
+with built-in types like {\tt int} and {\tt char} as well as with
+class objects.
+
+\item {\bf Destructors and the operator delete.}  Just as {\tt new} is the
+replacement for {\tt malloc()}, the replacement for {\tt free()} is
+{\tt delete}.  To get rid of the {\tt Stack} object pointed
+to by {\tt s}, one can do:
+\begin{verbatim}
+delete s;
+\end{verbatim}
+This will deallocate the object, but first it will call the
+{\it destructor} for the {\tt Stack} class, if there is one.  This
+destructor would be a member function of {\tt Stack} called {~Stack()}:
+\begin{verbatim}
+class Stack {
+  public:
+    Stack(int sz);    // Constructor:  initialize variables, allocate space.
+    ~Stack();         // Destructor:   deallocate space allocated above.
+    void Push(int i); // Push an integer, checking for overflow.
+    int Full();       // Returns non-0 if the stack is full, 0 otherwise.
+  private:
+    int size;         // The maximum capacity of the stack.
+    int top;          // Index of the lowest unused position.
+    int* stack;       // A pointer to an array that holds the contents.
+};
+
+Stack::~Stack()
+{
+    delete stack;
+}
+\end{verbatim}
+The destructor has the job of deallocating the data the constructor
+allocated.  Most classes won't need destructors, and some will use
+them to close files and otherwise clean up after themselves.
+
+As with constructors, a destructor for an auto object will be called
+when that object goes out of scope (i.e., at the end of the function
+in which it is defined), so in the {\tt test()} example above, the
+stack would be properly deallocated without your having to do
+anything.  {\bf However,} if you have a pointer to an object you got
+from {\tt new}, and the pointer goes out of scope, then the object
+won't be freed -- you have to use {\tt delete} explicitly.  Since C++
+doesn't have garbage collection, you should generally be careful to
+delete what you allocate.
+
+Many classes will not need destructors, and if you don't care about
+core leaks (i.e., space not getting freed when it is no longer used)
+when one object allocates other objects and keeps pointers to them,
+you will need them even less frequently.
+
+In some versions of C++, when you deallocate an array you have to tell
+{\tt delete} how many elements there are in the array, like this:
+\begin{verbatim}
+delete [size] stack;
+\end{verbatim}
+However, GNU C++ doesn't require this.
+
+\end{enumerate}
+
+\section{Other C++ Features}
+
+Here are a few minor C++ features that are useful to know.
+\begin{enumerate}
+\item When you define a {\tt class Stack}, the name {\tt Stack} becomes
+usable as a type name as if created with {\tt typedef}.  The same is
+true for {\tt enum}s.
+\item You can define functions inside of a {\tt class} definition,
+whereupon they become {\it inline functions}, which are expanded in
+the body of the function where they are used.  This is usually a
+matter of convenience, but it should not be overused.  A few examples
+of this appear in the second assignment.
+\item Inside a function body, you can declare some variables, execute
+some statements, and then declare more variables.  This can make code
+a lot more readable.  In fact, you can even write things like:
+\begin{verbatim}
+for (int i = 0; i < 10; i++) ;
+\end{verbatim}
+The variable {\tt i} is still visible after the end of the {\tt for}
+loop, however, which is not what one might expect or desire.
+\item Comments can begin with the characters \verb+//+ and extend to
+the end of the line.  These are usually more handy than the
+\verb+/* */+ style of comments.
+\end{enumerate}
+
+\section{Style Guidelines}
+
+It is as easy to write unreadable and undebuggable code in C++ as it
+is in C, and perhaps easier, given the more powerful features the
+language provides.  For this project, we suggest you adhere to these
+guidelines (and tell us if you catch us breaking them).
+
+\begin{enumerate}
+\item Words in a name are separated SmallTalk-style (i.e., capital
+letters at the start of each new word).  All class names and member
+function names begin with a capital letter, except for member
+functions of the form {\tt getSomething()} and {\tt setSomething()},
+where {\tt Something} is a data element of the class (i.e., accessor
+functions).  Note that you would want to provide such functions only
+when the data should be visible to the outside world, but you want to
+force all accesses to go through one function.  This is often a good
+idea, since you might at some later time decide to compute the data
+instead of storing it, for example.
+\item All global functions (except for {\tt main} and library
+functions) should also be capitalized.
+\item Minimize the use of global variables.  If you find yourself
+using a lot of them, try and group some together in a class in a
+natural way, or pass them as arguments to the functions that need them
+if you can.
+\item Minimize the use of global functions (as opposed to member
+functions).  If you write a function that operates on some object,
+consider making it a member function of that object.
+\item For every class, set of related classes, create a separate
+{\tt .h} file and {\tt .cc} file. The {\tt .h} file acts as the {\it
+interface} to the class, and the {\tt .cc} file acts as the
+{\it implementation}.  If, for a particular {\tt .h} file, you require
+another {\tt .h} file to be included (e. g., {\tt synch.h} needs
+{\tt thread.h}) you should include it in the {\tt .h} file, so that
+the user of your class doesn't have to track down all the dependencies
+himself.  To protect against multiple inclusion, bracket each {\tt .h}
+file with something like:
+\begin{verbatim}
+#ifndef STACK_H
+#define STACK_H
+
+class Stack { ... };
+
+#endif
+\end{verbatim}
+Sometimes this will not be enough, and you will have a circular
+dependency.  In this case, you will have to do something ad-hoc: if
+you only use a pointer to class {\tt Stack} and do not access any
+elements of the class, you can write, in lieu of the actual class
+definition:
+\begin{verbatim}
+class Stack;
+\end{verbatim}
+This will tell the compiler all it
+needs to know to deal with the pointer.  (But be sure you include
+{\tt stack.h} in the {\tt .cc} file.)  In a few cases this won't work,
+and you will have to move stuff around or alter your definitions.
+
+\end{enumerate}
+
+\section{Features Not Used}
+
+At this point, we do not expect to use the following features of the
+language in any code that we give you.  If you use them, {\it caveat
+hacker}.
+\begin{enumerate}
+\item {\bf Inheritance.}  This would probably be useful in some
+places, but if one is not comfortable with classes, derived classes
+(not to mention multiple inheritance) can be rather confusing.
+\item {\bf Operator overloading.}  C++ lets you redefine the meanings
+of the operators (such as {\tt +} and \verb+>>+) for class objects.
+This is dangerous at best, and when used in non-intuitive ways, a
+source of great confusion.
+\item {\bf Function overloading.}  You can define different functions
+with the same name but different argument types.  This is also
+dangerous, and we use it only for constructors.  We will also avoid
+using default arguments.
+\item {\bf References.}  Reference variables are rather hard to
+understand in general.  Their most common use is to declare some
+parameters to a function as {\it reference parameters}, like those in
+FORTRAN.  This can be useful but is also a source of obscure bugs, and
+the semantics of references are in general not obvious.
+\end{enumerate}
+
+\section{Compiling and Debugging}
+
+The Makefiles we will give you works only with the GNU version of
+make, which should be called ``gnumake'' on {\tt danube}.  You may want
+to put ``alias make gnumake'' in your .cshrc file.
+
+You should use {\bf gdb} to debug your program rather than {\bf dbx}.
+Dbx doesn't know how to decipher C++ names, so you will see function
+names like \verb+Run__9SchedulerP6Thread+.
+
+On the other hand, in GDB but not DBX, when you do a stack backtrace
+when in a forked thread (in homework 1), after printing out the
+correct frames at the top of the stack, the debugger will go into a
+loop printing the lower-most frame ({\tt ThreadRoot}), and you have to
+type control-C when it says ``more?''.  If you understand MIPS
+assembly language and can fix this, please tell us.
+
+\section{Example: A Stack of Integers}
+
+The complete, working code for the stack can be found in the directory
+{\tt ~c162sp92/stack-example} on the machine {\tt danube}.  You should
+read through it and play around with it to make sure you understand
+the features of C++ described in this paper.
+
+To compile the stack test, do {\tt g++ stack.cc test.cc}, which gives
+you an {\tt a.out} file.
+
+\end{document}

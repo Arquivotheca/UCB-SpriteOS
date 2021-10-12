@@ -1,0 +1,7 @@
+The directory contains the sources for Sprite LFS.  It contains two
+directories: kernel and utils. Kernel contains the Sprite kernel modules
+that comprise the Sprite file system.  The directory kernel/lfs contains
+the code specific to Sprite LFS.  The utils directory contains the user
+level code for making and exmaining Sprite LFS file systems.
+
+	Mendel

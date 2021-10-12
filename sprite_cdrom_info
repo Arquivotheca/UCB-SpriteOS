@@ -1,0 +1,30 @@
+The Sprite system is available on cdrom.  This cdrom includes the source
+code, executables, documentation and research papers for the Sprite network
+operating system.  Sprite is a distributed systems research project led by
+Prof. John Ousterhout in the Computer Science Department of the University
+of California at Berkeley.
+
+The CD-ROM is distributed by:
+    Walnut Creek CDROM
+    1547 Palos Verdes Mall, Suite 260
+    Walnut Creek, CA  94596
+    1 800 786-9907, 1 510 674-0783, 1 510 674-0821 FAX
+
+The cdrom contains the following files and directories:
+
+admin:		directory for administrative programs, scripts and information
+boot.txt:	file with information about booting the Sprite kernel images
+docs:		directory for documentation
+ds5000.bt:	boot image for Sprite on a  DECstation 5000/200
+sun4.bt:	boot image for Sprite on a SparcStation 2
+lib:		directory for library files other than source files
+filename.lst    A list of all the files on the disc
+ls_lR:          output from ls -lR, a recursive list of the files on the disc
+man:		directory for manual pages
+papers:		directory for research papers about Sprite
+readme.txt:	file that describes this CD-ROM
+sprite.txt:	file with a history of the Sprite project
+src:		directory for source code for kernel, commands, libraries, etc
+
+The full listing of contents can be ftp'd from cdrom.com:
+/cdrom/cdroms/sprite/ls_lR.

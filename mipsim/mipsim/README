@@ -1,0 +1,30 @@
+Mipsim
+
+by John Ousterhout
+University of California at Berkeley
+
+Mipsim is a simulator+debugger for the MIPS R2000 architecture.  It
+reads assembly-language files and simulates the execution of those
+files on an R2000 machine under the control of an interactive command
+language.
+
+To generate an executable version of Mipsim, type "make" in this directory.
+
+There are two forms of documentation available for Mipsim:  a terse
+man page and a longer tutorial document.  To print the man page, type
+
+		ditroff mipsim.man
+
+or whatever the equivalent command is in your system.  Do not provide
+any macros to the command.  To print the tutorial document you'll need
+to have the program "grn" (which is used on Gremlin files).   If your
+site has that program, then the formatting command is
+
+		grn manual.me | ditroff -me
+
+If you don't have the "grn" program (and you probably don't), there is
+a Postscript file manual.ps that you can print as-is.
+
+I can't promise any support for Mipsim, but I'm still interested in hearing
+about bugs or suggestions for improvement.  Send these to me at
+"ouster@sprite.berkeley.edu".

@@ -1,0 +1,62 @@
+\begin{thebibliography}{10}
+
+\bibitem{pattrsn:raid}
+D.~Patterson, G.~Gibson, and R.~Katz, ``A case for redundant arrays of
+  inexpensive disks ({RAID}),'' in {\em {ACM} {SIGMOD} 88}, (Chicago),
+  pp.~109--116, June 1988.
+
+\bibitem{mckusick:unix42}
+M.~K. McKusick {\em et~al.}, ``A fast file system for {U}nix,'' {\em ACM Trans.
+  Computer Systems}, vol.~2, pp.~181--197, Aug. 1984.
+
+\bibitem{lazowska:file-perf}
+E.~D. Lazowska {\em et~al.}, ``File access performance of diskless
+  workstations,'' {\em ACM Trans. Computer Systems}, vol.~4, pp.~238--268, Aug.
+  1986.
+
+\bibitem{ouster:bsd}
+J.~Ousterhout {\em et~al.}, ``A trace-driven analysis of the {U}nix 4.2 {BSD}
+  file system,'' in {\em Proceedings of the 10th {S}ymposium on {O}perating
+  {S}ystem {P}rinciples}, (Orcas Island, WA), pp.~15--24, ACM, Dec. 1985.
+
+\bibitem{satya:sizes}
+M.~Satyanarayanan, ``A study of file sizes and functional lifetimes,'' in {\em
+  Proceedings of the 8th {S}ymposium on {O}perating {S}ystem {P}rinciples},
+  pp.~96--108, ACM, Dec. 1981.
+
+\bibitem{nelson:caching-in-sprite}
+M.~Nelson, B.~Welch, and J.~Ousterhout, ``Caching in the {S}prite network file
+  system,'' {\em ACM Trans. Computer Systems}, vol.~6, pp.~134--154, Feb. 1988.
+
+\bibitem{gait:ofc}
+J.~Gait, ``The {O}ptical {F}ile {C}abinet: A random access file system for
+  write-once optical disks,'' {\em IEEE Computer}, vol.~21, pp.~11--22, June
+  1988.
+
+\bibitem{garfinkel:cdfs}
+S.~L. Garfinkel, ``A file system for write-once media.'' Unpublished report,
+  MIT Media Lab, July 1987.
+
+\bibitem{finlayson:log-files}
+R.~Finlayson and D.~Cheriton, ``Log files: An extended file service exploiting
+  write-once storage,'' in {\em Proceedings of the Eleventh ACM Symposium on
+  Operating Systems Principles}, (Austin, TX), pp.~139--148, ACM, November
+  1987.
+
+\bibitem{ungar:gen-scav}
+D.~Ungar, ``Generation scavenging: A non-disruptive high performance storage
+  reclamation algorithm,'' in {\em Proceedings of the Software Engineering
+  Symposium on Practical Software Development Environments}, (Pittsburgh, PA),
+  pp.~157--167, Apr. 1984.
+
+\bibitem{svobodova:sosp-swallow}
+L.~Svobodova, ``A reliable object-oriented data repository for a distributed
+  computer system,'' in {\em Proceedings of the 8th {S}ymposium on {O}perating
+  {S}ystem {P}rinciples}, pp.~47--58, ACM, Dec. 1981.
+
+\bibitem{hagmann:cedar-file-system}
+R.~Hagmann, ``Reimplementing the {C}edar file system using logging and group
+  commit,'' in {\em Proceedings of the Eleventh ACM Symposium on Operating
+  Systems Principles}, (Austin, TX), pp.~155--162, ACM, November 1987.
+
+\end{thebibliography}

@@ -1,0 +1,73 @@
+#!/bin/csh -f
+
+set dir = `pwd`
+set path = ($dir $dir/ds3100.md $path)
+
+
+echo "Doing results1a"
+rm -rf results1a
+mkdir results1a
+cd results1a
+(cd /scratch4/traces1 ; time proc4 -prefix $dir/../data/prefixes \
+    -s 24.00.00 -e 25.00.00 \
+  */Jan.23.23.* */*.Jan.24.*)   \
+  | extract >! results
+cd ..
+
+exit
+
+echo "Doing results1b"
+mkdir results1b
+cd results1b
+(cd /scratch4/traces1; time proc4 -prefix $dir/../data/prefixes \
+  */*.Jan.25.*)   \
+  | extract >! results
+cd ..
+
+echo "Doing results2a"
+mkdir results2a
+cd results2a
+(cd /scratch4/traces2 ; time proc4 -prefix $dir/../data/prefixes \
+  */*.May.10.*)   \
+  | extract >! results
+cd ..
+
+echo "Doing results2b"
+mkdir results2b
+cd results2b
+(cd /scratch4/traces2 ; time proc4 -prefix $dir/../data/prefixes \
+  */*.May.11.*)   \
+  | extract >! results
+cd ..
+
+echo "Doing results3a"
+mkdir results3a
+cd results3a
+(cd /scratch4/traces3 ; time proc4 -prefix $dir/../data/prefixes \
+  */*.May.14.*)   \
+  | extract >! results
+cd ..
+
+echo "Doing results3b"
+mkdir results3b
+cd results3b
+(cd /scratch4/traces3 ; time proc4 -prefix $dir/../data/prefixes \
+  */*.May.15.*)   \
+  | extract >! results
+cd ..
+
+echo "Doing results4a"
+mkdir results4a
+cd results4a
+(cd /scratch4/traces4 ; time proc4 -prefix $dir/../data/prefixes \
+  */*.Jun.26.*)   \
+  | extract >! results
+cd ..
+
+echo "Doing results5a"
+mkdir results5a
+cd results5a
+(cd /scratch4/traces5 ; time proc4 -prefix $dir/../data/prefixes \
+  */*.Jun.27.*)   \
+  | extract >! results
+cd ..

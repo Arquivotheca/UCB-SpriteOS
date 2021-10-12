@@ -1,0 +1,166 @@
+\documentstyle{article}
+
+\begin{document}
+
+\begin{center}
+{\large {\bf NACHOS}}
+
+% \vspace{.2in}
+% Tom Anderson\\
+% Wayne Christopher\\
+% Steven Procter\\
+
+% \vspace{.2in}
+% Computer Science 162\\
+% March 12, 1992
+
+\vspace{.5in}
+Assignment \#3: Multiprogramming\\
+Due date: Thursday, April 2, 5:00 p.m.
+\end{center}
+
+\vspace{.2in}
+
+The third phase of Nachos is to support multiprogramming.
+As in the first two assignments, we give you some of the code
+you need; your job is to complete the system and enhance it.
+
+The first step is to read and understand the part of the system
+we have written for you.  Our code can run a single user-level `C'
+program at a time.  As a test case, we've provided you with 
+a trivial user program, `halt'; all halt does is to turn around
+and ask the operating system to shut the 
+machine down.  First, load the program onto the Nachos disk -- 
+`nachos -f -cp test/halt halt'; then run the program -- 
+`nachos -x halt'.  As before, trace what happens as the user program
+gets loaded, runs, and invokes a system call.
+
+The files for this assignment are:
+
+\begin{description}
+
+\item test3.cc --- test routines for running user programs.
+
+\item addrspace.h, addrspace.cc -- create an address space in which
+to run a user program, and load the program from disk.
+
+\item syscall.h -- the system call interface: kernel procedures that 
+user programs can invoke.
+
+\item exception.cc -- the handler for system calls and other user-level
+exceptions, such as page faults.  In the code we supply, only the 
+`halt' system call is supported.
+
+\item pte.h, pte.cc -- page table management routines.  In the code
+we supply, we assume that every virtual address is the same as its 
+physical address -- this restricts us to running one user program at 
+a time.  You will generalize this to allow multiple user programs to
+be run concurrently.  We will not ask you to implement virtual 
+memory support until in assignment 4; for now, every page must 
+be in physical memory.  
+
+\item machine.h, machine.cc -- emulates the part of the machine that
+executes user programs: main memory, processor registers, etc.
+
+\item mipssim.cc -- emulates the integer instruction set of a 
+MIPS R2/3000 processor.
+
+\item console.h, console.cc -- emulates a terminal device.  A terminal
+is like a disk except (i) it is byte, rather than sector, oriented, 
+(ii) incoming bytes can be read and written at the same time, and (iii)
+bytes arrive asynchronously (as a result of user keystrokes), without 
+being explicitly requested.  As with the disk, we emulate the console
+input and output as UNIX files (e.g., stdin and stdout).
+
+\end{description}
+
+Until now, all the code you have run on Nachos has been part of the
+operating system.  The synchronization code was used only by the kernel,
+and the file system operations were invoked from the command line of 
+Nachos, rather than by user level programs.  In a
+real operating system, the kernel not only uses these services internally,
+but allows user-level programs to access them via ``system calls''.
+
+In assignment 2, we gave you a simulated disk that modelled the
+behavior of a real disk.  Likewise, in this assignment we are giving
+you a simulated CPU that models a real CPU.  In fact, the simulated
+CPU is the same as the real CPU (a MIPS chip), but we cannot just run
+user programs as regular UNIX processes, because we want complete
+control over how many instructions are executed at a time, how the
+address spaces work, and how interrupts and exceptions (including
+system calls) are handled.
+
+Our simulator can run normal programs compiled from C -- see 
+the Makefile in the `test' subdirectory for an example.  The compiled
+programs must be converted into Nachos format, using the
+program ``coff2flat'' (which we supply), before being loaded onto 
+the Nachos disk.  Two caveats: (i) floating point operations are not supported
+and (ii) the `main' procedure must be listed first in its C file
+(if there are multiple `.o' files, the one containing `main' must be 
+listed first on the `ld' command line).  This ensures that `main' 
+will be loaded at virtual address 0.  In UNIX, `main' can be located 
+anywhere in a program, because a special procedure `START' is located
+at a well-known virtual address (and START calls main).
+
+There are four parts to this assignment; each is weighted equally.
+If your file system from assignment 2 doesn't work, you may still 
+do assignment 3, by replacing calls to the Nachos file system with
+direct calls to the UNIX file system; however, 20\% of the grade for
+this assignment is based on whether you use your file system code from
+assignment 2.
+
+\begin{description}
+\item{1.}
+Implement system call and exception handling.  You must
+support all of the system calls defined in syscall.h, including
+the ability to pass arguments to a newly created address space.
+We have provided you an assembly-language routine, ``syscall'', to
+provide a way of invoking a system call from a C routine (UNIX has
+something similar -- try `man syscall').   You'll need to do part 2 of 
+this assignment in order to test out the `exec' and `wait' system calls;
+the routine `StartProcess' in test3.cc may be of use to you in
+implementing the `exec' system call.
+
+Note that you will need to ``bullet-proof'' the Nachos kernel from
+user program errors -- there should be nothing a user program can
+do to crash the operating system (with the exception of explicitly asking 
+the system to halt).  Also, to support the system calls that access 
+the console device, you will probably find it helpful to implement 
+a ``SynchConsole'' class, that has the same role in managing the physical 
+console device as SynchDisk has in managing the physical disk.
+``test3.cc'' has the beginnings of a SynchConsole implementation.
+
+\item{2.}
+Implement multiprogramming with time-slicing.  The code we have given
+you is restricted to running one user program at a time.
+You will need to: (a) come up with a way of allocating physical memory 
+frames so that multiple programs can be loaded into memory at once, 
+(b) provide a way of copying data to/from the kernel from/to the user's 
+virtual address space (now that the addresses the user program sees
+are not the same as the ones the kernel sees), and (c) use timer interrupts 
+to force threads to yield after a certain number of ticks.
+
+Note that scheduler.cc now saves and restores user machine state
+on context switches.
+
+\item{3.}
+Write a shell and some utility programs.  A shell reads a command 
+from the user via the console, then runs the command by invoking
+the kernel system call `exec'.
+The UNIX program `csh' is an example of a shell.  
+Test out your shell and system call handling by writing a couple 
+utility programs, such as UNIX `cat' and/or `cp'.
+
+\item{4.}
+Optimize Nacho's multiprogramming performance in running the `perftest'
+test case (invoke `nachos -x perftest' after loading it into the Nachos 
+file system).  This test case starts up a CPU-bound job and an I/O-bound job.
+You will probably need to carefully select the time-slice interval;
+you may also need to implement some kind of multi-level thread 
+scheduling in order to get good performance.
+
+Include in your writeup a journal of your experiences as in assignment 2.
+How do certain design choices affect performance?
+
+\end{description}
+\end{document}

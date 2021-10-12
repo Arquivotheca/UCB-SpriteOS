@@ -1,0 +1,21 @@
+.(z
+.GS C
+pointscale on
+x .5
+file penalty.traffic.g
+.GE
+.(q
+\fBFigure 2\fR. Client degradation and network traffic (diskless Sun-3's with
+client caches, warm start) as a function of maximum client
+cache size. For each point, the maximum size of the client cache
+was limited to a particular value. 
+The ``degradation'' shown in (a) is relative
+to the time required to execute the benchmark with a local disk and
+warm cache.  
+The network traffic shown in (b) includes bytes transmitted in packet 
+headers and control packets, as well as file data.
+The diff benchmark did not fit on graph (b);
+for all cache sizes less than 2 Mbytes it has an I/O rate of 185 Kbytes/second
+and for all larger cache sizes it has an I/O rate of only 0.5 Kbytes/second.
+.)q
+.)z

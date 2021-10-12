@@ -1,0 +1,4 @@
+#!/bin/csh -f
+foreach i ( / /swap1 /user1 /pcs/vlsi /local /scratch1 /sprite/src/kernel /sprite/src /scratch3 /X11 /user3 /pcs /user4 /user5 /user2 /postdev /pcs/tic /graphics /scratch4)
+find $i/. -type d -print -exec ls -saF {} \;
+end

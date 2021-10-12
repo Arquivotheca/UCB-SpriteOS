@@ -1,0 +1,30 @@
+#!/bin/nawk -f
+#Diff the data from two files.
+function isnum(n)
+{
+    if (n=="") return 0;
+    if (n+0 != 0) return 1;
+    if ((n "1")+0 != 0) return 1;
+    return 0;
+}
+BEGIN {
+    for (i=1;i<ARGC;i++) {
+	for (nline=0;;nline++) {
+	    if ((getline < ARGV[i]) <= 0) break;
+	    line[nline,i] = $0;
+	}
+	close ARGV[i];
+	if (i==1) nlines = nline
+    }
+    for (j=0;j<nlines;j++) {
+	nparts = split(line[j,1],parts," ");
+	nparts2 = split(line[j,2],parts2," ");
+	if (nparts == 2 && parts[1]==parts2[1] && isnum(parts[1])) {
+	    printf("%s %s\n", parts[1],parts[2]-parts2[2]);
+	} else if (line[j,1]==line[j,2]) {
+	    printf("%s\n", line[j,1]);
+	} else {
+	    printf("*** %s *** %s\n", parts[1], parts2[1]);
+	}
+    }
+}

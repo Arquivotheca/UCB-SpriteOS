@@ -1,0 +1,119 @@
+# This file contains contains a collection of tests for the "file"
+# command in Tcl.  If everything is OK then it finishes silently.
+# If a problem is detected then it generates a Tcl error with a
+# cryptic message.  To trace the error you'll have to read through
+# the commands in this file.
+#
+
+proc check {a b num} {
+    if {[string compare $a $b] != 0} {
+	error [format {File error %s: wanted "%s", got "%s"} $num $b $a]}
+}
+
+# rootname and ext
+
+check [file abc.def ext] .def 1.1
+check [file abc.def ro] abc 1.2
+check [file a/b/c.d extension] .d 1.3
+check [file a/b/c.d rootname] a/b/c 1.4
+check [file a/b.c/d extension] {} 1.5
+check [file a/b.c/d rootname] a/b.c/d 1.6
+set num 7
+foreach outer { {} a .a a. a.a } {
+  foreach inner { {} a .a a. a.a } {
+    set thing [format %s/%s $outer $inner]
+    set a [format %s%s [file $thing rootname] [file $thing ext]]
+    check $a $thing 1.$num
+    set num [expr $num+1]
+  }
+}
+
+# dirname and tail
+
+check [file abc.def dirname] . 2.1
+check [file abc.def tail] abc.def 2.2
+check [file a/b/c.d d] a/b 2.3
+check [file a/b/c.d t] c.d 2.4
+check [file a/b.c/d dirname] a/b.c 2.5
+check [file a/b.c/d tail] d 2.6
+set num 7
+foreach outer { a .a a. a.a } {
+  foreach inner { {} a .a a. a.a } {
+    set thing [format %s/%s $outer $inner]
+    set a [format %s/%s [file $thing dirname] [file $thing tail]]
+    check $a $thing 2.$num
+    set num [expr $num+1]
+  }
+}
+
+# exists
+
+catch {exec chmod 777 dir.file}
+catch {exec rm -f dir.file/gorp.file}
+catch {exec rm -f gorp.file}
+catch {exec rmdir dir.file}
+check [file gorp.file exists] 0 3.1
+exec sh -c "cat >gorp.file" < abcde
+exec mkdir dir.file
+exec sh -c "cat >dir.file/gorp.file" < 12345
+check [file gorp.file exists] 1 3.2
+check [file dir.file/gorp.file exi] 1 3.3
+exec chmod 000 dir.file
+check [file dir.file/gorp.file exists] 0 3.4
+
+# executable
+
+check [file gorp.file executable] 0 4.1
+exec chmod 775 gorp.file
+check [file gorp.file exe] 1 4.2
+
+# isdirectory
+
+check [file gorp.file isdirectory] 0 5.1
+check [file dir.file isd] 1 5.2
+
+# isfile
+
+check [file gorp.file isfile] 1 6.1
+check [file dir.file isf] 0 6.2
+
+# isowned
+
+check [file gorp.file owned] 1 7.1
+check [file / owned] 0 7.2
+
+# readable
+
+exec chmod 444 gorp.file
+check [file gorp.file readable] 1 8.1
+exec chmod 333 gorp.file
+check [file gorp.file re] 0 8.2
+
+# writable
+
+exec chmod 555 gorp.file
+check [file gorp.file writable] 0 9.1
+exec chmod 222 gorp.file
+check [file gorp.file w] 1 9.2
+
+
+exec chmod 777 dir.file
+exec rm dir.file/gorp.file gorp.file
+exec rmdir dir.file
+
+# Error conditions
+
+check [catch file msg] 1 10.1
+check $msg {wrong # args: should be "file name option"} 10.2
+check [catch {file x} msg] 1 10.3
+check $msg {wrong # args: should be "file name option"} 10.4
+check [catch {file x exists too} msg] 1 10.5
+check $msg {wrong # args: should be "file name option"} 10.6
+check [catch {file x gorp} msg] 1 10.7
+check $msg {bad "file" option "gorp": must be dirname, executable, exists, extension, isdirectory, isfile, owned, readable, root, tail, or writable} 10.8
+check [catch {file x ex} msg] 1 10.9
+check $msg {bad "file" option "ex": must be dirname, executable, exists, extension, isdirectory, isfile, owned, readable, root, tail, or writable} 10.10
+check [catch {file x is} msg] 1 10.11
+check $msg {bad "file" option "is": must be dirname, executable, exists, extension, isdirectory, isfile, owned, readable, root, tail, or writable} 10.12
+check [catch {file x r} msg] 1 10.13
+check $msg {bad "file" option "r": must be dirname, executable, exists, extension, isdirectory, isfile, owned, readable, root, tail, or writable} 10.14

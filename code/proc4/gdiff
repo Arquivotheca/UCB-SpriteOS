@@ -1,0 +1,54 @@
+#!/bin/nawk -f
+# Convert cumulative graph (stacked) into difference graph.
+BEGIN {
+	indata = 0;
+	for (;done==0;) {
+	    if (getline <= 0) {
+		done = 1;
+		break;
+	    }
+	    if (NF>=1 && substr($1,1,1)=="\"") {
+		file++;
+		recs[file] = 0;
+		indata=1;
+		hdr[file] = $0;
+	    } else if (indata==0) {
+		printf("%s\n", $0);
+	    } else if (NF==2) {
+		data[file,int($1)] = $2;
+		recs[file]++;
+	    }
+	}
+	for (f=1;f<file;f++) {
+	    printf("\n");
+	    printf("%s\n", hdr[f]);
+	    if (recs[f]==2 && recs[f+1]==2) {
+		printf("%f %f\n", 0, data[f,0]-data[f+1,0]);
+		printf("%f %f\n", 103, data[f,0]-data[f+1,0]);
+	    } else {
+		for (i=0;i<=110;i++) {
+		    if (recs[f]==2) {
+			v1 = data[f,0];
+		    } else {
+			v1 = data[f,i];
+		    }
+		    if (recs[f+1]==2) {
+			v2 = data[f+1,0];
+		    } else {
+			v2 = data[f+1,i];
+		    }
+		    if (data[f,i] != "" || data[f+1,i] != "") {
+			printf("%f %f\n", i, v1-v2);
+		    }
+		}
+	    }
+	}
+	f = file;
+	printf("\n");
+	printf("%s\n", hdr[f]);
+	for (i=0;i<105;i++) {
+	    if (data[f,i] != "") {
+		printf("%f %f\n", i, data[f,i]);
+	    }
+	}
+    }

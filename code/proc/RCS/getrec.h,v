@@ -1,0 +1,42 @@
+head     1.1;
+branch   ;
+access   ;
+symbols  ;
+locks    ; strict;
+comment  @ * @;
+
+
+1.1
+date     90.12.04.10.55.32;  author shirriff;  state Exp;
+branches ;
+next     ;
+
+
+desc
+@@
+
+
+
+1.1
+log
+@Initial revision
+@
+text
+@/*
+ * getrec.h --
+ *
+ *	Include file for the trace record processing.
+ */
+
+#ifndef _GETREC_H
+#define _GETREC_H
+
+
+typedef struct traceFile {
+    FILE *stream;		/* Stream to read from. */
+    int traceRecCount;		/* Counter of records read. */
+    int numRecs;		/* Counter of number of records. */
+} traceFile;
+
+#endif
+@

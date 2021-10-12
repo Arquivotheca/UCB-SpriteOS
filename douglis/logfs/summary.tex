@@ -1,0 +1,26 @@
+ \begin{table}[h]
+ \begin{center}
+ \begin{tabular} {|l|l|}
+	 \hline
+	 \hline
+    \multicolumn{1}{|c|}{Action} &
+    \multicolumn{1}{c|}{Time} \\
+	 \hline
+Migrate ``null'' process & 190 ms \\
+Flush dirty pages & 14 ms/page \\
+Demand-load pages & 15 ms/page \\
+Transfer info for open files & 14 ms/file \\
+Flush file cache & 7 ms/block \\
+	 \hline
+	 \hline
+ \end{tabular}
+ \caption{Summary of Effect of dirty  pages on time to migrate.  The cost per
+ dirty page is calculated by subtracting the cost of migration when
+ only one heap  page is dirty
+  and dividing by the difference in the
+ number of pages. Each process had no open files.
+}
+ \label{paging}
+ \end{center}
+ \end{table}
+

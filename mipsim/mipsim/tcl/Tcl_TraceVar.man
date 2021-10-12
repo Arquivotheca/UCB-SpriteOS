@@ -1,0 +1,151 @@
+'\" Copyright 1989 Regents of the University of California
+'\" Permission to use, copy, modify, and distribute this
+'\" documentation for any purpose and without fee is hereby
+'\" granted, provided that this notice appears in all copies.
+'\" The University of California makes no representations about
+'\" the suitability of this material for any purpose.  It is
+'\" provided "as is" without express or implied warranty.
+'\" 
+'\" $Header: /sprite/src/lib/tcl/RCS/Tcl_TraceVar.man,v 1.1 90/07/23 15:43:35 ouster Exp $ SPRITE (Berkeley)
+'\" 
+.so \*(]ltmac.sprite
+.HS Tcl_TraceVar tcl
+.BS
+.SH NAME
+Tcl_TraceVar, Tcl_UnTraceVar, Tcl_VarTraceInfo \- monitor accesses to a variable
+.SH SYNOPSIS
+.nf
+\fB#include <tcl.h>\fR
+.sp
+int
+\fBTcl_TraceVar(\fIinterp, varName, global, flags, proc, clientData\fB)\fR
+.sp
+\fBTcl_UnTraceVar(\fIinterp, varName, global\fB)\fR
+.sp
+int
+\fBTcl_VarTraceInfo(\fIinterp, varName, global, procPtr, clientDataPtr\fB)\fR
+.SH ARGUMENTS
+.AS ClientData *clientDataPtr
+.AP Tcl_Interp *interp in
+Interpreter containing variable.
+.AP char *varName in
+Name of variable.
+.AP int global in
+If non-zero, then treat \fIvarName\fR as global variable, ignoring
+any active Tcl procedure frames.  If zero,
+look up variable in current procedure's context.
+.AP int flags in
+OR-ed combination of the values TCL_TRACE_READS, TCL_TRACE_WRITES, and
+TCL_TRACE_DELETES.  Indicates which operations are to be traced.
+.AP char *((*proc)()) in
+Procedure to invoke whenever one of the traced operations occurs.
+.AP ClientData clientData in
+Arbitrary one-word value to pass to \fIproc\fR.
+.AP char *((**procPtr)()) out
+Pointer to word in which to store address of current trace procedure
+for \fIvarName\fR, if any.
+.AP ClientData *clientDataPtr out
+Pointer to word in which to store ClientData for current trace
+for \fIvarName\fR, if any.
+.BE
+
+.SH DESCRIPTION
+.PP
+\fBTcl_TraceVar\fR allows an arbitrary C procedure to be interposed
+in the access path to a variable, so that all reads or writes to
+that variable are mediated by the procedure.  The \fIflags\fR
+argument to \fBTcl_TraceVar\fR indicates which operations are to
+cause \fIproc\fR to be invoked;  it consists of an OR-ed combination
+of any of the following values:
+.TP
+\fBTCL_TRACE_READS\fR
+Invoke \fIproc\fR whenever an attempt is made to read the variable.
+.TP
+\fBTCL_TRACE_WRITES\fR
+Invoke \fIproc\fR whenever an attempt is made to modify the variable.
+.TP
+\fBTCL_TRACE_DELETES\fR
+Invoke \fIproc\fR whenever the trace on the variable is removed.  This
+can happen either because \fBTcl_UnTraceVar\fR is called, or because
+the variable was deleted (e.g. it is a local variable and the procedure
+is returning).
+.LP
+If the trace is created successfully then \fBTcl_TraceVar\fR returns
+TCL_OK.  If an error occurred (e.g. there is already a trace set on
+the variable) then TCL_ERROR is returned and an
+error message will be left in \fIinterp->result\fR.
+.PP
+Whenever one of the specified operations occurs, \fIproc\fR will be
+invoked.  It should have the following structure:
+.nf
+.RS
+char *
+\fIproc\fR(\fIclientData, interp, varName, global, flags, oldValue, newValue\fR)
+.RS
+ClientData \fIclientData\fR;
+Tcl_Interp *\fIinterp\fR;
+char *\fIvarName\fR;
+int \fIglobal\fR;
+int \fIflags\fR;
+char *\fIoldValue\fR;
+char *\fInewValue\fR;
+.RE
+{
+}
+.RE
+.fi
+The \fIclientData\fP, \fIinterp\fP, and \fIvarName\fR parameters will
+have the same values as those passed to \fBTcl_TraceVar\fR when the
+trace was created.  \fIClientData\fR typically points to
+an application-specific
+data structure that describes what to do when \fIproc\fR
+is invoked.  \fIGlobal\fR indicates whether or not the
+variable is a global one;  it may be needed by \fIproc\fR if
+\fIproc\fR calls \fBTcl_GetVar\fR or \fBTcl_SetVar\fR.  The \fIflags\fR
+parameter will have one of the bits TCL_TRACE_READS, TCL_TRACE_WRITES,
+or TCL_TRACE_DELETES set;  this indicates which operation is
+being performed on the variable.  In addition, the bit corresponding
+to TCL_VARIABLE_UNDEFINED will be set in \fIflags\fR if the
+variable has never been assigned a value.
+\fIOldValue\fR gives the variable's current value;  it points to an
+empty string if TCL_VARIABLE_UNDEFINED is set.  \fINewValue\fR
+gives the new value being stored in the variable, if this is a
+write operation;  otherwise it points to an empty string.
+.PP
+For read tracing, the return value from \fIproc\fR is the value that
+will be returned to the reader;  if \fIproc\fR returns NULL, this
+is a signal to the reader that the variable is undefined.  \fIProc\fR
+may return \fIoldValue\fR or something completely different, at
+its discretion.  For write tracing, the return value from \fIproc\fR
+is ignored.  However, it is up to \fIproc\fR to change the variable's
+value, if it wishes to allow the write to proceed.  To do this,
+\fIproc\fR should call \fBTcl_SetVar\fR.  For delete tracing, the
+return value from \fIproc\fR is also ignored;  the primary purpose
+of this trace call is to allow \fIproc\fR to free up its data structures
+associated with the trace.
+.PP
+Tracing is temporarily disabled on the variable while \fIproc\fR is
+executing.  This means that \fIproc\fR may call \fBTcl_GetVar\fR
+and \fBTcl_SetVar\fR without fear of infinite recursion on itself:
+the calls will operate directly on the variable, as if there were
+no tracing.  Once \fIproc\fR returns the trace is re-enabled.
+.PP
+\fBTcl_UnSetTrace\fR may be used to remove a trace from the variable
+given by \fIinterp\fR, \fIvarName\fR, and \fIglobal\fR.  If the
+current trace includes TCL_TRACE_DELETES, then the trace procedure
+will be invoked one last time as part of the \fBTcl_UnSetTrace\fR
+call.  If there is currently no trace on the selected variable then
+\fBTcl_UnSetTrace\fR has no effect.
+.PP
+\fBTcl_VarTraceInfo\fR is used to find out about the current trace
+on a variable, if any.  The arguments \fIprocPtr\fR and
+\fIclientDataPtr\fR point to variables that \fBTcl_VarTraceInfo\fR
+fills in with the \fIproc\fR and \fIclientData\fR arguments
+(respectively) from the call that created the current trace.  The
+return value is the \fIflags\fR argument from the call that created
+the current trace.  If there is no trace on the indicated variable,
+or if the variable doesn't exist, then 0 is returned and
+\fI*procPtr\fR and \fI*clientDataPtr\fR are both set to NULL.
+
+.SH KEYWORDS
+clientData, trace, variable

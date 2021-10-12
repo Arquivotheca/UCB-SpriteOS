@@ -1,0 +1,29 @@
+#!/bin/nawk -f
+BEGIN {
+    num = -10;
+}
+{    if (NF==1) {
+	    print $1
+	    if (num>500) {
+		print "**** ",num | "cat 1>&2"
+	    }
+	    dirTotal[num]++;
+	    num=0;
+	} else if ($1== "total") {
+	} else if ($2 == "./") {
+	    sizeTotal[$1]++;
+	} else if ($2 != "../") {
+	    num++;
+	}
+}
+END {
+	dirTotal[num]++;
+	for (i in dirTotal) {
+	if (i != -10) {
+	    printf("Total %d: %d\n", i, dirTotal[i]);
+	}
+    }
+    for (i in sizeTotal) {
+	printf("Size %d: %d\n", i, sizeTotal[i]);
+    }
+}

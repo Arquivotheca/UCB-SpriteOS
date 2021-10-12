@@ -1,0 +1,15 @@
+.(z
+.GS C
+width 6.0i
+file config.g
+.GE
+.(q
+\fBFigure 1.\fR  File caches in the Sprite system.  When a process
+makes a file access, it is presented first to the cache of the process's
+workstation (``file traffic'').  If not satisfied there, the request
+is passed either to the local disk, if the file is stored there
+(``disk traffic''), or to the server where the file is stored
+(``server traffic'').  Servers
+also maintain caches in order to reduce their disk traffic.
+.)q
+.)z

@@ -1,0 +1,683 @@
+.nr pp 11
+.nr tp 11
+.nr sp 11
+.nr qp 10
+.nr fp 10
+.th
+.sc
+.ps 12
+.vs 14
+.he 'Mipsim User Manual''\*(mo \n(dy, 19\n(yr'
+.fo ''- % -''
+.tp
+.(l C
+.sz +4
+.b "Mipsim User Manual"
+
+.b "Computer Science 60B"
+.sz -4
+.sp 2c
+John Ousterhout
+
+Computer Science Division
+Electrical Engineering and Computer Sciences
+University of California
+Berkeley, CA 94720
+
+.sp 2c
+.)l
+.ls 1
+
+.pn 2
+.sh 1 "Introduction"
+.pp
+Mipsim is a simulator for MIPS Computer Systems' R2000/R3000 family
+of processors, as described in the book \fIMIPS RISC
+Architecture\fR by Gerry Kane.  Mipsim allows you to examine and
+modify the memory and execution state of a simulated R2000
+processor, load assembly-language programs into the simulated
+machine, and run them.  Mipsim provides mechanisms for single-stepping
+the machine and also for stopping the machine when selected locations
+are accessed.
+.pp
+The rest of this manual consists of four sections.  Section 2 describes
+the basic facilities of Mipsim, which consist of only about a
+half-dozen commands.  Section 3 describes the assembly
+language features that are accepted by Mipsim (not all of the
+features described in the Kane book are implemented in Mipsim).
+Section 4 describes the I/O devices that are available on the R2000
+simulated by Mipsim, and Section 5 describes the subset of
+exception-handling facilities implemented by Mipsim.
+.pp
+This document provides a tutorial-style introduction to the features
+of Mipsim, but it only covers the features that are essential for
+CS 60B homework assignments.  There is a separate manual entry for
+Mipsim, which is much more terse but describes all of the features
+of Mipsim.  You may find the manual entry useful as a reference
+document.
+
+.sh 1 "Basic Mipsim Commands"
+.pp
+To run Mipsim, type \fCmipsim\fR to the shell with no additional
+arguments.  Once Mipsim starts running, it will print a
+prompt \fC(mipsim)\fR and wait for you to type commands.  Commands
+to mipsim have the same basic structure as commands to the shell:
+normally each line you type is one command, consisting
+of a command name followed by one or more
+arguments for the command.  As with the
+shell, arguments are separated by spaces.  If you wish to specify
+an argument that contains white space, you must type that argument
+between double-quotes or curly braces.  For
+example, the lines below are examples of valid Mipsim commands:
+.(l C
+\fCget r0 2x
+\fCstop at 0x100 "get r0 2x"\fR
+\fCstop at 0x100 {get r0 2x}\fR
+.)l
+The first command has the name \fCget\fR plus two additional
+arguments.  The second command has the name \fCstop\fR plus three
+additional arguments;  the last argument is \fCget r0 2x\fR.
+The third command is identical to the second, except that it uses
+curly braces instead of quotes.  What
+these commands actually do will be described later in this manual.
+.pp
+There are several other syntactic features to the Mipsim command language,
+but the information above should be enough for almost anything
+you'll need to do for CS 60B.
+.pp
+The most important Mipsim command is \fCquit\fR, which will return
+you to the shell.  Mipsim will also quit if you type control-D
+(end-of-file) as the only character of an input line.
+
+.sh 2 "Examining and Changing the Machine State: Get, Put, and Putstring"
+.pp
+The \fCget\fR command is used to print out the state of the R2000
+machine.  It has the form
+.(l C
+\fCget \fIaddress\fR
+or
+\fCget \fIaddress\fR \fIflags\fR
+.)l
+where \fIaddress\fR is the name of the piece of state you'd like
+to see.  For example, ``\fCget r0\fR'' will print out the contents of
+register 0, and ``\fCget 0x100\fR'' will print out the contents of
+the memory word at address 0x100.  You may type any of the following
+things for \fIaddress\fR:
+.ip
+A register name.  The valid register names are \fCr0\fR through
+\fCr31\fR, plus \fChi\fR, \fClo\fR, and \fCpc\fR.  The name \fCgp\fR
+is treated as a synonym for \fCr28\fR and \fCsp\fR is treated as a
+synonym for \fCr29\fR.  Also, the names \fCepc\fR, \fCstatus\fR, and
+\fCcause\fR may be used to access register in the system coprocessor.
+See Section 5 for details on the system coprocessor.
+.ip
+A number, in decimal, hexadecimal, or octal,
+which will be treated as the address of a memory location
+to print.  Hexadecimal numbers must start with ``0x'' and octal
+numbers must start with ``0''
+.ip
+A symbolic expression, such as \fCstart+4\fR, which will also be
+treated as the address of a memory location to print.  The symbols in the
+expression must be defined in the assembler files currently loaded
+(see below for details on loading assembly files).
+.pp
+You may also specify an additional \fIflags\fR argument to \fCget\fR.
+\fIFlags\fR may contain a number and/or any of several characters,
+all typed together in a single argument, for example
+.(l C
+\fCget r3 2d\fR
+or
+\fCget 0x241 22db
+.)l
+If \fIflags\fR contains a number, the number
+tells how many items to print out.
+For example, the first command above will print two registers starting
+with register 3 and the second command will print 22 memory locations
+starting with location 0x241.  If no number is given, then a single
+item is printed.  If \fIflags\fR contains non-numeric characters,
+they indicate what format to use for printing.  The legal
+characters are:
+.ba +.5i
+.ip \fCd\fR
+Print values in decimal.
+.ip \fCx\fR
+Print values in hexadecimal (this is the default if no \fIflags\fR
+are given).
+.ip \fCB\fR
+Print values in binary.
+.ip \fCi\fR
+Print values as instructions in the R2000 assembly language.
+.ip \fCc\fR
+Print values as single ASCII characters.
+.ip \fCs\fR
+Print values as null-terminated ASCII strings.
+.ip \fCw\fR
+When printing memory locations, print whole words.
+.ip \fCh\fR
+When printing memory locations, print halfwords.
+.ip \fCb\fR
+When printing memory locations, print individual bytes.
+.ip \fCv\fR
+Print the value of the address, instead of the location it refers to.
+See below for details.
+.ba -.5i
+.lp
+Thus the second example above will print 22 bytes starting with location
+0x241, printing each byte in decimal.
+.pp
+If you specify the \fCv\fR flag to \fCget\fR, then the \fIaddress\fR
+argument will be printed instead of the memory location it addresses.
+This feature can be used to convert values from one form to another.
+For example, if you want to convert the value 0x1234 to decimal, the
+command ``\fCget 0x1234 dv\fR'' will do the trick.
+.pp
+The \fCput\fR command may be used to change the value of a register
+or memory location.  It has the form
+.(l C
+\fCput \fIaddress\fR \fInumber\fR
+.)l
+\fIAddress\fR identifies the thing you'd like to modify
+and \fInumber\fR is the value to store in the location.  \fIAddress\fR
+has the same possible values as for \fCget\fR and \fInumber\fR is
+a hexadecimal, octal, or decimal number.  For example,
+.(l C
+\fCput r1 110\fR
+.)l
+will place the value 110 (decimal) in register 1.
+.pp
+The \fCputstring\fR command is similar to \fCput\fR, except that it
+stores a NULL-terminated ASCII string instead of a numeric value.
+It has the form
+.(l C
+\fCputstring \fIaddress\fR \fIstring\fR
+.)l
+\fIAddress\fR identifies the first byte to modify
+and \fIstring\fR gives the string to store in the bytes starting at
+\fIaddress\fR.  \fIAddress\fR has the same possible values as for
+\fCget\fR, except that register values are not permitted:  strings
+may only be stored in memory.
+
+.sh 2 "Loading and Running Programs: Load and Go"
+.pp
+The normal way to enter programs into the R2000's memory is to
+write them in assembly language and use the \fCload\fR command
+of Mipsim, which has the following syntax:
+.(l C
+\fCload \fIfile file file ...\fR
+.)l
+A single \fCload\fR command may specify any number of files.  Each
+file should be written in R2000 assembly language;  see Section 3
+for more information on the assembly-language features that are
+accepted by Mipsim.
+.pp
+As Mipsim reads the files it loads memory with the information
+specified in the files.  By default the information will be loaded
+starting at memory address 0x100.
+For most of your assignments in CS 60B it won't matter where the
+information is loaded in memory, but if you wish to change
+the default load address, read about the \fCcodeStart\fR and
+\fCdataStart\fR variables in the Mipsim manual entry.
+.pp
+To run a program once it has been loaded, use the \fCgo\fR command:
+.(l C
+\fCgo address\fR
+.)l
+.lp
+Mipsim will set the program counter to \fIaddress\fR and begin
+simulating the execution of the R2000 processor.  \fIAddress\fR
+may have the same forms as for the \fCget\fR command, except that
+register names will not be accepted.
+Normally, you should identify the beginning of your program with
+a symbol, such as \fCstart\fR, and use that symbol name in the
+\fCgo\fR command, e.g. ``go start''.
+.pp
+Once the machine starts executing, it will run forever until
+something causes it to stop.  Mipsim will not process any command
+lines until execution stops.  There are four things that will
+stop the machine:
+.ip [1]
+A \fCbreak\fR instruction.  You should normally place a
+\fCbreak\fR instruction at the end of your program to stop
+the simulator and return to Mipsim command mode.
+.ip [2]
+An execution error, such as an invalid memory address or illegal
+opcode.
+.ip [3]
+Control-C.  If your machine enters an infinite loop
+and you'd like to stop it to see where it is, you can type
+control-C:  Mipsim will then stop simulating the R2000 machine and
+start processing commands again.
+.ip [4]
+Stops set with the \fCstop\fR command.  See Section 2.3
+for information on using stops.
+
+.sh 2 "Additional Debugging Commands:  Step and Stop"
+.pp
+In the best of all worlds, your programs would always work perfectly
+the first time and you wouldn't need to use any commands except those
+above.  However, for those of you that are mere mortals, this
+section describes some additional commands to help you figure out
+why your programs don't work.
+.pp
+The \fCstep\fR command allows you to step through the execution of
+a program one instruction at a time.  It has the form
+.(l C
+\fCstep \fIaddress\fR
+or
+\fCstep\fR
+.)l
+.lp
+If you use the first form, the program counter will be set to \fIaddress\fR
+and the R2000 will execute a single instruction at that address.  You
+can then examine the state of the machine after the instruction completes.
+To continue execution, invoke \fCstep\fR with no arguments;
+each of these commands will execute one additional instruction.  If
+you've seen enough individual instructions and want to let your program
+run to completion, invoke the \fCgo\fR command with no arguments.
+.pp
+For long programs it will be tedious to step through the entire
+program one instruction at a time.  To help debug such programs,
+you can use the \fCstop\fR command, which will arrange for
+execution to stop whenever a particular memory location is accessed.
+The \fCstop\fR command has the following forms:
+.(l C
+\fCstop at \fIaddress\fR
+or
+\fCstop info\fR
+or
+\fCstop delete \fInumber\fR \fInumber\fR ...
+or
+\fCstop at \fIaddress\fR \fIcommand\fR
+.)l
+The first form is used to set a stop:  from now on, whenever the
+R2000 machine attempts to read, write, or execute the memory location
+given by \fIaddress\fR, the simulator will stop execution and return
+to command mode.  If you know that a particular portion of your program
+is buggy, you can set a stop at the beginning of that portion and
+then run your program flat-out (using \fCgo\fR).  When the buggy
+portion is reached, execution will stop and you can single-step through
+the tricky part.  \fCStop\fR is also useful if a memory location is
+being modified incorrectly and you can't figure out who is doing it:
+set a stop at that address, and you'll find out whenever the machine
+reads it or writes it.
+.pp
+You can set more than one stop at a given time.  Each stop is given
+a number to identify it.  The \fCstop info\fR command will print out
+information about all of the current stops and give their numbers.
+The \fCstop delete\fR command will remove one or more stops;
+use the identifying numbers to indicate which stops should be removed.
+.pp
+If you provide an additional \fIcommand\fR argument to the \fCstop at\fR
+command, then execution won't stop when the address is
+referenced.  Instead, the \fIcommand\fR argument will be executed as
+if you had typed it to Mipsim, then Mipsim will go back to simulating
+the R2000 machine.  For example, the command
+.(l C
+\fCstop at 0x100 {get r1}
+.)l
+will cause register 1 to be printed each time location 0x100 is accessed.
+
+.sh 2 "Other Useful Commands:  Source and History"
+.pp
+Although Mipsim contains many commands besides the ones described above,
+you won't need to use most of them.  However, there are two additional
+commands that many of you will find useful:  \fCsource\fR and
+\fChistory\fR.  The \fCsource\fR command takes a file name as argument:
+.(l C
+\fCsource \fIfileName\fR
+.)l
+This command reads the named file and executes
+it as a Mipsim command script.  The result of the last command in the file
+will be returned as the result of the \fCsource\fR command and will be
+printed on your terminal.  With the \fCsource\fR command you can
+save commonly-used command sequences in files.  To re-invoke the commands,
+you can just \fCsource\fR the files rather than retyping all the
+commands individually.  Note:  only the result of the last command in
+the file is printed.  If any of the other commands return results then their
+results are ignored (e.g. if there is a \fCget\fR command in the middle
+of the command file then its result won't be printed).
+.pp
+The \fChistory\fR command provides facilities somewhat like the
+history mechanism of \fCcsh\fR.  Here are a few of the most common
+forms of the \fChistory\fR command:
+.(l C
+\fChistory\fR
+\fChistory redo\fR
+\fChistory redo \fInumber\fR
+\fChistory substitute \fIold new\fR
+\fChistory substitute \fIold new number\fR
+.)l C
+The first form prints out a list of recently-executed Mipsim commands,
+with an identifying number next to each command.  The second form
+causes Mipsim to re-execute the previous command.  The third form
+causes Mipsim to re-execute the command whose identifying number is
+\fInumber\fR.  The fourth form re-executes the most recent command, except
+that any occurrences of the string \fIold\fR in that command are replaced
+with the string \fInew\fR.  The last form is similar except that it
+re-executes the command whose identifying number is \fInumber\fR.
+Note:  Mipsim commands and keyword arguments can be abbreviated, so you
+can type ``\fCh r\fR'' instead of ``\fChistory redo\fR'' and ``\fCh s\fR''
+instead of ``\fChistory substitute\fR''.
+
+.sh 2 "To Get More Information on Mipsim"
+.pp
+This document only describes the basic features of Mipsim.  The
+information above should be enough for all the things you'll need
+to do in CS 60B.  However, Mipsim provides many other features.
+For example, Mipsim's command language is built using Tcl,
+an interpretive command language.  Tcl is a complete programming
+language including variables, procedures, conditional statements,
+looping, lists, expressions, an so on.  All of the Tcl features
+are available in the Mipsim command language.
+If you're interested in more information on Tcl, see me and I'll
+get you a copy of the complete Tcl language description.
+.pp
+You may also wish to read the Mipsim manual entry to find out about
+more things you can do in Mipsim.  For example, it's possible to
+change the load address for a program to a place other than 0x100.
+The manual entry for Mipsim should appear immediately after
+this document in the CS 60B information packet.
+
+.sh 1 "Mipsim's Assembly Language"
+.pp
+The assembly language that Mipsim accepts is almost identical to
+what is described in Appendices A and D of Kane's book.  The main
+differences are that a few of the instructions and features described
+by Kane are not implemented by Mipsim.
+.pp
+An assembly-language program is a set of statements indicating
+how to initialize memory with the code and data for a program.
+Each statement occupies one line.  There are two kinds of statements,
+described in the paragraphs below:  machine instructions and
+pseudo ops.  In addition, assembly-language programs may define
+symbols, which allow the program to grow and shrink easily.
+.pp
+Assembly-language programs are processed by assemblers, which read
+in the programs and compute what to put in memory and where.  Mipsim
+contains such an assembler, which is invoked as part of the \fCload\fR
+command.  At any given time, the assembler has a \fBcurrent location\fR,
+which is the address of the next place in memory where it will store
+information.
+As the assembler reads the lines of an assembly-language program, it
+determines what to put in memory, stores it at the current location,
+and advances the current location past the information it just stored.
+
+.sh 2 "Machine Instructions"
+.pp
+Most of the statements of an assembly-language program describe
+machine instructions, one per line.  When the assembler encounters
+a machine instruction, it determines the binary representation of
+that instruction, stores the binary value at the current location,
+and advances the current location.
+Machine instructions are
+written in the following format:
+.(l C
+\fIopcode operand, operand, ...\fR
+.)l
+The \fIopcode\fR should be one of the ones described in Appendix A
+of Kane.  The number and order of \fIoperand\fRs varies from
+instruction to instruction, but should also
+be as described in Appendix A.  Opcodes should be entirely in lower
+case, e.g. \fCaddiu\fR.
+.pp
+Mipsim does not currently implement any of the floating-point operations
+described in Appendix B of Kane's book.  In addition, Mipsim doesn't
+implement the following opcodes from Appendix A:
+\fCbczf\fR, \fCbczt\fR, \fCcfcz\fR, \fCcopz\fR, \fCctcz\fR,
+\fCmfcz\fR, \fCmtcz\fR, \fCrfe\fR, \fCswcz\fR, \fCtlbp\fR,
+\fCtlbr\fR, \fCtlbwi\fR, \fCtlbwr\fR.
+
+.sh 2 "Pseudo ops"
+.pp
+The second kind of statement in an assembly-language program
+consists of \fBpseudo ops\fR.  Pseudo ops contain additional
+instructions to the assembler to help it fill in the contents
+of memory.  The full list of pseudo ops appears near the middle
+of Appendix D of Kane's book, but Mipsim only supports the pseudo-ops
+described here.  The simplest pseudo ops are \fC.ascii\fR, \fC.asciiz\fR, \fC.byte\fR, \fC.half\fR, \fC.space\fR,
+and \fC.word\fR;  these provide alternate
+mechanisms for specifying what values to put in memory.  For
+example, \fC.word\fR allows you to specify memory values as decimal or
+hexadecimal values instead of assembler instructions.  The assembler
+will place the given value(s) at the current location, then advance
+the current location.
+.pp
+Other pseudo ops accepted by Mipsim
+are \fC.align\fR, \fC.data\fR, \fC.globl\fR,
+and \fC.text\fR.  Only a single pseudo op should
+appear on a given
+line of an assembler file.  See Kane's book for a description of
+what these pseudo ops do.
+
+.sh 2 "Symbols"
+.pp
+Symbols are used to refer to memory locations without having to
+know the exact addresses of the items being referred to.  When
+the assembler reads an assembly-language program, it computes
+the actual address for each symbol;  wherever the symbol is used,
+the assembler substitutes the actual address.  This is
+particularly convenient when a program is undergoing modifications.
+If you use absolute addresses in your program you'll have to change
+the addresses manually whenever the program changes size;  with
+symbols, the assembler fills in the correct addresses for you.
+No assembly-language programs for this class should ever contain
+absolute addresses, except for things that can never move such as
+as device registers.
+.pp
+To declare an address symbolically, start off a line with a name
+followed by a colon.  This creates a symbol whose address is the
+current location (i.e. the address of the next memory location
+to be filled in by the assembler).  The rest of the line may contain
+a machine instruction or a pseudo op, or it may be blank.  For
+example, the statements
+.(l
+.ta 1i
+\fCone:	.word 1\fR
+.)l
+writes the value ``1'' in memory at the current location, and
+creates a symbol \fCone\fR whose value is the address of that
+word.  Then the symbol can be used in machine instructions such
+as the following example:
+.(l
+.ta 1i
+\fCloop:
+	lw r1,one
+	nop
+	beq r1,r2,loop
+	nop\fR
+.ta 1c 2c 3c 4c
+.)l
+This will store two instructions in memory and associate
+the symbol \fCloop\fR
+with the address of the first instruction.  The assembler will fill in the
+\fClw\fR instruction appropriately so that it loads register
+1 with the word allocated in the previous example (but note:  this
+instruction will only work if the address of \fCone\fR fits in the
+16-bit immediate value of the \fClw\fR instruction).  The branch offset
+in the \fCbeq\fR instruction will automatically be set to branch back
+to \fCloop\fR.
+
+.sh 2 "Comments"
+.pp
+Assembly programs can and should contain comments describing how
+they work.  The character ``#'' is used to indicate a comment:
+anything from a ``#'' character up to the end of the current line
+is treated as a comment and ignored by the assembler.
+
+.sh 2 "Miscellaneous Notes"
+.pp
+Mipsim's assembler does not do any instruction re-ordering, nor
+does it attempt to fill delay slots.  The \fCreorder\fR and
+\fCnoreorder\fR options are ignored.
+
+.sh 1 "I/O Devices"
+.pp
+In addition to simulating the basic operation of the R2000 processor,
+Mipsim also simulates a terminal attached to the machine.  When the R2000
+is ``running'' Mipsim connects its own terminal up to the R2000:
+characters you type while the R2000 is running will go to the
+R2000's terminal device rather than to Mipsim.  Similarly, if the R2000
+executes instructions to output characters to its terminal, the
+characters will appear on Mipsim's terminal.  One exception to this
+rule is control-C:  it will not be passed to the R2000, but instead
+will cause Mipsim to stop simulating and return to command mode.
+When the R2000 stops executing (for
+example, because you typed control-C or because the machine hit a
+stop that you set), then your terminal will be reconnected back to
+Mipsim so you can type Mipsim commands.
+.pp
+The terminal device consists of two independent units:  a \fIreceiver\fR
+and a \fItransmitter\fR.  The receiver unit receives characters from
+the keyboard as they are typed, and the transmitter unit is used to
+output characters to the terminal's display.  The two units are
+completely independent.  This means, for example, that characters
+typed at the keyboard are not automatically ``echoed'' on the
+display;  the R2000 must get the input character from the receiver
+and re-transmit it to echo it.
+.(z
+.GS
+file f1.g
+width 5i
+pointscale on
+.GE
+.(q
+\fBFigure 1\fR.  The terminal is controlled using four device
+registers, each of which appears as a special memory location
+at the given address.  Only a few bits of the registers are
+actually used:  the others always read as zeroes and are ignored
+on writes.
+.)q
+.)z
+.pp
+The R2000 accesses the terminal using four memory-mapped device
+registers, as shown in Figure 1.  ``Memory-mapped'' means that
+each register appears as a special memory location.  The Receiver
+Control Register is at location 0xfff0;  only two of its bits
+are actually used.  Bit 0 is called ``ready'': if it is one it
+means that a character has arrived from the keyboard but has not yet
+been read from the receiver data register.  The ready bit is
+read-only:  attempts to write it are ignored.  The ready bit will
+change automatically from zero to one when a character is typed at
+the keyboard, and it will change automatically from one to zero
+when the character is read from the receiver data register.
+.pp
+Bit one of the Receiver Control Register is ``interrupt enable''.
+This bit may be both read and written by the R2000 processor.  The
+interrupt enable is initially zero;  if it is set to one by the
+R2000, then an interrupt will be requested by the terminal on
+level zero whenever
+the ready bit is one.  For the  interrupt actually to be received
+by the R2000, it must be enabled in the status register of the
+R2000's system coprocessor (see Section 5).
+.pp
+Other bits of the Receiver Control Register are unused:  they always
+read as zeroes and are ignored in writes.
+.pp
+The second terminal device register is the Receiver Data Register.
+The low-order eight bits of this register contain the last character
+typed on the keyboard, and all the other bits contain zeroes.  This
+register is read-only to the R2000:  it only changes value
+when a new character is typed on the keyboard.  Reading the Receiver
+Data Register causes the ready bit in the Receiver Control Register
+to be reset to zero.
+.pp
+The third terminal device register is the Transmitter Control Register.
+Only the low-order two bits of this register are used, and they behave
+much like the corresponding bits of the Receiver Control Register.  Bit
+0 is called ``ready'' and is read-only.  If it is one it means the
+transmitter is ready to accept a new character for output.  If it
+is zero it means the transmitter is still busy outputting the previous
+character given to it.  Bit one is ``interrupt enable'';  it is readable and
+writable.  If it is set to one by the R2000 then an interrupt will be
+requested on level zero whenever the ready bit is one.
+.pp
+The final device register is the Transmitter Data Register.  This register
+always reads as zero.  When it is written, the low-order eight bits are
+taken as an ASCII character to output to the display.  When the
+Transmitter Data Register is written, the ready bit in the Transmitter
+Control Register will be reset to zero.  The bit will stay zero until
+enough time has elapsed to transmit the character to the terminal;  then
+the ready bit will be set back to one again.
+The Transmitter Data Register
+should only be written when the ready bit of the Transmitter Control
+Register is one;  if the transmitter isn't ready then writes to the
+Transmitter Data Register are ignored (the write appears to succeed but
+the character will not be output).
+.pp
+In real computers it takes time to send characters over the serial
+lines that connect terminals to computers.  These time lags are
+simulated by Mipsim.  For example, after the transmitter starts
+transmitting a character, the transmitter's ready bit will become zero for
+a while.  Mipsim measures this time in instructions executed, not in
+real clock time.  This means that the transmitter will not become
+ready again until the R2000 has executed a certain number of
+instructions.  If you stop the machine and look at the ready bit
+using Mipsim, it will not change.  However, if you let the
+machine run then the bit will eventually change back to one.
+
+.sh 1 "Exceptions"
+.pp
+A real R2000 processor provides a number of mechanisms for dealing
+with exceptions, which are described in Section 5 of the Kane book.
+Mipsim implements a subset of those facilities, just enough to
+handle interrupts from the terminal.  Mipsim implements only three
+registers of CP0 (the system coprocessor):  status, cause, and
+exception program counter.  Not all of the status and cause bits
+are implemented by Mipsim;  Figure 2 shows the bits that are
+implemented.  For a description of what the bits mean, see pages
+5-1 through 5-9 of the Kane book.
+.pp
+The CP0 registers may be read and written using the \fCmfc0\fR
+and \fCmtc0\fR instructions.  For example, the instruction
+.(l C
+\fCmfc0 r26,r14\fR
+.)l
+will read register 14 of CP0 (the EPC register) and place
+its contents in register 26 of the main R2000 processor.  The
+instruction
+.(l C
+\fCmtc0 r7,r12\fR
+.)l
+will copy register 7 of the main R2000 processor to register
+12 of CP0 (the status register).  You can also read these registers
+from Mipsim using the \fCget\fR command and the register names
+\fCstatus\fR, \fCcause\fR, and \fCepc\fR.  For example, the
+command
+.(l C
+\fCget status\fR
+.)l
+will print the contents of the status register.  You may not write
+the CP0 registers from Mipsim.
+.pp
+One difference between a real R2000 and the one simulated by
+Mipsim is that the general exception vector address (i.e. the
+address of the first instruction executed after an interrupt)
+is 0x80 in Mipsim, instead of 0x80000080 as advertised in the
+Kane book.  You will need to arrange for your interrupt
+routine to be located at address 0x80.  To do this, place the
+assembler pseudo-op
+.(l C
+\fC\&.text 0x80\fR
+.)l
+at the beginning of your assembler file, and follow it immediately
+with the code for the interrupt routine.  This will guarantee that
+the interrupt-handling code is at 0x80.
+.(z
+.GS C
+file f2.g
+width 4i
+pointscale on
+.GE
+.(q
+\fBFigure 2\fR.  Mipsim simulates a subset of the R2000's system
+coprocessor (CP0).  The figure shows the three registers implemented
+by Mipsim, their register numbers, and the bits of the registers
+that are implemented by Mipsim.
+.)q
+.)z
+.pp
+Mipsim does not support any of the R2000 exceptions except for
+interrupts.  Other exceptions, such as bus errors or
+addressing errors, cause Mipsim to stop the simulation.
+Except for the differences noted above, the handling of interrupts
+in Mipsim is just as described in the Kane book on page 5-17.

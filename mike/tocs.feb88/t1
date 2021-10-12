@@ -1,0 +1,42 @@
+.(z C
+.(c
+.TS
+center, tab(;);
+| c s s s s |
+| c | c | c | c | c |
+| n | n | n | n | n |.
+.br
+_
+Server Traffic With Cache Consistency
+_
+Client Cache Size;Blocks Read;Blocks Written;Total;Traffic Ratio
+=
+0 Mbyte;445815;172546;618361;100%
+_
+0.5 Mbyte;102469;96866;199335;32%
+_
+1 Mbyte;84017;96796;180813;29%
+_
+2 Mbytes;77445;96796;174241;28%
+_
+4 Mbytes;75322;96796;172118;28%
+_
+8 Mbytes;75088;96796;171884;28%
+_
+.TE
+.)c
+.(q
+\fBTable 1\fR.
+Client caching simulation results, based on trace data from BSD study.
+Each user was treated as a different client, with client caching and
+a 30-second delayed-write policy.  The table
+shows the number of read and write requests made by client caches to
+the server, for different client cache sizes.
+The ``Traffic Ratio'' column gives the total server traffic
+as a percentage of the total file traffic presented to the client caches.
+Write-sharing is infrequent: of the write traffic, 4041 blocks were
+written through because of
+concurrent write-sharing and 6887 blocks were flushed back because
+of sequential write-sharing.
+.)q
+.)z

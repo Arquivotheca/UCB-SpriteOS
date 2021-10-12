@@ -1,0 +1,4 @@
+#define field77_1_width 7
+#define field77_1_height 7
+static char field77_1_bits[] = {
+   0x08, 0x14, 0x22, 0x41, 0x22, 0x14, 0x08};

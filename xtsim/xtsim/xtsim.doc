@@ -1,0 +1,206 @@
+Manifest:
+---------
+xtsim.doc
+Makefile
+event.c
+event.h
+initsim.c
+local.map
+pqarr.c
+pqarr.h
+queue.c
+queue.h
+schedule.c
+schedule.h
+sun3.md/	sun3 machine dependent files
+sun4.md/
+ds3100.md/
+simtest/	A simple test to see if you've ported xtsim correctly.
+atax/		A game written using xtsim.
+
+How to make libxtsim.a:
+-----------------------
+% cp <machine>.md/* .
+% make
+
+How to make simtest:
+--------------------
+% cd simtest
+% make
+
+How to make atax:
+-----------------
+% cd atax
+% make
+
+Xtsim:
+------
+XtSim is a library which interfaces a simple event driven simulator to the
+Xt tool kit.  Please send questions and comments to eklee@cs.berkeley.edu.
+
+XtSim allows you to create multiple threads, cause threads to
+wait for user defined events and cause threads to delay for a specified
+period of time.  In order to support multiple threads, a small amount of
+assembly code is used.  Currently, multiple threads are supported on
+sun3, sun4, dec3100 and dec5000 architectures (the dec3100 and dec5000 are
+binary compatible).  If your machine is not listed above, look at the files
+in the '.md' directories and see if you can port them.
+The files are very short and there is very little assembly code.
+The main thing the machine dependent code does is save the machine registers,
+copy the current stack frame and relocate the frame pointer and stack pointer
+in the saved copy of the register contents to refer to the new stack.
+After you've ported xtsim, compile and run simtest and check the output
+with simtest.out.  If the files are the same, please send me a copy of the port.
+If you are unable port the files, you can still use xtsim but
+you will not be able to create new threads, that is you will not be able
+to use the Spawn() macro and therefore will be limited to a single thread.
+
+Functions and Macros:
+---------------------
+InitSim()
+    Initializes xtsim.  Must be called before any other routine.
+---------------------
+Spawn(char *threadName)
+    Create a new thread.  Spawn() functions in a manner analogous to the
+    Unix fork() system call, returning 0 to the child thread and a non-zero
+    thread id to the parent.  Spawn allocate a new C stack and copies only
+    the currently active stack frame to the new C stack, thus, the child
+    thread should NEVER return from the stack frame.  Instead, when
+    the child thread finishes it should invoke Terminate().
+    Spawn() copies only local variables and does not copy formal parameters,
+    thus, if you wish to access the arguements of a function from which
+    Spawn is invoked, you must copy them to local variables.
+    Data structures that are to be shared between the parent and child must
+    be statically allocated or the address of the data structure must be
+    passed to both the parent and child.
+    Note: It is possible for the child's stack to overflow, warning messages
+    should appear when stack overflow is imminent.
+Example:
+    int
+    do_stuff(a, b)
+	int a, *b;
+    {
+	int  localA = a;
+	int *localB = b;
+	int  c;
+
+	if (Spawn("childname")) {
+	    /* parent code */
+	    c = a + *b;
+	} else {
+	    /* child code */
+	    c = localA - *localB;
+	    /* child thread must not return! */
+	    Terminate();
+	}
+    }
+
+    Note that in the above example, the parent may reference the formal
+    parameters a and b whereas the child can not.  Also note that the parent
+    and child refer to different variables localA, localB and c; however,
+    the storage location *localB is shared between the parent and child.
+---------------------
+Terminate()
+    Terminates the current thread.
+---------------------
+SimTime LocalTime()
+    Return current time in ms.
+---------------------
+Delay(SimTime time /* in ms */)
+    Blocks the current thread time ms before continuing processing.
+---------------------
+Event *AllocEvent()
+    Allocate an event.
+---------------------
+CauseEvent(Event *event)
+    Causes event.
+---------------------
+WaitEvent(Event *event)
+    Blocks the current thread until event occures.
+---------------------
+FreeEvent(Event *event)
+    Frees an event.
+---------------------
+
+Programming Notes:
+------------------
+Don't forget to call InitSim().
+
+Note that all scheduling is non-preemptive.
+
+If after you have set-up your widgets and callbacks, the initial thread 
+has nothing more to do, have it call Terminate() instead of XtMainLoop().
+
+You should not call any blocking functions (Delay() and WaitEvent()) from
+callback functions.  This is because callbacks do not have their own stack
+context but rather execute off of the context of whatever thread happened to
+be running when the callback occures.  Thus, executing a blocking function
+from a callback would have the undesirable effect of blocking the thread whose
+context the callback happens to be using, resulting in unpredictable behavior.
+If you need a callback to call a blocking function you should have the
+callback spawn off a child thread and have the child thread call the
+blocking function instead.
+Example:
+    callbackProc()
+    {
+	if (Spawn("childname")) {
+	    /* parent returns and lets the child to all the work */
+	    return;
+	} else {
+	    /* child */
+	    ...
+	    Delay(500);
+	    ...
+	    WaitEvent(event);
+	    ...
+	    Terminate();
+	}
+    }
+If you are unable to use Spawn() because you were unable to port the machine
+dependent files, you will have to have the original parent process wait around
+and perform the blocking function calls for the callbacks.
+
+The following illustrates a common mistake when trying to share storage between
+threads:
+    int
+    do_stuff ()
+    {
+	int a;
+	int *shared;
+	if (Spawn("childname")) {
+	    shared = &a;
+		...
+	} else {
+	    shared = &a
+		...
+	    Terminate();
+	}
+    }
+
+In this example, shared will contain to different values and will not really
+be shared since the address of 'a' is taken AFTER the Spawn().  Moving the
+assignment to 'shared' before the Spawn() will cause 'shared' in both the
+parent and the child to refer to the 'a' in the parent and will solve the
+problem but it is less error prone if you allocate variables like 'a'
+statically or with malloc().
+    int
+    do_stuff ()
+    {
+	int *shared = malloc(sizeof(int));
+	if (Spawn("childname")) {
+		...
+	} else {
+		...
+	    Terminate();
+	}
+    }
+
+Implementation Notes:
+---------------------
+WARNING: XtSim directly calls _XtwaitForSomething() and _XtDefaultAppContext().
+While the interfaces to these routines are not likely to change, they are
+not formally defined Xt interfaces.  If anyone has a better way of doing
+it, please let me know.
+You can change the default stack size allocated for each new thread my
+modifying STACKSIZE in coproc.h.  Note that STACKSIZE specifies the size
+of the stack in int's and not bytes.

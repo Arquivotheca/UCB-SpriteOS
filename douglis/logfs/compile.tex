@@ -1,0 +1,33 @@
+\begin{table}[h]
+ \begin{center}
+ \begin{tabular} {|l|r|r|r||r|r|r|}
+	 \hline
+	 \hline
+    & \multicolumn{3}{c||}{Sprite} & 
+       \multicolumn{3}{c|}{Sun NFS}\\
+    Program\hfill &\multicolumn{2}{c|}{ Execution times} &
+    \zcol{c||}{Improvement} & \multicolumn{2}{c|}{ Execution times} & \zcol{c|}{Improvement} \\
+		  & local & migrated &  \zcol{c||}{(\%)} 
+		  & local & {\em rex\/} &  \zcol{c|}{(\%)}\\
+         \hline
+	 \hline
+
+          one compilation          & 15\makebox[0pt][l]{.5s}~~   &
+	  15\makebox[0pt][l]{.9s}~~ &  --3 & 25\makebox[0pt][l]{s}   &
+	  27\makebox[0pt][l]{s} &  --8 \\
+          two compilations          & 30~~   &  17~~ & 43   & 39 & 30 & 23\\
+          three compilations         & 45~~   &  18~~ & 60  & 57 & 32 & 44 \\
+	  four compilations         & 60~~   &  20~~ & 67   & 72 & 39 & 46 \\
+	 \hline
+	 \hline
+ \end{tabular}
+  \caption{Comparison between Sprite migration performance and Sun
+  NFS, running on diskless Sun-3 workstations.  For one compilation,
+  the comparison is between local and remote execution; for all other
+  cases, the completion time for local execution is compared to the
+  completion time when one compilation is performed locally and all
+  others are executed remotely on separate workstations.}
+  \label{compile}
+ \end{center}
+\end{table}
+

@@ -1,0 +1,34 @@
+.(z C
+.(c
+.TS
+center, tab(;);
+| c s s s |
+| c | c | c s |
+| c | c | c s |
+| c | c | c | c |
+| c | n | n | n |.
+.br
+_
+File Lookup Operations
+_
+Operation;Local Disk;Diskless
+\^;\^;_
+\^;\^;Elapsed Time;Server CPU Time
+=
+Open/Close;2.17ms;8.11ms;3.75ms
+_
+Failed Open;1.48ms;4.13ms;2.01ms
+_
+Get Attributes;1.28ms;4.47ms;2.12ms
+_
+.TE
+.)c
+.(q
+\fBTable 3\fR. Cost of three common file name lookup operations in Sprite.
+Each of these operations requires contacting the server of the named file.
+Times are milliseconds per operation on a pathname with a single component.
+The first row is the cost of opening and closing a file,
+the second row is the cost of opening a file that does not exist,
+and the third row is the cost of getting the attributes of a file (``stat'').
+.)q
+.)z

@@ -1,0 +1,18 @@
+#!/bin/nawk -f
+BEGIN {
+    while (1) {
+	for (i=1;i<ARGC;i++) {
+	    if ((getline < ARGV[i]) <= 0) exit;
+	    if (i==1) {
+		line = $0;
+		printf("%s",line);
+	    } else {
+		if (line==$0) {
+		} else {
+		    printf(",%s",$NF);
+		}
+	    }
+	}
+	printf("\n");
+    }
+}

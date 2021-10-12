@@ -1,0 +1,51 @@
+.(z
+.TS
+center, box, tab(;);
+l | c | c s
+l | c | c s
+l | c | c | c
+lt | lt | n | n.
+Program;Description;I/O (Kbytes/sec)
+\^;\^;_
+\^;\^;Read;Write
+=
+Andrew;T{
+Copy a directory hierarchy containing 70
+files and 200 Kbytes of data;  examine the
+status of every file in the new subtree; read
+every byte of the files;  compile and link
+the files.  Developed by M. Satyanarayanan
+for benchmarking the Andrew file system;
+see [HOWA87] for details.
+T};54.9;34.4
+_
+Fs-make;T{
+Use the ``make'' program to recompile
+the Sprite file system: 33 source files,
+33,800 lines of C source code.
+T};56.6;28.9
+_
+Simulator;T{
+Simulate set-associative cache memory
+using 3375-Kbyte address trace.
+T};23.0;0.0
+_
+Sort;T{
+Sort a 1-Mbyte file.
+T};47.0;90.2
+_
+Diff;T{
+Compare 2 identical 1-Mbyte files.
+T};252.4;0
+_
+Nroff;T{
+Format the text of this paper.
+T};16.1;18.1
+.TE
+.(q
+\fBTable 5\fR.  Macro-benchmarks.  The I/O columns give the
+average rates at which file data were read and written by the
+benchmark when run on Sun-3's with local disks and warm caches;  they measure
+the benchmark's I/O intensity.
+.)q
+.)z

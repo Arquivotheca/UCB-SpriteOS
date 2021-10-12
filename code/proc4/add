@@ -1,0 +1,7 @@
+#!/bin/nawk -f
+#Take a key and a number, and sum up the numbers associated with the key
+{    if (NF==2) sum[$1] = sum[$1] + $2;}
+END { for (i in sum) {
+	printf("%d %f\n",i,sum[i]);
+    }
+}

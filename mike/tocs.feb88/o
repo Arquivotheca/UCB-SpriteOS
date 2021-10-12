@@ -1,0 +1,16 @@
+x T psc
+x res 576 1 1
+x init
+x font 1 R
+x font 2 I
+x font 3 B
+x font 4 BI
+x font 5 H
+x font 6 HB
+x font 7 C
+x font 8 CB
+x font 9 S
+x font 10 SS
+x trailer
+V0
+x stop

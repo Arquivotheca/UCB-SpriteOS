@@ -1,0 +1,28 @@
+\begin{table}[h]
+ \begin{center}
+ \begin{tabular} {|l|r|r|}
+	 \hline
+	 \hline
+    Program\hfill & \multicolumn{2}{c|}{Execution times} \\
+		  & Running locally & Running as migrated process \\
+	 \hline
+	 \hline
+     get environment variable              & 0.50ms   &  4.45ms \\
+     get process and user identifiers      & 0.40ms   &  3.80ms \\
+     fork, synchronize with pipes, &&\\
+     {\hskip 2em} wait for child to exit      & 45.7~ms   & 54.6~ms \\
+     fork, migrate child, synchronize with  &&\\
+      {\hskip 2em} pipes, wait for child to exit      & 300~~ms   &  N/A \\
+	 \hline
+	 \hline
+ \end{tabular}
+  \caption{Times to complete sequences of system calls.
+    For each benchmark, times are given for the
+  program running on locally on a diskless Sun-3 workstation and
+  migrated from one diskless Sun-3 to another.  For these sequences
+  of system calls, the overhead of
+  remote execution is substantial.}
+  \label{syscalls}
+ \end{center}
+\end{table}
+

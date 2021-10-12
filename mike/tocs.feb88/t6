@@ -1,0 +1,45 @@
+.(z
+.TS
+center, box, tab(;);
+c || c s || c s || c s
+c || c s || c s || c s
+c || c s || c s || c s
+c || c | c || c | c || c | c
+c || c | c || c | c || c | c.
+Benchmark;Local Disk,;Diskless,;Diskless,
+\^;with Cache;Server Cache Only;Client & Server Caches
+\^;_;_;_
+\^;Cold;Warm;Cold;Warm;Cold;Warm
+=
+Andrew;261;249;373;363;291;280
+\^;105%;100%;150%;146%;117%;112%
+_
+Fs-make;660;649;855;843;698;685
+\^;102%;100%;132%;130%;108%;106%
+_
+Simulator;161;147;168;153;167;147
+\^;109%;100%;114%;104%;114%;100%
+_
+Sort;65;61;74;72;66;61
+\^;107%;100%;121%;118%;108%;100%
+_
+Diff;22;8;27;12;27;8
+\^;165%;100%;225%;147%;223%;100%
+_
+Nroff;53;51;57;56;53;52
+\^;103%;100%;112%;109%;105%;102%
+.TE
+.(q
+\fBTable 6\fR.  Execution times with and without local disks
+and caching, measured on Sun-3's.  The top number
+for each run is total elapsed time in seconds.  The
+bottom number is normalized relative to the warm-start time with
+a local disk.  ``Cold'' means that all caches, both on server and
+client, were empty at the beginning of the run.  ``Warm'' means
+that the program was run once to load the caches, then timed on a
+second run.  In the ``Diskless, Server Cache Only'' case, the client
+cache was disabled but the server cache was still enabled.  In
+all other cases, caches were enabled on all machines.  All caches
+were allowed to vary in size using the VM-FS negotiation scheme.
+.)q
+.)z

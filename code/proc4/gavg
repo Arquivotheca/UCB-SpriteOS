@@ -1,0 +1,49 @@
+#!/bin/nawk -f
+# Average several graphs.
+# I.e. given several files that are the same except for lines:
+# 4 6.3   vs 4 6.8,  we average the 6.3 and 6.8
+BEGIN {
+    datafield = 5;
+    for (i=1;i<ARGC;i++) {
+	if (i==1) {
+	    for (line=0;;line++) {
+		if ((getline < ARGV[i]) <= 0) break;
+		label[line] = $1;
+		results[line,i] = $0;
+	    }
+	    nlines = line;
+	} else {
+	    for (line=0;;line++) {
+		if ((getline < ARGV[i]) <= 0) break;
+		results[line,i] = $0;
+	    }
+	    if (line != nlines) {
+		printf("line mismatch\n") | "cat 1>&2";
+	    }
+	}
+	close ARGV[i];
+    }
+    for (j=0;j<nlines;j++) {
+	nparts = split(results[j,1],vals);
+	if (nparts < 2 || (vals[1] "1")+0==0) {
+	    if (results[j,1] != results[j,2]) {
+		printf("data mismatch in line %d\n", j) | "cat 1>&2";
+	    } else {
+		printf("%s\n", results[j,1]);
+	    }
+	} else {
+	    t = 0;
+	    for (i=1;i<ARGC;i++) {
+		nparts = split(results[j,i],nvals);
+		if (nparts != 2) {
+		    printf("format error in line %d, file %d\n", j, i) | "cat 1>&2";
+		} else if (vals[1] != nvals[1]) {
+		    printf("label mismatch in line %d, file %d\n", j, i) | "cat 1>&2";
+		} else {
+		    t += nvals[2];
+		}
+	    }
+	    printf("%f %f\n", vals[1], t/(ARGC-1));
+	}
+    }
+}

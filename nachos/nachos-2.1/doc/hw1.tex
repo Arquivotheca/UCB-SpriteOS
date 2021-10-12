@@ -1,0 +1,302 @@
+\documentstyle{article}
+
+\begin{document}
+
+\begin{center}
+{\large {\bf NACHOS}}
+
+% \vspace{.2in}
+% Tom Anderson\\
+% Wayne Christopher\\
+% Steven Procter
+
+% \vspace{.2in}
+% Computer Science 162\\
+% January 29, 1992
+
+\vspace{.5in}
+Assignment \#1: Build a thread system\\
+Due date: Monday, Feb. 17, 5:00 p.m.
+\end{center}
+
+\vspace{.2in}
+
+In this assignment, we give you part of a working thread system; 
+your job is to complete it, and then to use it to solve
+several synchronization problems.  
+
+The first step is to read and understand the partial thread system 
+we have written for you.  This thread system implements thread fork, 
+thread completion, along with semaphores for synchronization.  
+Run the program `nachos' for a simple test of our code.
+Trace the execution path (by hand) for the simple test case
+we provide.
+
+When you trace the execution path, it is helpful to keep track
+of the state of each thread and which procedures are on each thread's 
+execution stack.
+You will notice that when one thread calls SWITCH, another thread
+starts running, and the first thing the new thread does is 
+to return from SWITCH.
+We realize this comment will seem cryptic to you at this point, but you
+will understand threads once you understand
+why the SWITCH that gets called is different from the SWITCH that returns.
+(Note: because gdb does not understand threads, you will get bizarre 
+results if you try to trace in gdb across a call to SWITCH.)
+
+The files for this assignment are:
+
+\begin{description}
+
+\item main.cc, test1.cc --- a simple test of our thread routines.
+
+\item thread.h, thread.cc --- thread data structures and
+thread operations such as thread fork, thread sleep and thread finish.
+
+\item scheduler.h, scheduler.cc --- manages the list of threads that
+are ready to run.
+
+\item synch.h, synch.cc --- synchronization routines: semaphores, locks, 
+and condition variables.
+
+\item list.h, list.cc --- generic list management (LISP in C++).
+
+\item synchlist.h, synchlist.cc --- synchronized access to lists using
+locks and condition variables (useful as an example of the use 
+of synchronization primitives).
+
+\item system.h, system.cc --- Nachos startup/shutdown routines.
+
+\item utility.h, utility.cc --- some useful definitions and debugging routines.
+
+\item switch.h, switch.s --- assembly language magic for starting 
+up threads and context switching between them.
+
+\item interrupt.h, interrupt.cc --- manage enabling and disabling
+interrupts as part of the machine emulation.
+
+\item timer.h, timer.cc --- emulate a clock that periodically causes 
+an interrupt to occur.
+
+\item stats.h -- collect interesting statistics.
+
+\end{description}
+
+For this assignment, all groups must do every part.  We suggest that 
+each person in a group code all of this assignment separately, since 
+we will ask you to do similar problems on the exams, and you will
+need the practice.  There should be no busy-waiting in any of your 
+solutions.  Each part has equal weight in the grading.
+
+Properly synchronized code should work no matter what order the 
+scheduler chooses to run the threads on the ready list.  In other 
+words, we should be able to put a call to Thread::Yield (causing the scheduler
+to choose another thread to run) anywhere in your code where interrupts 
+are disabled without changing the correctness of your code.   
+You will be asked to write properly synchronized code as part of the 
+later assignments, so understanding how to do this is crucial to
+being able to do the project.
+
+To aid you in this, code linked in with Nachos will cause Thread::Yield 
+to be called on your behalf in a repeatable but unpredictable way.
+Nachos code is repeatable in that if you call it repeatedly with the 
+same arguments, it will do exactly the same thing each time.
+However, if you invoke ``nachos -rs \#'', with a different number each
+time, calls to Thread::Yield will be inserted at different places in the code.
+
+Make sure to run various test cases against your solutions to 
+these problems; for instance, for part two, create multiple producers
+and consumers and demonstrate that the output can vary, within certain 
+boundaries.  Where the question calls for an explanation, include
+that in the README.
+
+Warning: in our implementation of threads, each thread is assigned a 
+small, fixed-size execution stack.  This may cause bizarre problems 
+(such as segmentation faults at strange lines of code) if you declare 
+large data structures to be automatic variables (e.g., ``int buf[1000];'').
+You will probably not notice this during the semester, but if you do,
+you may change the size of the stack by modifying the StackSize define in 
+switch.h.
+
+\begin{description}
+
+\item{1.}
+Implement locks and condition variables using semaphores as the only
+synchronization primitive.  We have provided the public interface to these 
+objects in synch.h.  You need to define the private data and implement
+the interface.
+
+\item{2.}
+Implement producer/consumer communication through a bounded buffer,  
+using locks and condition variables.  (A solution to the bounded buffer 
+problem is described in Silberschatz, Peterson and Galvin, using 
+semaphores.)
+
+The producer places characters from the string "Hello world" into the 
+buffer one character at a time; it must wait if the buffer is full.
+The consumer pulls characters out of the buffer one at a time
+and prints them to the screen; it must wait if the buffer is empty.
+Test your solution with a buffer that holds more than one
+character at a time and with multiple producers and consumers.
+
+\item{3.} The local laundromat has just entered the computer age.
+As each customer enters, he or she puts coins into
+slots at one of two stations and types in
+the number of washing machines he/she will need.  The stations
+are connected to a central computer that
+automatically assigns available machines and outputs
+tokens that identify the machines to be used.  The
+customer puts laundry into the machines and inserts each
+token into the machine indicated on the token.  When a machine finishes
+its cycle, it informs the computer that it is available again.
+The computer maintains an array {\em available[NMACHINES]} whose elements are
+non-zero if the corresponding machines are available (NMACHINES is
+a constant indicating how many machines there are in the
+laundromat), and a semaphore {\em nfree} that indicates how many 
+machines are available.
+
+The code to allocate and release machines is as follows:
+
+\begin{verbatim}
+int allocate()	/* Returns index of available machine.*/
+{
+  int i;
+
+  P(nfree);	/* Wait until a machine is available */
+  for (i=0; i < NMACHINES; i++)
+    if (available[i] != 0) {
+      available[i] = 0;
+      return i;
+    }
+}
+
+release(int machine)	/* Releases machine */
+{
+  available[machine] = 1;
+  V(nfree);
+}
+\end{verbatim}
+
+The {\em available} array is initialized to all ones, and {\em nfree} is
+initialized to NMACHINES.
+
+\begin{description}
+
+\item{(a)} It seems that
+if two people make requests at the two stations at the same time, they
+will occasionally be assigned the same machine.  This has resulted in
+several brawls in the laundromat, and you have been called in by the
+owner to fix the problem.  Assume that one thread handles each
+customer station.  Explain how the same washing machine can be assigned
+to two different customers.
+
+\item{(b)} Modify the code to eliminate the problem.
+
+\item{(c)} Re-write the code to solve the synchronization problem 
+using locks and condition variables instead of semaphores.
+
+\end{description}
+
+\item{4.} You've just been hired by Mother Nature to help her out with the
+chemical reaction to form water, which she doesn't seem to be
+able to get right due to synchronization problems.  The trick is to
+get two H atoms and one O atom all together at the same time.  The
+atoms are threads.  Each H atom invokes a procedure {\em hReady} when it's
+ready to react, and each O atom invokes a procedure {\em oReady}
+when it's ready.  For this problem, you are to write the code for
+{\em hReady} and {\em oReady}.  The procedures must delay until there
+are at least two H atoms and one O atom present, and then one
+of the procedures must call the procedure {\em makeWater} (which
+just prints out a debug message that water was made).
+After the {\em makeWater} call, two 
+instances of {\em hReady} and one instance of {\em oReady} should return.
+Write the code for {\em hReady} and {\em oReady} using
+either semaphores or locks and condition variables for synchronization.
+Your solution must avoid starvation and busy-waiting.
+
+\item{5.} You have been hired by Caltrans to synchronize traffic over a
+narrow light-duty bridge on a public highway.  Traffic may only cross
+the bridge in one direction at a time, and if there are ever more than
+3 vehicles on the bridge at one time, it will collapse  under their
+weight.  In this system, each car is represented by one thread,
+which executes the procedure {\em OneVehicle} when it arrives
+at the bridge:
+
+\begin{verbatim}
+OneVehicle(int direc)
+{
+  ArriveBridge(direc);
+  CrossBridge(direc);
+  ExitBridge(direc);
+}
+\end{verbatim}
+
+In the code above, {\em direc} is either 0 or 1;  it gives the
+direction in which the vehicle will cross the bridge.
+
+\begin{description}
+
+\item{(a)} Write the procedures {\em ArriveBridge}
+and {\em ExitBridge} (the {\em CrossBridge} procedure should just print 
+out a debug message), using locks and condition variables.  {\em ArriveBridge} 
+must not return until it safe
+for the car to cross the bridge in the given direction (it
+must guarantee that there will be no head-on collisions or
+bridge collapses).  {\em ExitBridge} is called to indicate
+that the caller has finished crossing the bridge;  {\em ExitBridge}
+should take steps to let additional cars cross the bridge.
+This is a lightly-travelled rural bridge, so
+you do not need to guarantee fairness or freedom from starvation.
+
+\item{(b)} In your solution, if a car arrives while traffic is currently moving
+in its direction of travel across the bridge, but there is another
+car already waiting to cross in the opposite direction, will the
+new arrival cross {\em before} the car waiting on the other side,
+{\em after} the car on the other side, or is it impossible to
+say?  Explain briefly.
+
+\end{description}
+
+\end{description}
+
+\end{document}
+
+\item{6.}
+Implement (non-preemptive) priority scheduling.  
+
+Modify the thread scheduler to always return the 
+highest priority thread.  (You will need to create a new constructor 
+for Thread to take another parameter -- the priority level of the thread;
+leave the old constructor alone since we'll need it for backward
+compatibility.)  You may assume that there are a fixed, small 
+number of priority levels -- for this assignment, you'll only need two levels.
+
+Can changing the relative priorities of producers and consumers
+have any affect on the output?  For instance, what happens with 
+two producers and one consumer, when one of the
+producers is higher priority than the other?  What if the two
+producers are at the same priority, but the consumer is at high
+priority?
+
+\item{7.} You have been hired to simulate one of the Cal fraternities.
+Your job is to write a computer program to pair up men and women
+as they enter a Friday night mixer.  Each man and each woman will
+be represented by one thread.  When the man or woman enters the
+mixer, its thread will call one of two procedures, \fIman\fR
+or \fIwoman\fR, depending on the sex of the thread.  You must
+write C code to implement these procedures.  Each procedure takes
+a single parameter, \fIname\fR, which is just an integer name for
+the thread.  The procedure must wait until there is an available
+thread of the opposite sex, and must then exchange names
+with this thread.
+Each procedure must return the integer name of the thread
+it paired up with.  Men and women may enter the fraternity
+in any order, and many threads may call the \fIman\fR and
+\fIwoman\fR procedures simultaneously.  It doesn't matter
+which man is paired up with which woman (Cal frats aren't
+very choosy), as long as each pair contains one man and one woman
+and each gets the other's name.  Use semaphores and shared
+variables to implement the two procedures.  Be sure to
+give initial values for the semaphores and indicate which
+variables are shared between the threads.  There must
+not be any busy-waiting in your solution.

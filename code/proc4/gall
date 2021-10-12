@@ -1,0 +1,37 @@
+#!/bin/nawk -f
+# Combine several graphs.
+# I.e. write the header from the first file, and the data from
+# all files, where the data starts with a quotation mark
+BEGIN {
+    for (i=1;i<ARGC;i++) {
+	if (i==1) {
+	    for (;;) {
+		if ((getline < ARGV[i]) <= 0) break;
+		if ($1=="LogX:") logmode = 1;
+		if (logmode && ($1 "1")+0 != 0 && $1==0.0) {
+		} else {
+		    printf("%s\n", $0);
+		}
+	    }
+	} else {
+	    mode = 0;
+	    for (;;) {
+		if ((getline < ARGV[i]) <= 0) break;
+		if (mode==0) {
+		    if (NF>1 && substr($1,1,1)=="\"") {
+			printf("\n");
+			printf("%s\n", $0);
+			mode = 1;
+		    } else {
+		    }
+		} else {
+		    if (logmode && $1==0.0) {
+		    } else {
+			printf("%s\n", $0);
+		    }
+		}
+	    }
+	}
+	close ARGV[i];
+    }
+}

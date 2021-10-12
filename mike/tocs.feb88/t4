@@ -1,0 +1,19 @@
+.(z
+.TS
+center, box, tab(;);
+c   s   s   s   s
+c | c | c | c | c
+c | n | n | n | n.
+Read & Write Throughput, Kbytes/second
+_
+;Local Cache;Server Cache;Local Disk;Server Disk
+=
+Read;3269;475;224;212
+_
+Write;2893;380;197;176
+.TE
+.(q
+\fBTable 4\fR.  Maximum rates at which programs can read and write
+file data in various places, using large files accessed sequentially.
+.)q
+.)z

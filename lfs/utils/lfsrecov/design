@@ -1,0 +1,20 @@
+Two pass approach:
+
+    Read checkpoint
+
+
+Pass 1)
+    Compute pass checkpoint segment list. 
+	Use array of timestamps per segment.
+    Locate all inodes in new region and keep track of inode deallocates.
+	Record new inode location in table along with new location.
+
+Pass 2)
+    Roll forward checking computing active bytes for segment.
+
+	Process log entries;
+	    If all objects are forward change has been allo
+
+
+
+

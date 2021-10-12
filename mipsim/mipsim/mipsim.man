@@ -1,0 +1,216 @@
+'\" Copyright 1989 Regents of the University of California
+'\" Permission to use, copy, modify, and distribute this
+'\" documentation for any purpose and without fee is hereby
+'\" granted, provided that this notice appears in all copies.
+'\" The University of California makes no representations about
+'\" the suitability of this material for any purpose.  It is
+'\" provided "as is" without express or implied warranty.
+'\" 
+'\" $Header: /user1/ouster/mipsim/RCS/mipsim.man,v 1.6 91/02/03 17:23:31 ouster Exp $ SPRITE (Berkeley)
+'/" 
+.so \*(]ltmac.sprite
+.HS MIPSIM cmds
+.BS
+'\" Note:  do not modify the .SH NAME line immediately below!
+.SH NAME
+mipsim \- Simulator and debugger for R2000 assembly programs
+.SH SYNOPSIS
+\fBmipsim\fR
+.SH OPTIONS
+None.
+.BE
+
+.SH DESCRIPTION
+.PP
+\fBMipsim\fR is an interactive program that loads R2000 assembly programs
+and simulates the operation of an R2000 computer on those programs.
+When \fBmipsim\fR starts up, it looks for a file named \fB.mipsim\fR
+in the user's home directory.  If such a file exists, \fBmipsim\fR
+reads it and processes it a command file.  Then \fBmipsim\fR checks
+for a \fB.mipsim\fR file in the current directory, and executes
+the commands in it if the file exists.  Then \fBmipsim\fR loops
+forever reading commands from standard input and printing results on
+standard output.
+
+.SH "NUMBERS"
+.PP
+Whenever \fBmipsim\fR reads a number it will accept the number either
+in decimal notation, or in hexadecimal notation if the first two
+characters of the number are \fB0x\fR (e.g. 0x3acf), or in octal
+notation if the first character is \fB0\fR (e.g. 0342).
+
+.SH "ADDRESS EXPRESSIONS"
+.PP
+Many of \fBmipsim\fR's commands take as input an expression identifying
+a register or memory location.  Such values are indicated with the
+term \fIaddress\fR in the command descriptions below.  Where register
+names are acceptable, any of the names \fBr0\fR through \fBr31\fR may
+be used.  The names
+\fB$0\fR through \fB$31\fR may also be used, but the dollar signs
+are likely to cause confusion with Tcl variables, so it is safer
+to use \fBr\fR instead of \fB$\fR.  The name \fBgp\fR is a
+synonym for \fBr28\fR and \fBsp\fR is a synonym for \fBr29\fR.
+In addition, the names \fBhi\fR,
+\fBlo\fR, and \fBpc\fR may be used to refer to the HI and LO registers
+and the program counter.
+.PP
+Symbolic expressions may be used to specify memory addresses.  The simplest
+form of such an expression is a number, which is interpreted
+as a memory address.  More generally, address expressions may consist of
+numbers, symbols (which must be defined in the assembly files currently
+loaded), the operators *, /, %, +, \-, <<, >>, &, |, and ^ (which have
+the same meanings and precedences as in C), and parentheses for grouping.
+
+.SH "COMMANDS"
+.PP
+In addition to all of the built-in Tcl commands, \fBmipsim\fR provides
+the following application-specific commands:
+.TP
+\fBasm \fIinstruction\fR [\fIaddress\fR]
+Treats \fIinstruction\fR as an assembly instruction and returns the
+hexadecimal value of the instruction word equivalent to
+\fIinstruction\fR.  Some instructions, such as relative branches,
+will be assembled differently depending on where in memory the
+instruction will be stored.  The \fIaddress\fR argument may be
+used to indicate where the instruction will be stored;  if omitted,
+it defaults to 0.
+.TP
+\fBget \fIaddress\fR [\fIflags\fR]
+Return the values of one or more memory locations or registers.
+\fIAddress\fR identifies a memory location or register, and
+\fIflags\fR, if present, consists of a number and/or a set of letters,
+all concatented together.
+If the number is present, it indicates how many consecutive
+values to print (the default is 1).  If flag characters are
+present, they have the following interpretation:
+.RS
+.TP
+\fBB\fR
+Print values in binary.
+.TP
+\fBb\fR
+When printing memory locations, treat each byte as a separate value.
+.TP
+\fBc\fR
+Print values as ASCII characters.
+.TP
+\fBd\fR
+Print values in decimal.
+.TP
+\fBh\fR
+When printing memory locations, treat each halfword as a separate value.
+.TP
+\fBi\fR
+Print values as instructions in the R2000 assembly language.
+.TP
+\fBs\fR
+Print values as null-terminated ASCII strings.
+.TP
+\fBv\fR
+Instead of printing the value of the memory location referrred to
+by \fIaddress\fR, print the address itself as the value.
+.TP
+\fBw\fR
+When printing memory locations, treat each word as a separate value.
+.TP
+\fBx\fR
+Print values in hexadecimal.
+.RE
+.TP
+\fBgo \fR[\fIaddress\fR]
+Start simulating the R2000 machine.  If \fIaddress\fR is given,
+execution starts at that memory address.   Otherwise, it continues from
+wherever it left off previously.  This command does not complete
+until simulated execution stops.  The return value is an information
+string about why execution stopped and the current state of the machine.
+.TP
+\fBload \fIfile file file ...\fR
+Read each of the given \fIfile\fRs.  Treat them as R2000 assembly
+language files and load memory as indicated in the files.  Code
+(text) is normally loaded starting at address 0x100, but the
+\fBcodeStart\fR variable may be used to set a different starting
+address.  Data is normally loaded starting at address 0x1000,
+but a different starting address may be specified in the the
+\fBdataStart\fR variable.  The return value is either an empty
+string or an error message describing problems in reading the files.
+.TP
+\fBput \fIaddress number\fR
+Store \fInumber\fR in the register or memory location
+given by \fIaddress\fR.  The return value is an empty string.
+.TP
+\fBputstring \fIaddress string\fR
+Store \fIstring\fR as a null-terminated ASCII string
+in the memory location given by \fIaddress\fR.  \fIAddress\fR
+may not refer to a register or an I/O device register.
+The return value is an empty string.
+.TP
+\fBquit\fR
+End the program and return to the command shell.
+.TP
+\fBstep \fR[\fIaddress\fR]
+If no \fIaddress\fR is given, the \fBstep\fR command executes a
+single instruction, continuing from wherever execution previously
+stopped.  If \fIaddress\fR is given, then the program counter is
+changed to point to \fIaddress\fR, and a single instruction is
+executed from there.  In either case, the return value is an
+information string about the state of the machine after the single
+instruction has been executed.
+.TP
+\fBstop \fR[\fIoption args\fR]
+This command may take any of the forms described below:
+.RS
+.TP
+\fBstop\fR
+Arrange for execution of R2000 code to stop as soon as possible.
+If a simulation isn't in progress then this command has no effect.
+Returns an empty string.  This command is most often used in the
+\fIcommand\fR argument for the \fBstop at\fR command.
+.TP
+\fBstop at \fIaddress \fR[\fIcommand\fR]
+Arrange for \fIcommand\fR (a \fBmipsim\fR command string) to be
+executed whenever the memory address
+identified by \fIaddress\fR is read, written, or executed.  If
+\fIcommand\fR is not given, it defaults to \fBstop\fR, so that
+execution stops whenever \fIaddress\fR is accessed.  A stop applies
+to the entire word containing \fIaddress\fR:  the stop will be triggered
+whenever any byte of the word is accessed.  Stops are not processed
+during the \fBstep\fR commands or the first instruction executed in
+a \fBgo\fR command. Returns an empty string.
+.TP
+\fBstop info\fR
+Return information about all stops currently set.
+.TP
+\fBstop delete \fInumber number number ...\fR
+Delete each of the stops identified by the \fInumber\fR arguments.
+Each \fInumber\fR should be an identifying number for a stop,
+as printed by \fBstop info\fR. Returns an empty string.
+.RE
+
+.SH "VARIABLES"
+.PP
+\fBMipsim\fR uses or sets the following Tcl variables:
+.TP
+\fBcodeStart\fR
+If this variable exists, it indicates where to start loading code
+in \fBload\fR commands.
+.TP
+\fBdataStart\fR
+If this variable exists, it indicates where to start loading data
+in \fBload\fR commands.
+.TP
+\fBinsCount\fR
+\fBMipsim\fR uses this variable to keep a running count of the
+total number of instructions that have been simulated so far.
+.TP
+\fBprompt\fR
+If this variable exists, it should contain a \fBmipsim\fR command
+string.  \fBMipsim\fR will execute the command in this string before
+printing each prompt, and use the result as the prompt string to
+print.  If this variable doesn't exist, or if an error occurs in
+executing its contents, then the prompt ``(mipsim) '' is used.
+
+.SH "SEE ALSO"
+\fIMipsim User Manual\fR, by John Ousterhout
+
+.SH KEYWORDS
+R2000, debug, simulate

@@ -1,0 +1,4 @@
+#!/bin/csh -f
+time proc4 -prefix ../data/prefixes \
+  {ta,tan,tas}/*.Jan.25.*   \
+  | extract >! results

@@ -1,0 +1,4149 @@
+head     1.8;
+branch   ;
+access   ;
+symbols  ;
+locks    shirriff:1.8; strict;
+comment  @ * @;
+
+
+1.8
+date     91.11.21.15.57.44;  author shirriff;  state Exp;
+branches ;
+next     1.7;
+
+1.7
+date     91.10.24.23.58.11;  author shirriff;  state Exp;
+branches ;
+next     1.6;
+
+1.6
+date     91.02.19.14.13.29;  author shirriff;  state Exp;
+branches ;
+next     1.5;
+
+1.5
+date     91.02.08.16.23.26;  author shirriff;  state Exp;
+branches ;
+next     1.4;
+
+1.4
+date     91.02.01.12.17.23;  author shirriff;  state Exp;
+branches ;
+next     1.3;
+
+1.3
+date     91.01.30.23.53.27;  author shirriff;  state Exp;
+branches ;
+next     1.2;
+
+1.2
+date     91.01.22.15.52.00;  author shirriff;  state Exp;
+branches ;
+next     1.1;
+
+1.1
+date     91.01.11.12.18.18;  author shirriff;  state Exp;
+branches ;
+next     ;
+
+
+desc
+@@
+
+
+1.8
+log
+@*** empty log message ***
+@
+text
+@#include <stdio.h>
+#include <sprite.h>
+#include <status.h>
+#include <namehash.h>
+#include <bstring.h>
+#include <hash.h>
+#include <stdlib.h>
+#include <strings.h>
+#include <sospRecord.h>
+#include <kernel/fs.h>
+#include <kernel/fsNameOps.h>
+#include <fs.h>
+extern long startSec;
+extern long startUsec;
+
+#define MULTI_OPS
+
+#define EXTRA 2
+
+extern char *ctime();
+extern char *filetype();
+
+extern int debug;
+extern int thisLRU;
+
+extern char *prefixList;
+
+char bar[sizeof(nameRec)] = {120};
+
+extern char *timeStr;
+
+extern int version;
+
+extern long sec;
+extern long firstSecs;
+
+float totalSecs;
+
+char charBuf[500];
+
+unsigned char masks[4] = {0x3,0xc,0x30,0xc0};
+
+#define NLRU(x) 0
+
+int remember_host, remember_home;
+int remember_file;
+
+
+#if 1
+#define BYTE(n) ((n)>>2)
+#define POS(n) (((n)+(n))&6)
+#define GET_MACHINEINFO(mi,n) ((mi[BYTE(n)]>>POS(n))&0x3)
+#define SET_MACHINEINFO(mi,n,v) mi[BYTE(n)] = (mi[BYTE(n)]&~(3<<POS(n)))|\
+	(v<<POS(n))
+#else
+#define GET_MACHINEINFO(mi,n) mi[n]
+#define SET_MACHINEINFO(mi,n,v) mi[n]=v
+#endif
+
+void abort() { printf("%s",1); }
+
+
+#if 0
+GET_MACHINEINFO(mi,n)
+unsigned char *mi;
+int n;
+{
+    int v,v1;
+    if (n<0 || n>=NUM_MACHINES) {
+	fprintf(stderr,"Out of bounds\n");
+    }
+    v = GET_MACHINEINFO2(mi,n);
+    v1 = GET_MACHINEINFO2(mi,n+NUM_MACHINES);
+    if (v != v1) {
+	fprintf(stderr,"Get error: %x %d\n", mi,n);
+    }
+    return v;
+}
+
+SET_MACHINEINFO(mi,n,v)
+unsigned char *mi;
+int n;
+unsigned char v;
+{
+    if (n<0 || n>=NUM_MACHINES) {
+	fprintf(stderr,"Out of bounds\n");
+    }
+    SET_MACHINEINFO2(mi,n,v);
+    SET_MACHINEINFO2(mi,n+NUM_MACHINES,v);
+}
+#endif
+
+int gcMax = 1000;
+#define GC_INC 1000
+#define GC_REMOVE_COUNT 20
+#define GC_REMOVE_TIME 600
+
+static LRUentry LRUlist[NUM_LRU_LISTS][NUM_MACHINES] = {NULL};
+
+/*
+ * Data structures:
+ * An ID is a File_ID (aka 4 integers)
+ * We also have trace_index, which is an int.  This is an index into the
+ * list of ID's in the trace.
+ * ID_NUM converts a trace_index to an ID.
+ *
+ * Invariants:
+ * numActiveUsers is the number of nonremoved pointers to the name entry.
+ * This should equal the number of machineInfos that are 1 or 2, plus the
+ * number of opens.
+ */
+
+
+#define error(x) fprintf(stderr,"%19.19s: %s", ctime(&sec), x)
+#define CHECKLRU(x) if ((x)<0 || (x)>=NUM_LRU_LISTS) printf("LRU=%d at %d\n",x,__LINE__)
+
+#define mypanic() printf("%s",1)
+
+#define MAKENEW 1
+#define IFNEW 0
+
+#define NUM_OPS 20
+#define NUM_PREFIXES 50
+#define LEVEL_TABLE_SIZE	103
+#define AGE_TABLE_SIZE		303
+#define IMT_SIZE 50
+
+/*
+ * NAME = normal name cache, ATTR = attr cache, NAME_ENTRY = entry-based
+ * name cache, NAME_MIG, ATTR_MIG = caches with mig. back at home.
+ */
+#define NAME 0
+#define ATTR 1
+#define NAME_ENTRY 2
+#define NAME_MIG 3
+#define ATTR_MIG 4
+#define MIG_MEAS (NUM_LRU_LISTS)
+#define TMP_MEAS (NUM_LRU_LISTS+1)
+
+char *LRUWord[] = {"name", "attribute", "name (entry)", "name (mig)",
+	"attr (mig)"};
+
+#define HARDLINK_2 11
+
+/*
+ * Functions for a directory lookup.
+ */
+char *microNames[] = {"?","name lookup","attr lookup", "name modify",
+	"attr modify", "?", "remove", "create", "read"};
+#define NAME_LOOKUP 1
+#define ATTR_LOOKUP 2
+#define NAME_MODIFY 3
+#define ATTR_MODIFY 4
+#define NAMEATTR_REMOVE 6
+#define NAMEATTR_CREATE 7
+#define DIR_READ 8
+
+typedef int trace_index;
+typedef int trace_data;
+typedef int file_id;
+
+#define DIFF_FD(x,y) (((x)[0]!=(y)[0])||((x)[1]!=(y)[1])||\
+		      ((x)[2]!=(y)[2])||((x)[3]!=(y)[3]))
+
+#define RETURN_ID (&data[3])
+
+#define ID_NUM(n) ((n<0)?(int *)mypanic():&data[10+4*(n)])
+
+int NULL_ID[4] = {0};
+int prefixParts[50][40] = {0};
+
+int tmpDir[4] = {1,14,10,125304};
+nameRec *tmpName;
+
+/*
+ ****************************************************************************
+ *	Counters
+ ****************************************************************************
+ */
+
+int ops[NUM_OPS]={0};	/* Counter of operations */
+int typeUsage[NUM_OPS]={0}; /* Number of accesses to each type. */
+int nlookups = 0;
+int nHitLookups = 0;	/* Number of lookups that hit every component. */
+int nMigLookups = 0;	/* Number of migrated lookups. */
+int ncomps = 0;
+int nCompLookups = 0; /* Number of component lookups. */
+int nInvalidates[NUM_LRU_LISTS] = {0}; /* Number of directory invalidates. */
+int nMInvalidates[NUM_LRU_LISTS] = {0}; /* Number of directory-machine invalidates. */
+int nRHits[NUM_LRU_LISTS+EXTRA] = {0}; /* Number of remote directory validates. */
+int forcedMiss[NUM_LRU_LISTS+EXTRA]={0};
+int nRValidates[NUM_LRU_LISTS+EXTRA] = {0}; /* Number of remote directory validates. */
+int nRRevalidates[NUM_LRU_LISTS+EXTRA] = {0}; /* Number of remote directory revalidates. */
+int nAccesses[NUM_LRU_LISTS+EXTRA] = {0}; /* Number of cache accesses. */
+int nRRemoves[NUM_LRU_LISTS] = {0}; /* Number of remote directory removes. */
+int prefixRef = 0;	/* Number of prefix directories referenced. */
+int prefixRefNum[50] = {0}; /* Number of references, by prefix. */
+int modifies[NUM_OPS] = {0}; /* Operations modifying directories. */
+int entryCnt = 0;	/* Count of hash table entries. */
+int realEntryCnt = 0;	/* Count of hash table entries (not reset). */
+int reusedID = 0;	/* Count of hash entries that are reused. */
+int badOp = 0;		/* Count of bad operations. */
+int machineTable[NUM_MACHINES]={0};	/* Accesses by machine. */
+int numDirectoryOpens = 0;	/* Number of directory opens. */
+int unmatchedOpens = 0;	/* Files opened but not closed. */
+int unmatchedCloses = 0;/* Files closed but not opened. */
+int attributesWhileReading = 0; /* Accesses to attributes while reading file */
+int attributesWhileWriting = 0; /* Accesses to attributes while writing file */
+int attributesWhileExecuting = 0; /* Accesses to attributes while file execd */
+int attributesWhileSafe = 0; /* Accesses to attributes while file closed */
+int numLinksEncountered = 0; /* Count of symbolic links. */
+int numMicroFuncs[NUM_OPS] = {0}; /* Count of low-level functions. */
+int numGetAttrID = 0;	/* Number of get attributes by ID calls. */
+int numSetAttrID = 0;	/* Number of set attributes by ID calls. */
+int fileSharing = 0; /* Count of opens on shared file. */
+int overflow = 0;	/* Number of records which may have overflowed. */
+int numWrites = 0;	/* Number of file opens for writes. */
+int numReads = 0;	/* Number of file opens for reads. */
+int tmpAccess = 0;	/* Number of accesses to /tmp */
+int migCount = 0;	/* Count of migrated lookups. */
+int gcError = 0;	/* Count of trace errors due to removed entries. */
+int numMoveOps = 0;	/* Number of moves. */
+int mallocOpen=0, mallocName=0, mallocLRU=0; /* Memory usage. */
+int mallocHash=0, mallocTable=0;
+int hashOpen=0, hashName=0;
+int nAttrPermReads=0;	/* Attribute operations from permission accesses.*/
+
+/* Histogram tables */
+
+int statusTable[NUM_OPS][20] = {0};	/* Return status by op. */
+int ValidhistTable[NUM_LRU_LISTS+EXTRA][LEVEL_TABLE_SIZE] = {0}; /* LRU position when valid */
+int foundInvalidTable[NUM_LRU_LISTS+EXTRA][LEVEL_TABLE_SIZE] = {0}; /* LRU when invalid. */
+int InvalidhistTable[NUM_LRU_LISTS][LEVEL_TABLE_SIZE] = {0}; /* LRU when invalidated.  */
+int invalidatedMachinesTable[NUM_LRU_LISTS][IMT_SIZE] = {0}; /* # of machines invalidated. */
+int ageTable[NUM_LRU_LISTS][AGE_TABLE_SIZE] = {0}; /* used entry age. */
+
+Hash_Table *streamTablePtr = NULL;
+
+/*
+ ****************************************************************************
+ *	Procedures
+ ****************************************************************************
+ */
+
+char *opname(), *status();
+
+/* Print traces. */
+void printLookupStats _ARGS_((void));
+void dumpHash _ARGS_((void));
+
+/* Low-level operations */
+int accessDir _ARGS_((int function, nameRec *dirIDName, nameRec *entryIDName,
+	int currHost, int homeHost, int type));
+void modifyblock _ARGS_((file_id *fileID, trace_data *data, int machine,
+	int LRU));
+
+/* Hash table operations */
+nameRec *newID _ARGS_((file_id *fileID, int force, char *name, int type));
+char *getIDname _ARGS_((file_id *fileID));
+void doneID _ARGS_((nameRec *namePtr));
+void freeIDIfDone _ARGS_((nameRec *namePtr));
+
+/* LRU list operations */
+void invalidateLRU _ARGS_((nameRec *namePtr, int machine, int LRU));
+void removeLRU _ARGS_((file_id *fileID));
+int accessLRU _ARGS_((nameRec *namePtr, int machine, int LRU, int new, int
+	migrated));
+void dumpLRU _ARGS_((int LRU));
+LRUentry * searchLRU _ARGS_((nameRec *namePtr, int machine, int *pos, int LRU));
+void collectHashStatistics _ARGS_((nameRec *namePtr));
+void garbageCollect _ARGS_((void));
+void validateLRU _ARGS_((char *str));
+
+/* Histogram operations */
+void addHist _ARGS_((int val,int table[],int max));
+void dumpHist _ARGS_((int *table, int max, int total));
+void dumpHistGraph _ARGS_((int *table, int max, int total, int cumul, float
+	xoff));
+void sumHist _ARGS_((int *h1, int *h2, int *sum, int max));
+ 
+/*
+ ****************************************************************************
+ *	Handle getattr and figure out the directories accessed
+ ****************************************************************************
+ */
+void
+dogetattr(data, machine)
+    int *data;
+    int machine;
+{
+/*
+ * Getattr: 1:currHost, 2:homeHost, 3:fileID
+ */
+    int currHost = data[1];
+    int homeHost = data[2];
+    nameRec *namePtr;
+
+    numGetAttrID++;
+    if (homeHost == -1) homeHost = currHost;
+    namePtr = newID(&data[3],IFNEW,(char *)NULL, UNKNOWN);
+    (void)accessDir(ATTR_LOOKUP,namePtr,(char *)NULL,currHost, homeHost,
+	    UNKNOWN);
+    doneID(namePtr);
+}
+
+/*
+ ****************************************************************************
+ *	Handle setattr and figure out the directories accessed
+ ****************************************************************************
+ */
+void
+dosetattr(data, machine)
+    int *data;
+    int machine;
+{
+/*
+ * Setattr: 1:currHost, 2:homeHost, 3:fileID
+ */
+    int currHost = data[1];
+    int homeHost = data[2];
+    nameRec *namePtr;
+
+    namePtr = newID(&data[3],IFNEW,(char *)NULL, UNKNOWN);
+    if (namePtr->fileID[3] == remember_file) {
+	/*
+	 * We did a SetAttrPath, and this operation followed.
+	 * So we just return ignore this record.
+	 */
+    } else {
+	/*
+	 * No setAttrPath, so this must be a setAttrID.
+	 * Unfortunately, we lost the host numbers, so we'll have to
+	 * ignore the operation.  Since setAttrID is about 1% of the sets,
+	 * this shouldn't matter too much.
+	 */
+	numSetAttrID++;
+	if (currHost>0 && homeHost>0) {
+	    (void)accessDir(ATTR_MODIFY,namePtr,(char *)NULL,currHost, homeHost, UNKNOWN);
+	}
+    }
+    doneID(namePtr);
+}
+
+/*
+ ****************************************************************************
+ *	Handle opens and figure out the directories accessed
+ ****************************************************************************
+ */
+void
+doopen(data, machine)
+    int *data;
+    int machine;
+{
+/*
+ * Open: 1:currHost, 2:homeHost, 3:fileID, 7:streamID, 11:effID, 12:realID,
+ * 13:mode, 14:#reading, 15:#writing, 16:create, 17:fileSize, 18:modify,
+ * 19:type, 20:consist.
+ */
+    int type = data[19];
+    int mode = data[13];
+    int currHost = data[1];
+    int homeHost = data[2];
+    nameRec *namePtr;
+    Hash_Entry *entryPtr;
+    int created;
+
+    namePtr = newID(&data[3],IFNEW,(char *)NULL, type);
+
+    if (type == FS_DIRECTORY) {
+	numDirectoryOpens++;
+	(void)accessDir(DIR_READ,namePtr,(char *)NULL,currHost, homeHost ,FS_DIRECTORY);
+	if (mode & FS_WRITE) {
+	    error("Write to directory\n");
+	}
+    }
+    if (mode & FS_WRITE) {
+	(void)accessDir(ATTR_MODIFY,namePtr,(char *)NULL,currHost, homeHost, UNKNOWN);
+	numWrites++;
+    } else {
+	numReads++;
+    }
+    entryPtr = Hash_CreateEntry(streamTablePtr, (Address)&data[7], &created);
+#if 0
+    printf("Opening %x,%x,%x,%x by stream %x,%x,%x,%x\n", data[3], data[4],
+	    data[5], data[6], data[7], data[8], data[9], data[10]);
+#endif
+
+    if (created) {
+	hashOpen++;
+	entryPtr->clientData = (ClientData) malloc(4*sizeof(int));
+	mallocOpen += 4*sizeof(int);
+	bcopy(&data[3], entryPtr->clientData, 4*sizeof(int));
+    } else {
+	error("Stream in use\n");
+    }
+    namePtr->numberOfOpens++;
+    namePtr->numUsers++;
+    namePtr->numActiveUsers++;
+    if (namePtr->numberOfOpens > 1) {
+	fileSharing++;
+    }
+    namePtr->openMode |= (mode & (FS_READ | FS_WRITE | FS_EXECUTE));
+    doneID(namePtr);
+}
+
+/*
+ ****************************************************************************
+ *	Handle lookups and figure out the directories accessed
+ ****************************************************************************
+ */
+void
+doclose(data, machine)
+    int *data;
+    int machine;
+{
+/*
+ * Close: 1:streamID, 5:offset, 6:size, 7:flags, 8:rwflags, 9:refCount,
+ * 10:consist
+ */
+
+    int flags = data[7];
+    int refCount = data[9];
+
+    Hash_Entry *entryPtr;
+    nameRec *namePtr;
+
+    entryPtr = Hash_FindEntry(streamTablePtr, (Address)&data[1]);
+    if (entryPtr == NULL) {
+	unmatchedCloses++;
+    } else {
+	if ((flags & FS_RMT_SHARED) && refCount != 0) {
+	} else {
+
+	    namePtr = hashID(entryPtr->clientData);
+	    if (namePtr==NULL) {
+		error("****BAD CLOSE");
+		return;
+	    }
+	    if (namePtr->numberOfOpens <= 0) {
+		error("Too many closes\n");
+	    } else {
+		namePtr->numberOfOpens--;
+		namePtr->numUsers--;
+		namePtr->numActiveUsers--;
+		if (namePtr->numberOfOpens == 0) {
+		    namePtr->openMode = 0;
+		    freeIDIfDone(namePtr);
+		}
+	    }
+	    free(entryPtr->clientData);
+	    mallocOpen -= 4*sizeof(int);
+	    Hash_DeleteEntry(streamTablePtr, entryPtr);
+	    hashOpen--;
+	}
+    }
+}
+
+int lastOp = -1;
+int hitLen[20]={0};
+int hitCount=0;
+#define MAX(a,b) ((a)>(b)?(a):(b))
+#define DOLEVEL if (level==-1) {comp++;hit=9999;} else if (level>0) {comp++;hit=MAX(hit,level);}
+int pathHitTable[LEVEL_TABLE_SIZE] = {0}; /* LRU position when valid */
+/*
+ ****************************************************************************
+ *	Handle lookups and figure out the directories accessed
+ ****************************************************************************
+ */
+/*
+ * Lookup: 1:hostID, 2:homeHostID, 3:streamID, 7:status, 8:numIds, 9:op
+ */
+void
+dolookup(data, machine)
+    int *data;
+    int machine;
+{
+    int i;
+    int op,returnStatus, numIds;
+    int returnType;
+    int inTmp;
+    int comp=0,hit=0;
+    int currHost = data[1];
+    int homeHost = data[2];
+    nameRec *returnPath = NULL;
+    nameRec *path[20];
+    int level;
+
+    bzero(path,sizeof(path));
+    if (version != VERSION2) {
+	fprintf(stderr,"Warning: old version: %d\n", version);
+    }
+
+    op = data[9]&0xff;
+    returnStatus = data[7];
+    returnType = data[9]>>8;
+    numIds = data[8];
+    if (homeHost < -1) homeHost = currHost; /* Bug? */
+    if (debug) {
+	printf("LOOKUP: hostID: %d, home: %d, %s, numIDs %d, op %s, type %d\n", 
+		currHost, homeHost, status(returnStatus), numIds,
+		opname(op), returnType);
+    }
+    if (homeHost>=NUM_MACHINES || homeHost<0 || currHost<0) {
+	error(sprintf(charBuf,"***Invalid machine number: %d,%d\n",
+		homeHost, currHost));
+	homeHost = NUM_MACHINES-1;
+	currHost = NUM_MACHINES-1;
+    }
+    if (homeHost != currHost) migCount++;
+    if (numIds>=10) {
+	overflow++;
+    }
+    if (lastOp == 0x8a && op == FS_DOMAIN_REMOVE) {
+	numMoveOps++;
+    }
+    if (returnStatus == SUCCESS) {
+	lastOp = op;
+    } else {
+	lastOp = -1;
+    }
+    machineTable[currHost]++;
+    inTmp = 0;
+    for (i=0;i<numIds-1;i++) {
+	if (!inTmp && !DIFF_FD(ID_NUM(i),tmpDir)) {
+	    tmpAccess++;
+	    inTmp = 1;
+	}
+	if (ID_NUM(i+1)[0]==-1) {
+	    path[i] = newID(ID_NUM(i),IFNEW,(char *)NULL, FS_SYMBOLIC_LINK);
+	} else {
+	    path[i] = newID(ID_NUM(i),IFNEW,(char *)NULL, FS_DIRECTORY);
+	}
+    }
+    path[numIds-1] = newID(ID_NUM(numIds-1),IFNEW,(char *)NULL,UNKNOWN);
+    returnPath = newID(RETURN_ID,IFNEW,(char *)NULL, returnType);
+    if (op==0x8a) op = HARDLINK_2;
+    if (op==-1) op = 4; /* To fix a bug in the tracing. */
+    if ((op>=0 && op<11) || op==HARDLINK_2) {
+	ops[op]++;
+	if ((path[0]->flags)&PREFIX) {
+	    int prefNum;
+	    int partCnt;
+	    prefNum = path[0]->flags&~PREFIX;
+	    prefixRef++;
+	    prefixRefNum[prefNum]++;
+	    if (prefixParts[prefNum][0] != -1) {
+		for (partCnt=0;;partCnt += 4) {
+		    if (prefixParts[prefNum][partCnt+4]==-1) break;
+		    level = accessDir(NAME_LOOKUP,hashID(&prefixParts[prefNum]
+			    [partCnt]),
+			    hashID(&prefixParts[prefNum][partCnt+4]),
+			    currHost, homeHost, FS_DIRECTORY);
+		    DOLEVEL;
+		}
+		if (prefixParts[prefNum][partCnt]!=-1) {
+		    level =accessDir(NAME_LOOKUP,hashID(&prefixParts[prefNum]
+			    [partCnt]), path[0], currHost, homeHost,
+			    FS_DIRECTORY);
+		    DOLEVEL;
+		}
+	    }
+	}
+
+	if (numIds <=0) {
+	    error("NumIds <= 0 !\n");
+	}
+	/*
+	 * We have entries: 0,1,2,3,...,nIds-1,return.
+	 * Here we lookup 0:1, 1:2, ..., nIds-2:nIds-1
+	 */
+	for (i=0;i<=numIds-2;i++) {
+	    level =accessDir(NAME_LOOKUP,path[i],path[i+1],currHost,
+		    homeHost, i==numIds-2?FS_DIRECTORY:UNKNOWN);
+	    DOLEVEL;
+	}
+	if (!DIFF_FD(RETURN_ID,ID_NUM(numIds-1))) {
+	    /* RETURN_ID == last lookup */
+	} else if (DIFF_FD(RETURN_ID, NULL_ID)) {
+	    /* Unique RETURN_ID */
+	    if (returnStatus == SUCCESS &&
+		    (op==FS_DOMAIN_OPEN || op==HARDLINK_2 ||
+		    op==FS_DOMAIN_MAKE_DIR)) {
+		/* This is normal */
+	    } else {
+		error(sprintf(charBuf,"Different returnID (%x,%x,%x,%x) for op %s, status %s\n",
+			RETURN_ID[0], RETURN_ID[1], RETURN_ID[2], RETURN_ID[3],
+			opname(op), status(returnStatus)));
+	    }
+	} else {
+	    /* Null RETURN_ID */
+	}
+	if (returnStatus==SUCCESS) {
+	    statusTable[op][0]++;
+	    typeUsage[returnType]++;
+	} else {
+	    statusTable[op][(returnStatus&0xf)+1]++;
+	}
+	if (returnStatus == FS_FILE_NOT_FOUND) {
+		/*
+		returnStatus==FS_NO_ACCESS ||
+		returnStatus==FS_IS_DIRECTORY ||
+		returnStatus==FS_NOT_DIRECTORY ||
+		returnStatus==FS_DIR_NOT_EMPTY) {}
+		*/
+	    level =accessDir(NAME_LOOKUP,path[numIds-1],(char *)NULL,currHost,
+		    homeHost, UNKNOWN);
+	    DOLEVEL;
+	}
+	if (returnStatus == SUCCESS) {
+	    switch (op) {
+		default:
+		case FS_DOMAIN_IMPORT:
+		case FS_DOMAIN_EXPORT:
+		case FS_DOMAIN_MAKE_DEVICE:
+		    error(sprintf(charBuf,"Wasn't expecting op %d\n", op));
+		    break;
+		case FS_DOMAIN_GET_ATTR:
+		    if (DIFF_FD(ID_NUM(numIds-1), RETURN_ID)) {
+			error("Expected same returnID (3)\n");
+		    }
+		    level =accessDir(ATTR_LOOKUP,returnPath,(char *)NULL,currHost,
+			    homeHost, returnType);
+		    DOLEVEL;
+		    break;
+		case FS_DOMAIN_SET_ATTR:
+		    if (DIFF_FD(ID_NUM(numIds-1), RETURN_ID)) {
+			error("Expected same returnID (4)\n");
+		    }
+		    remember_host = currHost;
+		    remember_home = homeHost;
+		    remember_file = returnPath->fileID[3];
+		    level =accessDir(ATTR_MODIFY,returnPath,(char *)NULL, currHost,
+			    homeHost, returnType);
+		    DOLEVEL;
+		    modifies[4]++;
+		    break;
+		case FS_DOMAIN_REMOVE_DIR:
+		    if (DIFF_FD(RETURN_ID, NULL_ID)) {
+			error("Expected 0 returnID (8)\n");
+		    }
+		    level =accessDir(NAMEATTR_REMOVE,path[numIds-2],
+			    path[numIds-1],currHost, homeHost, returnType);
+		    DOLEVEL;
+		    modifies[8]++;
+		    break;
+		case FS_DOMAIN_OPEN:
+		    if (DIFF_FD(ID_NUM(numIds-1), RETURN_ID)) {
+			doneID(returnPath);
+			returnPath = newID(RETURN_ID,MAKENEW,(char *)NULL, returnType);
+			level =accessDir(NAMEATTR_CREATE,path[numIds-1],
+				returnPath, currHost, homeHost, returnType);
+			DOLEVEL;
+			modifies[2]++;
+		    }
+		    break;
+		case FS_DOMAIN_REMOVE:
+		    if (DIFF_FD(RETURN_ID, NULL_ID)) {
+			error("Expected 0 return (7)\n");
+		    }
+		    level =accessDir(NAMEATTR_REMOVE,path[numIds-2],
+			    path[numIds-1], currHost, homeHost, returnType);
+		    DOLEVEL;
+		    modifies[7]++;
+		    break;
+		case FS_DOMAIN_RENAME:
+		    printf("Rename?");
+		    break;
+		case FS_DOMAIN_HARD_LINK: /* hardlink */
+		    if (DIFF_FD(ID_NUM(numIds-1), RETURN_ID)) {
+			error("Expected same returnID (10)\n");
+		    }
+		    level =accessDir(NAME_MODIFY,path[numIds-2],
+			    returnPath, currHost, homeHost, returnType);
+		    DOLEVEL;
+		    modifies[10]++;
+		    break;
+		case HARDLINK_2: /* hardlink, part 2 */
+		    if (!DIFF_FD(ID_NUM(numIds-1), RETURN_ID)) {
+			error("Expected different returnID (10)\n");
+		    }
+		    level =accessDir(NAME_MODIFY,path[numIds-1],
+			    returnPath, currHost, homeHost, returnType);
+		    DOLEVEL;
+		    modifies[10]++;
+		    break;
+		case FS_DOMAIN_MAKE_DIR:
+		    if (!DIFF_FD(ID_NUM(numIds-1), RETURN_ID)) {
+			error("Expected different returnID (6)\n");
+		    }
+		    doneID(returnPath);
+		    returnPath = newID(RETURN_ID,MAKENEW,(char *)NULL, returnType);
+		    level =accessDir(NAMEATTR_CREATE,path[numIds-1],
+			    returnPath, currHost, homeHost, returnType);
+		    DOLEVEL;
+		    modifies[6]++;
+		    break;
+	    }
+	}
+    } else {
+	error(sprintf(charBuf,"*** Bad op %x!\n", op));
+	badOp++;
+    }
+    for (i=0;i<numIds;i++) {
+	doneID(path[i]);
+    }
+    doneID(returnPath);
+    nlookups++;
+    if (currHost != homeHost) {
+	nMigLookups++;
+    }
+    ncomps += numIds;
+    if (entryCnt >= gcMax) {
+	 garbageCollect();
+    }
+    hitLen[comp]++;
+    hitCount++;
+    addHist(hit,pathHitTable,LEVEL_TABLE_SIZE);
+}
+/*
+ ****************************************************************************
+ *	Print the results of the traces
+ ****************************************************************************
+ */
+
+char *graphNames[] = {"GNamecache.x", "GAttrcache.x", "GEntrycache.x",
+    "GNamecacheMig.x", "GAttrcacheMig.x", "GMigMeas.x"};
+char *graphTitles[] = { "Name cache performance",
+    "Attribute cache performance", "Name entry cache performance",
+    "Name cache performance (no mig)", "Attribute cache performance (no mig)",
+    "Name cache for migrated procs."};
+
+void
+donerecs()
+{
+    int i;
+
+    validateLRU("end");
+    dumpHash();
+
+    totalSecs = sec - firstSecs;
+    printf("%d sec start, %d sec end : %s", (int)firstSecs, (int)sec,
+	    ctime(&firstSecs));
+    printf("Total # of seconds = %.3f (%.3f hours), ends %s", totalSecs,
+	    totalSecs/3600, ctime(&sec));
+
+    printLookupStats();
+
+#if 0
+    for (i=0;i<NUM_LRU_LISTS;i++) {
+	type = LRUWord[thisLRU];
+	printf("-------------------%s---------------\n",type);
+	printf("\n%s's depth in LRU list when found:\n", type);
+	dumpHist(ValidhistTable[i], LEVEL_TABLE_SIZE,
+	    nRValidates[i]+nRRevalidates[i]+nRHits[i]);
+
+	printf("\n%s's depth in LRU list when found invalid (consistency miss):\n",
+	        type);
+	dumpHist(foundInvalidTable[i], LEVEL_TABLE_SIZE,
+	    nRValidates[i]+nRRevalidates[i]+nRHits[i]);
+
+	printf("\nConsistency above hits:\n");
+	sumHist(ValidhistTable[i], foundInvalidTable[i],
+		foundInvalidTable[i], LEVEL_TABLE_SIZE);
+	dumpHist(foundInvalidTable[i], LEVEL_TABLE_SIZE,
+	    nRValidates[i]+nRRevalidates[i]+nRHits[i]);
+
+	printf("\n%s's depth in LRU list when invalidated:\n", type);
+	dumpHist(InvalidhistTable[i], LEVEL_TABLE_SIZE, -1);
+
+	printf("\n%s's idle age when used:\n", type);
+	dumpHist(ageTable[i], AGE_TABLE_SIZE, -1);
+
+
+	dumpLRU(i);
+    }
+    printf("---------------------------------------------\n");
+
+
+    printf("\nNumber of machines used directory:\n");
+#endif
+
+    if (thisLRU==0) {
+	printf("##file GNumInvalid.x\n");
+	printf("BarGraph: 1\nBarWidth: .1\nNoLines: 1\n");
+	printf("TitleText: Number of invalidations\n");
+	printf("XUnitText: Number of invalidations\n");
+	printf("YUnitText: Percent\n");
+	printf("YStep: 10\nXStep: 1\nXLowLimit: 0\nXHighLimit: 5\n");
+	puts("ZeroWidth: 2\nXFormat: %2.0f\nYFormat: %3.0f\n");
+	printf("Device: Gremlin\nDisposition: To File\n");
+    } else {
+	printf("##append GNumInvalid.x\n");
+    }
+    for (i=0;i<NUM_LRU_LISTS;i++) {
+	printf("\n\"%s\n", graphTitles[thisLRU]);
+	dumpHistGraph(invalidatedMachinesTable[i],5, -1, TRUE, thisLRU/10.);
+    }
+    printf("##end\n");
+
+
+#define GGRAPHSTR "Markers: 0\nYUnitText: Percent\nYLowLimit: 0\n\
+YHighLimit: 100\nYStep: 10\nXFormat: %2.0f\nYFormat: %3.0f\n\
+XUnitText: Number cached\n\
+Geometry: =600x300\n\
+Device: Gremlin\nDisposition: To File\nGremlin.OutputAxisSize: 12\n"
+
+
+    if (thisLRU==NAME) dumpLRU(NAME);
+
+
+    for (i=0;i<NUM_LRU_LISTS+EXTRA;i++) {
+	if (nRValidates[i]+nRRevalidates[i]+nRHits[i] != nAccesses[i]) {
+	    fprintf(stderr,"Access count error\n");
+	    fprintf(stderr,"%d,%d,%d,%d %d\n", nRValidates[i],
+		    nRRevalidates[i], nRHits[i], nAccesses[i],i);
+	}
+	if (i==0) {
+	    printf("##file %s\n%s",graphNames[thisLRU], GGRAPHSTR);
+	    printf("TitleText: %s\n", graphTitles[thisLRU]);
+	} else if (i==1) {
+	    printf("##file GMig%s\n%s",graphNames[thisLRU], GGRAPHSTR);
+	    printf("TitleText: %s (only mig)\n", graphTitles[thisLRU]);
+	} else {
+	    printf("##file GTmp%s\n%s",graphNames[thisLRU], GGRAPHSTR);
+	    printf("TitleText: %s (/tmp)\n", graphTitles[thisLRU]);
+	}
+	printf("XLowLimit: 0\nXHighLimit: %d\n", LEVEL_TABLE_SIZE);
+	printf("\n\"Compulsory misses\n0 100\n100 100\n");
+	if (forcedMiss[i] != 0) {
+	printf("\n\"Entry misses\n0 %f\n100 %f\n",
+		100-(nRValidates[i]-forcedMiss[i])*100./nAccesses[i],
+		100-(nRValidates[i]-forcedMiss[i])*100./nAccesses[i]);
+	}
+	printf("\n\"Capacity misses\n0 %f\n100 %f\n",
+		100-nRValidates[i]*100./nAccesses[i],
+		100-nRValidates[i]*100./nAccesses[i]);
+	printf("\n\"Consistency misses\n");
+	sumHist(ValidhistTable[i], foundInvalidTable[i],
+		foundInvalidTable[i], LEVEL_TABLE_SIZE);
+	dumpHistGraph(foundInvalidTable[i], LEVEL_TABLE_SIZE,
+	    nAccesses[i], TRUE, 0.0);
+	printf("\n\"Hits\n");
+	dumpHistGraph(ValidhistTable[i], LEVEL_TABLE_SIZE,
+	    nAccesses[i], TRUE, 0.0);
+	printf("##end\n");
+    }
+
+    if (thisLRU==0) {
+	printf("##file GPathHit.x\n");
+	printf("%s",GGRAPHSTR);
+	printf("TitleText: Hits over entire path\n");
+	printf("XLowLimit: 0\nXHighLimit: %d\n", LEVEL_TABLE_SIZE);
+	printf("\n\"Component hit rate\n");
+	dumpHistGraph(ValidhistTable[0], LEVEL_TABLE_SIZE,
+	    nAccesses[0], TRUE, 0.0);
+	printf("\n\"Path hit rate\n");
+	dumpHistGraph(pathHitTable, LEVEL_TABLE_SIZE, hitCount, TRUE, 0.0);
+	printf("\n\"Predicted path hit rate\n");
+	{
+	    int cumul=0,j;
+	    float prod;
+	    float t;
+	    for (i=0;i<LEVEL_TABLE_SIZE-3;i++) {
+		cumul += ValidhistTable[0][i];
+		prod = 1;
+		t = 0;
+		for (j=0;j<20;j++) {
+		    t += hitLen[j]*prod;
+		    prod *= cumul/(float)nAccesses[0];
+		}
+		printf("%d %5.2f\n", i, t/hitCount*100);
+	    }
+	}
+	printf("##end\n");
+    }
+
+    if (thisLRU==0) {
+	printf("##file GInvSize.x\n");
+	printf("TitleText: Invalidations vs. size\n");
+	puts(GGRAPHSTR);
+	printf("YHighLimit: 7\n");
+	printf("YStep: 1\n");
+	printf("XLowLimit: 0\nXHighLimit: 50\nXStep: 10\n");
+    } else {
+	printf("##append GInvSize.x\n");
+    }
+    for (i=0;i<NUM_LRU_LISTS;i++) {
+	printf("\n\"%s\n", graphTitles[thisLRU]);
+	dumpHistGraph(InvalidhistTable[i], LEVEL_TABLE_SIZE,
+	    nAccesses[i], TRUE, 0.0);
+    }
+    printf("##end\n");
+
+    if (thisLRU==0) {
+	printf("##file GIdleAge.x\n");
+	printf("TitleText: Idle age when used\n");
+	puts(GGRAPHSTR);
+	printf("XUnitText: seconds\n");
+	printf("YHighLimit: 100\n");
+	printf("LogX: 1\n");
+    } else {
+	printf("##append GIdleAge.x\n");
+    }
+    for (i=0;i<NUM_LRU_LISTS;i++) {
+	printf("\n\"%s\n", graphTitles[thisLRU]);
+	ageTable[i][1] += ageTable[i][0];
+	ageTable[i][0] = 0;
+	dumpHistGraph(ageTable[i], AGE_TABLE_SIZE, -1, TRUE, 0.0);
+    }
+    printf("##end\n");
+
+}
+
+void
+printLookupStats()
+{
+    int op;
+    int i;
+    int nOps=0;
+    int statusTotals[20];
+    FILE *prefixFile;
+
+    fprintf(stderr,"mallocOpen: %d, mallocName: %d, mallocLRU: %d\n",
+	    mallocOpen, mallocName, mallocLRU);
+    fprintf(stderr,"mallocHash: %d, mallocTable: %d\n", mallocHash,
+	    mallocTable);
+    fprintf(stderr,"hashOpen: %d, hashName: %d\n", hashOpen, hashName);
+
+    for (op=0;op<NUM_OPS;op++) {
+	nOps += ops[op];
+    }
+    printf("--Results--\n");
+
+    printf("\n");
+    printf("Number of lookup calls: %d\n", nlookups);
+    printf("%d of these had a bad operation field.\n", badOp);
+
+    printf("\nOperations:\n");
+    for (op=0;op<NUM_OPS;op++) {
+	if (ops[op]>0) {
+	    printf("  %s: %d %5.2f%%, %d mods\n", opname(op),
+		ops[op], ops[op]*100./nOps, modifies[op]);
+	    printf("      %s: %d %5.2f%% %5.2f%%\n", status(0),
+		statusTable[op][0], statusTable[op][0]*100./ops[op]);
+	    for (i=0;i<19;i++) {
+		if (statusTable[op][i+1]>0) {
+		    printf("      %s: %d %5.2f%% %5.2f%%\n",
+			    status((int)0x40000+i),
+			    statusTable[op][i+1],
+			    statusTable[op][i+1]*100./nlookups,
+			    statusTable[op][i+1]*100./ops[op]);
+		}
+	    }
+	}
+    }
+
+    if (thisLRU==0) {
+	printf("##file TMiscMeasure.d\n");
+	printf("Lookups\t%d\n", nlookups);
+	printf("Migrated lookups\t%d\n", nMigLookups);
+	/*
+	printf("Accesses to directories\t%d\n", nCompLookups);
+	printf("Prefix references\t%d\n", prefixRef);
+	*/
+	printf("Symbolic links encountered\t%d\n", numLinksEncountered);
+	printf("/tmp accesses\t%d\n", tmpAccess);
+	printf("Directory opens as a file\t%d\n", numDirectoryOpens);
+	printf("Duration of trace (secs)\t%5.0f\n", totalSecs);
+	printf("##end\n");
+    }
+    if (thisLRU==NAME) {
+	printf("##append TMiscMeasure.d\n");
+	printf("_\nName accesses\t%d\n", nAccesses[0]);
+	printf("  Invalidates\t%d\n", nInvalidates[0]);
+	printf("##end\n");
+    } else if (thisLRU==ATTR) {
+	printf("##append TMiscMeasure.d\n");
+	printf("_\nAttribute accesses\t%d\n", nAccesses[0]);
+	printf("  For permissions\t%d\n", nAttrPermReads);
+	printf("  Invalidates\t%d\n", nInvalidates[0]);
+	printf("##end\n");
+    }
+
+    printf("##file TMiscAttr.d\n");
+    printf("Accesses to open write file attributes\t%d\n",
+	    attributesWhileReading);
+    printf("Accesses to open read file attributes\t%d\n",
+	    attributesWhileWriting);
+    printf("_\n");
+    printf("Fstat\t%d\n", numGetAttrID); 
+    printf("FsetStat\t%d\n", numSetAttrID); 
+    printf("_\n");
+    printf("Stat\t%d\n", ops[3]); 
+    printf("SetStat\t%d\n", ops[4]); 
+    printf("_\n");
+    printf("Permission accesses\t%d\n", nAttrPermReads);
+    printf("_\n");
+    printf("Total accesses\t(elsewhere)\n");
+    printf("##end\n");
+
+    printf("##file TOpBreakdown.d\n");
+    for (op=0;op<NUM_OPS;op++) {
+	if (ops[op]>0) {
+	    printf("%s\t%d\t%5.2f\t%5.2f\t%5.2f\t%5.2f\n", opname(op),
+		ops[op], ops[op]*100./nOps,
+		statusTable[op][0]*100./ops[op],
+		statusTable[op][13]*100./ops[op],
+		statusTable[op][10]*100./ops[op]);
+	}
+    }
+    printf("_\n(Rename)\t%d\n", numMoveOps);
+    for (i=0;i<20;i++) {
+	statusTotals[i]=0;
+	for (op=0;op<NUM_OPS;op++) {
+	    statusTotals[i] += statusTable[op][i];
+	}
+    }
+    printf("_\nTotals\t%d\t%5.2f\t%5.2f\t%5.2f\t%5.2f\n", nlookups, 100.,
+	    statusTotals[0]*100./nlookups, statusTotals[13]*100./nlookups,
+	    statusTotals[10]*100./nlookups);
+    printf("##end\n");
+
+    printf("\nStatus totals:\n");
+    printf("      %s: %d (%5.2f%%)\n", status(0), statusTotals[0],
+	statusTotals[0]*100./nlookups);
+    for (i=0;i<19;i++) {
+	if (statusTotals[i+1]>0) {
+	    printf("      %s: %d (%5.2f%%)\n", status((int)0x40000+i),
+	    statusTotals[i+1], statusTotals[i+1]*100./nlookups);
+	}
+    }
+
+    printf("\nAvg # components returned: %5.2f\n", ncomps/(float)nlookups);
+
+    for (i=0;i<NUM_LRU_LISTS;i++) {
+	char *type;
+	type = LRUWord[thisLRU];
+	printf("\n%s lookup statistics\n", type);
+	printf("%d %s invalidated (removed from LRU lists for invalidation)\n",
+		nInvalidates[i], type);
+	printf("%d remote %s removes (#machines with entry removed for destruction)\n",
+		nRRemoves[i], type);
+	printf("%d machine-%s invalidated (#machines with entry removed for invalidation)\n", nMInvalidates[i],type);
+	printf("%d remote %s validates (%5.2f)(compulsory)(0)\n",
+		nRValidates[i], type, nRValidates[i]*100./nAccesses[i]);
+	printf("%d remote %s revalidates (#invalidated entries reused (1))\n", nRRevalidates[i], type);
+	printf("%d remote %s hits (#valid entries used(2))\n", nRHits[i],
+	    type);
+	printf("%d total %s accesses (sum of the above)\n", nAccesses[i],
+		type);
+    }
+    
+    printf("\n%d accesses to directories\n", nCompLookups);
+    printf("\n%d prefix references\n", prefixRef);
+    printf("\n%d hash table entries created\n", entryCnt);
+    if (prefixList != NULL) {
+	prefixFile = fopen(prefixList,"r");
+	if (prefixFile == NULL) {
+	    perror(prefixList);
+	    exit(-1);
+	}
+	for (i=1;i<NUM_PREFIXES;i++) {
+	    char buf[100],buf2[100];
+	    fgets(buf2,99,prefixFile);
+	    sscanf(buf2,"%s",buf);
+	    fgets(buf2,99,prefixFile);
+	    if (prefixRefNum[i]>0) {
+		printf("Prefix %s: %d refs\n", buf, prefixRefNum[i]);
+	    }
+	}
+	fclose(prefixFile);
+    }
+#if 0
+    printf("\nMachine statistics:\n");
+    for (i=0;i<NUM_MACHINES;i++) {
+	if (machineTable[i]>0) {
+	    printf("Machine %d: %d ops\n", i,machineTable[i]);
+	}
+    }
+#endif
+
+    printf("\nReturn type on success:\n");
+    for (i=0;i<NUM_OPS;i++) { if (typeUsage[i]>0) {
+	    printf("\t%s: %d\n", filetype(i), typeUsage[i]);
+	}
+    }
+
+    printf("\nReused hash table entries: %d\n", reusedID);
+
+    printf("\nNumber of directory opens: %d\n", numDirectoryOpens);
+
+    printf("\nNumber of unmatched opens: %d\n", unmatchedOpens);
+    printf("Number of unmatched closes: %d\n", unmatchedCloses);
+
+    printf("\nAccesses to attributes while file being read: %d\n", 
+	    attributesWhileReading);
+    printf("Accesses to attributes while file being written: %d\n",
+	    attributesWhileWriting);
+    printf("Accesses to attributes while file executing: %d\n",
+	    attributesWhileExecuting);
+    printf("Accesses to attributes while file closed: %d\n",
+	    attributesWhileSafe);
+    printf("Number of write opens: %d, read opens: %d\n", numWrites,
+	    numReads);
+
+    printf("\nSymbolic links: %d\n", numLinksEncountered);
+
+    printf("\nMicro ops:\n");
+    for (i=0;i<NUM_OPS;i++) {
+	if (numMicroFuncs[i]>0) {
+	    printf("    %s: %d\n", microNames[i], numMicroFuncs[i]);
+	}
+    }
+
+    printf("\nGetAttrID: %d, SetAttrID: %d\n", numGetAttrID, numSetAttrID);
+
+    printf("\nFile sharing: %d\n", fileSharing);
+
+    printf("\nOverflow: %d\n", overflow);
+
+    printf("\n/tmp accesses: %d\n", tmpAccess);
+
+    printf("\nMigrated lookups: %d\n", migCount);
+
+    printf("\nGC errors: %d\n", gcError);
+
+    printf("\nNumber of Move operations (link,delete) = %d\n", numMoveOps);
+
+}
+
+/*
+ * Results2: end of the results.
+ */
+
+/*
+ * Dump hash table entries.
+ */
+void
+dumpHash()
+{
+    Hash_Search search;
+    Hash_Entry *entryPtr;
+
+    entryPtr = Hash_EnumFirst(tablePtr, &search);
+    while (entryPtr != NULL) {
+	collectHashStatistics((nameRec *)(entryPtr->clientData));
+        entryPtr = Hash_EnumNext(&search);
+    }
+}
+
+/*
+ * Dump LRU results.
+ */
+void dumpLRU(LRU)
+    int LRU;
+{
+    LRUentry *entry, *oldentry;
+    int count;
+    int machine;
+    int time;
+#define NUM_TO_DUMP 100
+    int min[NUM_TO_DUMP], max[NUM_TO_DUMP], avg[NUM_TO_DUMP],
+	    cnt[NUM_TO_DUMP];
+    printf("##file GEntryAge.x\n");
+    printf("Markers: 0\nTitleText: Directory age at completion\n");
+    printf("XUnitText: Position\nYUnitText: Age(sec)\n");
+    printf("YLowLimit: 0\nYHighLimit: 1200\n");
+    printf("XLowLimit: 0\nXHighLimit: 50\n");
+    printf("XStep: 20\nYStep: 120\n");
+    puts("XFormat: %2.0f\nYFormat: %3.0f\n");
+    printf("Device: Gremlin\nDisposition: To File\n");
+
+    CHECKLRU(LRU);
+    for (count=1;count<NUM_TO_DUMP;count++) {
+	min[count] = 99999999;
+	max[count] = 0;
+	avg[count] = 0;
+	cnt[count] = 0;
+    }
+    for (machine=1;machine<NUM_MACHINES;machine++) {
+	oldentry = &LRUlist[LRU][machine];
+	for (count=1;count<100;count++) {
+	    entry = oldentry->down;
+	    if (entry==NULL) {
+		break;
+	    }
+	    if (entry->nameInfo != NULL) {
+		if (GET_MACHINEINFO(entry->nameInfo->machineInfo[LRU],machine)
+			!=1) {
+		    count--;
+		} else {
+		    time = sec - entry->lastAccess;
+		    if (time<min[count]) min[count] = time;
+		    if (time>max[count]) max[count] = time;
+		    cnt[count]++;
+		    avg[count] += time;
+		}
+	    }
+	    oldentry = entry;
+	}
+    }
+    printf("\n\"Max\n");
+    for (count=1;count<100;count++) {
+	if (cnt[count]>0) printf("%d %d\n", count, max[count]);
+    }
+    printf("\n\"Avg\n");
+    for (count=1;count<100;count++) {
+	if (cnt[count]>0) printf("%d %5.2f\n", count, avg[count]/
+		(float)cnt[count]);
+    }
+    printf("\n\"Min\n");
+    for (count=1;count<100;count++) {
+	if (cnt[count]>0) printf("%d %d\n", count, min[count]);
+    }
+    printf("##end\n");
+}
+
+/*
+ ****************************************************************************
+ *	Handle low-level operations (access directory, modify directory)
+ ****************************************************************************
+ */
+#define MAXHIT(h,l) ((l)<0?9999:((h)>(l)?(h):(l)))
+
+static char *accessDirNames[] = {"???", "NAME_LOOKUP", "ATTR_LOOKUP",
+	"NAME_MODIFY", "ATTR_MODIFY", "???", "NAMEATTR_REMOVE",
+	"NAMEATTR_CREATE", "DIR_READ"};
+
+/*
+ * Called when we access a directory block.
+ * We access an entry in the parent directory and do some function on it.
+ * We may read the entry, its attributes, remove it, modify it, or delete it.
+ *
+ * Return the maximum name cache size required for success.
+ *
+ * We assume that (except for NAME_LOOKUP) we have already done any
+ * necessary name resolution on the entry.
+ *
+ * Ops:
+ *  NAME_LOOKUP(parent, entry)
+ *  ATTR_LOOKUP(file,NULL)
+ *  ATTR_MODIFY(file,NULL)
+ *  NAME_MODIFY(parent,entry)
+ *  NAMEATTR_REMOVE(parent,entry)
+ *  NAMEATTR_CREATE(parent,entry)
+ *  DIR_READ(directory, NULL)
+ */
+int
+accessDir(function, dirIDName, entryIDName, currHost, homeHost, type)
+    int function;
+    nameRec *dirIDName;
+    nameRec *entryIDName;
+    int currHost;
+    int homeHost;
+    int type;
+{
+    int migrated;
+    int level=0;
+    if (function<0 || function >= sizeof(accessDirNames)/sizeof(char*)) {
+	error("Bad function in accessDir\n");
+    }
+    if (debug) {
+	printf("accessDir: %s on ", accessDirNames[function]);
+	if (dirIDName != NULL && dirIDName != (nameRec *)-1) {
+	    printf("(%x,%x,%x,%x)", dirIDName->fileID[0], dirIDName->fileID[1],
+		    dirIDName->fileID[2], dirIDName->fileID[3]);
+	} else {
+	    printf("(NULL)\n");
+	}
+	if (entryIDName != NULL && entryIDName != (nameRec *)-1) {
+	    printf("/(%x,%x,%x,%x)\n", entryIDName->fileID[0],
+		    entryIDName->fileID[1], entryIDName->fileID[2],
+		    entryIDName->fileID[3]);
+	} else {
+	    printf("/(NULL)\n");
+	}
+    }
+    if (dirIDName==NULL) {
+	error("Warning: NULL dirIDName to accessDir\n");
+	return 0;
+    }
+    if (dirIDName==(nameRec *)-1 || entryIDName==(nameRec *)-1) {
+	return 0;
+    }
+    if (currHost<0 || homeHost<0) {
+	error("accessDir: negative machine\n");
+	return 0;
+    }
+    if (currHost >= NUM_MACHINES || homeHost >= NUM_MACHINES) {
+	error("accessDir: machine number too big!!!*****\n");
+	return 0;
+    }
+    nCompLookups++;
+    migrated = ((currHost != homeHost)?1:0)|((dirIDName==tmpName)?2:0);
+    numMicroFuncs[function]++;
+    switch (function) {
+        case NAME_LOOKUP:
+	    nAttrPermReads++;
+#ifdef MULTI_OPS
+	    (void) accessLRU(dirIDName,currHost,ATTR, FALSE, migrated);
+	    (void) accessLRU(dirIDName,homeHost,ATTR_MIG, FALSE, migrated);
+#endif
+	    level = accessLRU(dirIDName,currHost,NAME, FALSE, migrated);
+	    (void) accessLRU(dirIDName,homeHost,NAME_MIG, FALSE, migrated);
+	    (void) accessLRU(entryIDName,currHost,NAME_ENTRY, FALSE,
+		    migrated);
+	    break;
+        case ATTR_LOOKUP:
+	    (void) accessLRU(dirIDName,currHost,ATTR, FALSE, migrated);
+	    (void) accessLRU(dirIDName,homeHost,ATTR_MIG, FALSE, migrated);
+	    if (dirIDName->openMode & FS_WRITE) {
+		attributesWhileWriting++;
+	    } else if (dirIDName->openMode & FS_READ) {
+		attributesWhileReading++;
+	    } else if (dirIDName->openMode & FS_EXECUTE) {
+		attributesWhileExecuting++;
+	    } else {
+		if (dirIDName->numberOfOpens>0) {
+		    error("File open but not R/W ?!\n");
+		}
+		attributesWhileSafe++;
+	    }
+	    break;
+        case NAME_MODIFY:
+#ifdef MULTI_OPS
+	    level = accessLRU(dirIDName,currHost,NAME, FALSE, migrated);
+	    (void) accessLRU(dirIDName,homeHost,NAME_MIG, FALSE, migrated);
+	    (void) accessLRU(dirIDName,currHost,ATTR, FALSE, migrated);
+	    (void) accessLRU(dirIDName,homeHost,ATTR_MIG, FALSE, migrated);
+#endif
+	    invalidateLRU(dirIDName,currHost,NAME); /* Dir no longer valid. */
+	    invalidateLRU(dirIDName,homeHost,NAME_MIG);
+	    invalidateLRU(entryIDName,currHost,NAME_ENTRY); /* Entry invalid. */
+	    break;
+        case ATTR_MODIFY:
+#ifdef MULTI_OPS
+	    (void) accessLRU(dirIDName,currHost,ATTR, FALSE, migrated);
+	    (void) accessLRU(dirIDName,homeHost,ATTR_MIG, FALSE, migrated);
+#endif
+	    invalidateLRU(dirIDName,currHost,ATTR); /* Attrs no lonver valid. */
+	    invalidateLRU(dirIDName,homeHost,ATTR_MIG);
+	    break;
+        case NAMEATTR_REMOVE:
+#ifdef MULTI_OPS
+	    (void) accessLRU(dirIDName,currHost,ATTR, FALSE, migrated);
+	    (void) accessLRU(dirIDName,homeHost,ATTR_MIG, FALSE, migrated);
+#endif
+	    invalidateLRU(dirIDName,currHost,NAME); /* Dir no longer valid. */
+	    invalidateLRU(dirIDName,homeHost,NAME_MIG);
+	    invalidateLRU(entryIDName,currHost,NAME_ENTRY); /* Entry invalid. */
+	    removeLRU(entryIDName);
+	    break;
+        case NAMEATTR_CREATE:
+#ifdef MULTI_OPS
+	    (void) accessLRU(dirIDName,currHost,ATTR, FALSE, migrated);
+	    (void) accessLRU(dirIDName,homeHost,ATTR_MIG, FALSE, migrated);
+	    level = accessLRU(dirIDName,currHost,NAME, FALSE, migrated);
+	    (void) accessLRU(dirIDName,homeHost,NAME_MIG, FALSE,
+		    migrated);
+#endif
+	    invalidateLRU(dirIDName,currHost,NAME); /* Directory no longer valid */
+	    invalidateLRU(dirIDName,homeHost,NAME_MIG);
+	    (void) accessLRU(entryIDName,currHost,ATTR, TRUE, migrated);
+	    (void) accessLRU(entryIDName,homeHost,ATTR_MIG, TRUE, migrated);
+	    (void) accessLRU(entryIDName,homeHost,NAME_ENTRY, TRUE, migrated);
+	    if (type == FS_DIRECTORY) {
+		level = accessLRU(entryIDName,currHost,NAME, TRUE, migrated);
+		(void) accessLRU(entryIDName,homeHost,NAME_MIG, TRUE,
+			migrated);
+	    }
+	    break;
+	case DIR_READ:
+#if 0
+	    nAttrPermReads++;
+#ifdef MULTI_OPS
+	    (void) accessLRU(dirIDName,currHost,ATTR, FALSE, migrated);
+	    (void) accessLRU(dirIDName,homeHost,ATTR_MIG, FALSE, migrated);
+#endif
+	    level = accessLRU(dirIDName,currHost,NAME, FALSE, migrated);
+	    (void) accessLRU(dirIDName,homeHost,NAME_MIG, FALSE, migrated);
+	    (void) accessLRU(-1,homeHost,NAME_ENTRY, FALSE, migrated);
+#endif
+	    break;
+	default:
+	    error(sprintf(charBuf,"Bad function in accessDir (%d)\n",
+		    function));
+	    exit(-1);
+    }
+    return level;
+}
+
+/*
+ * Collect statistics for a hash record.
+ */
+void
+collectHashStatistics(namePtr)
+    nameRec *namePtr;
+{
+}
+
+/*
+ * Clean up some unused stuff so we don't run out of memory.
+ */
+void
+garbageCollect()
+{
+    int machine;
+    int lru;
+    int lruCount=0;
+    int count;
+    int removePos;
+    int nullRemove;
+    LRUentry *entry, *newentry;
+    int numLRUfreed = 0;
+
+    /*
+     * Remove entries more than 20 down on the list and more than 1 hour old.
+     */
+
+    for (lru=0;lru<NUM_LRU_LISTS;lru++) {
+	for (machine=0;machine<NUM_MACHINES;machine++) {
+	    /*
+	     * First go through and decide what we want to discard.
+	     */
+	    newentry = LRUlist[lru][machine].down;
+	    removePos = -1;
+	    for (count=1;;count++) {
+		lruCount++;
+		entry = newentry;
+		if (entry==NULL) {
+		    break;
+		}
+		newentry = entry->down;
+		/*
+		 * At this point, entry points to something, and newentry
+		 * points to the next thing.
+		 */
+		if (entry->nameInfo == NULL || (count>GC_REMOVE_COUNT &&
+			sec-entry->lastAccess>GC_REMOVE_TIME)) {
+		    if (removePos == -1) {
+			removePos = count;
+		    }
+		} else {
+		    removePos = -1;
+		}
+	    }
+	    /*
+	     * Now go through and discard those entries.
+	     */
+	    nullRemove = 0;
+	    if (removePos != -1) {
+		newentry = LRUlist[lru][machine].down;
+		for (count=1;count<removePos;count++) {
+		    entry = newentry;
+		    newentry = entry->down;
+		}
+		entry->down = NULL;
+		while (1) {
+		    entry = newentry;
+		    if (entry==NULL) {
+			break;
+		    }
+		    newentry = entry->down;
+		    if (entry->nameInfo != NULL) {
+			entry->nameInfo->numUsers--;
+			entry->nameInfo->numActiveUsers--;
+			SET_MACHINEINFO(entry->nameInfo->machineInfo[lru],
+				machine, 0);
+			freeIDIfDone(entry->nameInfo);
+		    } else {
+			nullRemove++;
+		    }
+		    numLRUfreed++;
+		    free(entry);
+		    mallocLRU -= sizeof(LRUentry);
+		}
+	    }
+	}
+    }
+    if (entryCnt>=gcMax) {
+	gcMax = entryCnt+GC_INC;
+    } else {
+	gcMax += GC_INC;
+    }
+    fprintf(stderr,"%19.19s: GC removed %d LRU (%d null), max=%d, cnt=%d, numLRU=%d, %d lookups\n",
+	    ctime(&sec), numLRUfreed, nullRemove, gcMax, entryCnt, lruCount,
+	    nlookups);
+    fprintf(stderr,"mallocOpen: %d, mallocName: %d, mallocLRU: %d\n",
+	    mallocOpen, mallocName, mallocLRU);
+    fprintf(stderr,"mallocHash: %d, mallocTable: %d\n", mallocHash,
+	    mallocTable);
+    fprintf(stderr,"hashOpen: %d, hashName: %d\n", hashOpen, hashName);
+}
+
+/*
+ ****************************************************************************
+ *	Hash table operations
+ ****************************************************************************
+ */
+
+Hash_Table *tablePtr = NULL;
+
+/*
+ * Hash on an id
+ * This routine converts an id into a hash entry (nameRec *).
+ */
+nameRec *
+hashID(id)
+int id[];
+{
+    Hash_Entry *entryPtr;
+    if (id==NULL) {
+	error("NULL hash key!\n");
+	mypanic();
+    }
+    entryPtr = Hash_FindEntry(tablePtr, (Address)id);
+    if (entryPtr==NULL) { 
+	error(sprintf(charBuf,"Id: %d %d %d %d missing from table\n", id[0],
+		id[1], id[2], id[3]));
+	return NULL;
+    } else {
+	return (nameRec *)entryPtr->clientData;
+    }
+}
+
+/*
+ * This creates a nameRecPtr entry for the ID if it does not exist.
+ * If force is MAKENEW, the old record will be destroyed.
+ * If force is IFNEW, an old record will be preserved.
+ * If name != NULL, it will be used as the new name for the entry.
+ */
+nameRec *
+newID(fileID, force, name, type)
+file_id *fileID;
+int force;
+char *name;
+int type;
+{
+    Hash_Entry *entryPtr;
+    nameRec *nameRecPtr=NULL;
+    int created;
+    if (fileID[0]==-1) {
+	numLinksEncountered++;
+	return (nameRec *)-1;
+    }
+    if (fileID==NULL) {
+	error("Warning: null lookupID\n");
+	return NULL;
+    }
+    if (tablePtr != NULL) {
+	entryPtr = Hash_CreateEntry(tablePtr, (Address)fileID, &created);
+	nameRecPtr = (nameRec *)entryPtr->clientData;
+	if (created) {
+	    hashName++;
+	}
+	if (created==FALSE &&
+		(force==MAKENEW || nameRecPtr->type == INVALID)) {
+	    if (nameRecPtr->numUsers != 0) {
+		fprintf(stderr,"Reuse of %x\n", fileID[3]);
+		if (nameRecPtr->numActiveUsers != 0) {
+		    fprintf(stderr,"And its still active\n");
+		    removeLRU(nameRecPtr);
+		    entryPtr = Hash_CreateEntry(tablePtr, (Address)fileID, &created);
+		    if (created) {
+			hashName++;
+		    }
+		}
+	    }
+	    reusedID++;
+	    created = TRUE;
+	}
+	if (created==TRUE) {
+	    nameRecPtr = (nameRec *)malloc(sizeof(nameRec));
+	    mallocName += sizeof(nameRec);
+	    bzero((char *)nameRecPtr, sizeof(nameRec));
+	    nameRecPtr->fileID[0] = fileID[0];
+	    nameRecPtr->fileID[1] = fileID[1];
+	    nameRecPtr->fileID[2] = fileID[2];
+	    nameRecPtr->fileID[3] = fileID[3];
+	    nameRecPtr->type = type;
+#if 0
+	    if (name == NULL) {
+		sprintf(nameRecPtr->name, "NEW%d", realEntryCnt);
+	    } else {
+		sprintf(nameRecPtr->name, name);
+	    }
+#endif
+	    entryPtr->clientData = (ClientData) nameRecPtr;
+	    entryCnt++;
+	    realEntryCnt++;
+	} else if (((nameRec *)entryPtr->clientData)->type == UNKNOWN) {
+	    ((nameRec *)entryPtr->clientData)->type = type;
+	} else if (type != UNKNOWN &&
+		((nameRec *)entryPtr->clientData)->type != type) {
+	    error(sprintf(charBuf,"Warning: type change: %s to %s on %x %x %x %x\n",
+		filetype(((nameRec *)entryPtr->clientData)->type),
+		filetype(type), fileID[0], fileID[1], fileID[2], fileID[3]));
+	}
+    }
+     nameRecPtr->numUsers++;
+#if 0
+    printf("New; %x,%x,%x,%x %x,%x,%x,%x -> %x\n", fileID[0], fileID[1],
+    fileID[2], fileID[3], nameRecPtr->fileID[0], nameRecPtr->fileID[1],
+    nameRecPtr->fileID[2], nameRecPtr->fileID[3], nameRecPtr);
+#endif
+     return nameRecPtr;
+}
+
+/*
+ * Decrement the counter associated with newID, and discard if necessary.
+ */
+void
+doneID(namePtr)
+nameRec *namePtr;
+{
+    if (namePtr==(nameRec *)-1) return;
+    namePtr->numUsers--;
+#if 0
+    printf("Done %x,%x,%x,%x (%x)\n", namePtr->fileID[0], namePtr->fileID[1],
+	    namePtr->fileID[2], namePtr->fileID[3], namePtr);
+#endif
+    freeIDIfDone(namePtr);
+}
+
+/*
+ * If we're done with the entry, free it.
+ */
+void
+freeIDIfDone(namePtr)
+nameRec *namePtr;
+{
+    Hash_Entry *entryPtr;
+    if (namePtr->numUsers==0) {
+	if (namePtr->numberOfOpens>0) {
+	    fprintf(stderr,"******numberOfOpens>0 on %x,%x,%x,%x\n",
+		    namePtr->fileID[0], namePtr->fileID[1],
+		    namePtr->fileID[2], namePtr->fileID[3]);
+	    return;
+	}
+	collectHashStatistics(namePtr);
+	entryPtr = Hash_FindEntry(tablePtr, (Address)namePtr->fileID);
+	Hash_DeleteEntry(tablePtr, entryPtr);
+	hashName--;
+#if 0
+	printf("Freeing %x,%x,%x,%x\n", namePtr->fileID[0],
+	namePtr->fileID[1], namePtr->fileID[2], namePtr->fileID[3]);
+#endif
+	free((char *)namePtr);
+	mallocName -= sizeof(nameRec);
+	entryCnt--;
+    }
+}
+
+static char lookupBuf[100]; 
+/*
+ * Print the name associated with an id.
+ */
+char *
+getIDname(fileID)
+file_id *fileID;
+{
+    if (fileID==NULL) {
+	error("Warning: null lookupID\n");
+	return "<NULL>";
+    }
+#if 0
+    if (tablePtr != NULL) {
+	entryPtr = Hash_FindEntry(tablePtr, (Address)fileID);
+	if (entryPtr == NULL) {
+	    error("Warning: undefined lookupID\n");
+	    return "<UNDEFINED>";
+	} else {
+	    return ((nameRec *)(entryPtr->clientData))->name;
+	}
+    } else {
+#endif
+	sprintf(lookupBuf,"(%x %x %x %x)", fileID[0], fileID[1], fileID[2],
+		fileID[3]);
+	return lookupBuf;
+#if 0
+    }
+#endif
+}
+
+/*
+ * Initialize the hash table.
+ */
+void
+initHash()
+{
+    int id[4];
+
+    tablePtr = (Hash_Table *)malloc(sizeof(Hash_Table));
+    Hash_InitTable(tablePtr, 0, 4);
+    id[0] = id[1] = id[2] = id[3] = 0;
+    newID(id, MAKENEW, "NULL", FS_FILE);
+    tmpName = newID(tmpDir, MAKENEW, "TMP", FS_DIRECTORY);
+
+    streamTablePtr = (Hash_Table *)malloc(sizeof(Hash_Table));
+    Hash_InitTable(streamTablePtr, 0, 4);
+}
+
+int prefixCount = 1;
+
+/*
+ * Initialize the hash table.
+ */
+void
+loadHash(name, type)
+char *name;
+int type;
+{
+    FILE *inFile;
+    char buf[1000];
+    int id[4];
+    char *bufp;
+    int i;
+
+    inFile = fopen(name,"r");
+    if (inFile==NULL) {
+       perror("open");
+       exit(-1);
+    }
+    while (1) {
+	if (fscanf(inFile,"%s %d %d %d %d", buf, &id[0], &id[1], &id[2],
+		&id[3]) != 5) break;
+	fgets(buf,499,inFile);
+	newID(id, MAKENEW, buf, FS_DIRECTORY);
+	if (type==1) {
+	    hashID(id)->flags = PREFIX | prefixCount;
+	    fgets(buf,499,inFile);
+	    bufp = buf;
+	    for (i=0;i<30;i++) {
+		if (bufp==NULL || *bufp == '\n') break;
+		prefixParts[prefixCount][i] = atoi(bufp);
+		bufp = strchr(bufp,' ');
+		if (bufp!=NULL) {
+		    bufp++;
+		}
+	    }
+	    if (i%4 != 0) {
+		fprintf(stderr,"Bad # components for prefix %d\n",
+			prefixCount);
+		i &= 3;
+	    }
+	    prefixParts[prefixCount][i] = -1;
+	    prefixCount++;
+	}
+    }
+    fclose(inFile);
+}
+
+/*
+ ****************************************************************************
+ *	LRU list operations
+ ****************************************************************************
+ */
+
+/*
+ * Search the LRU list for an entry.  Return the parent, or NULL.
+ * Also return the position on the list (first = 1).
+ */
+LRUentry *
+searchLRU(namePtr, machine, pos, LRU)
+nameRec *namePtr;
+int machine;
+int *pos;
+int LRU;
+{
+
+    register LRUentry *entry, *oldentry;
+    register int count;
+    CHECKLRU(LRU);
+    if (namePtr == NULL) {
+	error("NULL searchLRU\n");
+    }
+    oldentry = &LRUlist[LRU][machine];
+    for (count=1;;count++) {
+	entry = oldentry->down;
+#if 0
+	if (entry==NULL) {
+	    *pos = -1;
+	    fprintf(stderr,"***Wasted searchLRU\n");
+	    return NULL;
+	} else if (entry->nameInfo == namePtr) {
+#else
+	if (entry->nameInfo == namePtr) {
+#endif
+	    *pos = count;
+	    return oldentry;
+	}
+	oldentry = entry;
+    }
+}
+
+/*
+ * Invalidate file from all LRU lists, except the specified.
+ */
+void
+invalidateLRU(namePtr,machine,LRU)
+    nameRec *namePtr;
+    int machine;
+    int LRU;
+{
+    int i;
+    int pos;
+    LRUentry *entry;
+    unsigned char *machineInfo;
+    int numMachinesInvalidated = 0;
+    if (LRU != thisLRU) return;
+    LRU = NLRU(LRU);
+    CHECKLRU(LRU);
+    if (debug) {
+	printf("invalidateLRU(%x,%x,%x,%x: m: %d, l: %d\n", namePtr->fileID[0],
+		namePtr->fileID[1], namePtr->fileID[2], namePtr->fileID[3],
+		machine, LRU);
+    }
+    machineInfo = namePtr->machineInfo[LRU];
+    for (i=0;i<NUM_MACHINES;i++) {
+	if (machine==i) {
+	} else {
+	    if (GET_MACHINEINFO(machineInfo,i)==1) {
+		entry = searchLRU(namePtr, i, &pos,LRU);
+		if (entry==NULL) {
+		    error("***(a)Removing file not in LRU\n");
+		}
+		addHist(pos,InvalidhistTable[LRU],LEVEL_TABLE_SIZE);
+		SET_MACHINEINFO(machineInfo,i,2);
+		numMachinesInvalidated++;
+	    } else if (GET_MACHINEINFO(machineInfo,i)==3) {
+		gcError++;
+	    }
+	}
+    }
+    nInvalidates[LRU]++;
+    nMInvalidates[LRU] += numMachinesInvalidated;
+    addHist(numMachinesInvalidated,invalidatedMachinesTable[LRU],IMT_SIZE);
+}
+
+/*
+ * Remove file from all LRU lists.
+ * This sets the machineInfo to 0 and counts up nRRemoves.
+ */
+void
+removeLRU(namePtr)
+    nameRec *namePtr;
+{
+    int i;
+    int pos;
+    LRUentry *entry;
+    int LRU;
+    unsigned char *machineInfo;
+    if (namePtr->type == INVALID) {
+	error("Double invalidation\n");
+	return;
+    }
+    if (debug) {
+	printf("removeLRU: %x,%x,%x,%x\n", namePtr->fileID[0],
+		namePtr->fileID[1], namePtr->fileID[2], namePtr->fileID[3]);
+    }
+    namePtr->type = INVALID;
+    for (LRU=0;LRU<NUM_LRU_LISTS;LRU++) {
+	machineInfo = namePtr->machineInfo[LRU];
+	for (i=0;i<NUM_MACHINES;i++) {
+	    if (GET_MACHINEINFO(machineInfo,i)!= 0) {
+		entry = searchLRU(namePtr, i, &pos,LRU);
+		if (entry==NULL) {
+		    error("***(b)Removing file not in LRU\n");
+		}
+		SET_MACHINEINFO(machineInfo,i,0);
+		entry->down->nameInfo = (nameRec *) NULL;
+		namePtr->numUsers--;
+		namePtr->numActiveUsers--;
+		nRRemoves[LRU]++;
+	    }
+	}
+    }
+    if (namePtr->numActiveUsers != namePtr->numberOfOpens) {
+	error("Num active users mismatch\n");
+    }
+    freeIDIfDone(namePtr);
+}
+
+/*
+ * Access a file on the machine's LRU list.
+ * This will move the file to the top of the list (creating it if necessary).
+ * The position on the list will be returned (-1 if not present).
+ *
+ * Side effects: entry moved to top of LRU list (may be created)
+ */
+int
+accessLRU(namePtr,machine,LRU, new, migrated)
+    nameRec *namePtr;
+    int machine;
+    int LRU;
+    int new;
+    int migrated;
+{
+    int pos;
+    int machineInfo;
+    int created=0;
+    register LRUentry *entry, *currEntry;
+
+    if (LRU != thisLRU) return 0;
+    LRU = NLRU(LRU);
+    nAccesses[LRU]++;
+    if (migrated&1) {
+	nAccesses[MIG_MEAS]++;
+    }
+    if (migrated&2) {
+	nAccesses[TMP_MEAS]++;
+    }
+    if (namePtr==NULL) {
+	/*
+	 * Forced miss.
+	 */
+	forcedMiss[LRU]++;
+	nRValidates[LRU]++;
+	if (migrated&1) {
+	    forcedMiss[MIG_MEAS]++;
+	    nRValidates[MIG_MEAS]++;
+	}
+	if (migrated&2) {
+	    forcedMiss[TMP_MEAS]++;
+	    nRValidates[TMP_MEAS]++;
+	}
+	return -1;
+    }
+    if (debug) {
+	printf("accessLRU: (%x,%x,%x,%x): m: %d, LRU: %d\n",
+		namePtr->fileID[0], namePtr->fileID[1], namePtr->fileID[2],
+		namePtr->fileID[3], machine, LRU);
+    }
+    machineInfo = GET_MACHINEINFO(namePtr->machineInfo[LRU],machine);
+    if (machineInfo != 0) {
+	entry = searchLRU(namePtr, machine, &pos,LRU);
+	if (new) {
+	    error("accessLRU: new entry exists\n"); 
+	}
+    } else {
+	entry = NULL;
+    }
+    if (entry==NULL) {
+	created = 1;
+	entry = (LRUentry *)malloc(sizeof(LRUentry));
+	mallocLRU += sizeof(LRUentry);
+	bzero((char *)entry,sizeof(LRUentry));
+	entry->down = LRUlist[LRU][machine].down;
+	currEntry = entry;
+	LRUlist[LRU][machine].down = entry;
+	entry->nameInfo = namePtr;
+	namePtr->numUsers++;
+	namePtr->numActiveUsers++;
+	pos = -1;
+    } else if (entry != &LRUlist[LRU][machine]) {
+	/* Only move if not first on the list */
+	LRUentry *oldFirst, *newFirst;
+	newFirst = entry->down;
+	oldFirst = LRUlist[LRU][machine].down; /* First entry on the list */
+	LRUlist[LRU][machine].down = newFirst;
+	entry->down = newFirst->down;
+	newFirst->down = oldFirst;
+	currEntry = newFirst;
+    } else {
+	currEntry = entry->down;
+    }
+    if (namePtr->type==INVALID) {
+	error("Accessed invalid entry\n");
+    }
+    if (machineInfo==0) {
+	pos = -1;
+	if (debug) {
+	    printf("accessLRU: nRValidates++: used invalid name\n");
+	}
+	nRValidates[LRU]++;
+	if (migrated&1) {
+	    nRValidates[MIG_MEAS]++;
+	}
+	if (migrated&2) {
+	    nRValidates[TMP_MEAS]++;
+	}
+    } else if (machineInfo==1) {
+	if (currEntry->lastAccess==0) {
+	    addHist(-1, ageTable[LRU], AGE_TABLE_SIZE);
+	} else {
+	    addHist((int)(sec-currEntry->lastAccess),
+		    ageTable[LRU], AGE_TABLE_SIZE);
+	}
+	nRHits[LRU]++;
+	addHist(pos,ValidhistTable[LRU],LEVEL_TABLE_SIZE);
+	if (migrated&1) {
+	    nRHits[MIG_MEAS]++;
+	    addHist(pos,ValidhistTable[MIG_MEAS],LEVEL_TABLE_SIZE);
+	}
+	if (migrated&2) {
+	    nRHits[TMP_MEAS]++;
+	    addHist(pos,ValidhistTable[TMP_MEAS],LEVEL_TABLE_SIZE);
+	}
+    } else if (machineInfo==3) {
+	pos = -1;
+	nRValidates[LRU]++;
+	if (migrated&1) {
+	    nRValidates[MIG_MEAS]++;
+	}
+	if (migrated&2) {
+	    nRValidates[TMP_MEAS]++;
+	}
+	gcError++;
+    } else {
+	nRRevalidates[LRU]++;
+	addHist(pos,foundInvalidTable[LRU],LEVEL_TABLE_SIZE);
+	if (migrated&1) {
+	    nRRevalidates[MIG_MEAS]++;
+	    addHist(pos,foundInvalidTable[MIG_MEAS],LEVEL_TABLE_SIZE);
+	}
+	if (migrated&2) {
+	    nRRevalidates[TMP_MEAS]++;
+	    addHist(pos,foundInvalidTable[TMP_MEAS],LEVEL_TABLE_SIZE);
+	}
+    }
+    currEntry->lastAccess = sec;
+    if (created != (machineInfo==0?1:0)) {
+	error("LRU creation error\n");
+	fprintf(stderr,"Created = %d, machineInfo=%d\n", created, machineInfo);
+    }
+    SET_MACHINEINFO(namePtr->machineInfo[LRU],machine,1);
+    return pos;
+}
+
+/*
+ * Do some validations. */
+void
+validateLRU(str)
+char *str;
+{
+    int lru, m, mi;
+    LRUentry *entry, *oldentry;
+    int c;
+
+    for (lru=0;lru<NUM_LRU_LISTS;lru++) {
+	for (m=0;m<NUM_MACHINES;m++) {
+	    c = 0;
+	    oldentry = &LRUlist[lru][m];
+	    while (1) {
+		entry = oldentry->down;
+		if (entry==NULL) {
+		    break;
+		}
+		if (entry->nameInfo != NULL) {
+		    mi = GET_MACHINEINFO(entry->nameInfo->machineInfo[lru], m);
+		    if (mi != 1 && mi != 2) {
+			fprintf(stderr,"%s: Bad mi: %d on list [%d][%d][%d]\n",
+				str,mi, lru,m,c);
+			mypanic();
+		    }
+		}
+		c++;
+		oldentry = entry;
+	    }
+	}
+    }
+}
+
+/*
+ ****************************************************************************
+ *	Histogram operations
+ ****************************************************************************
+ */
+
+/*
+ * Histogram tables work as follows:
+ * 0...max-3 hold the number with that value.
+ * max-2 holds the number >= max-2
+ * max-1 holds the number < 0.
+ */
+
+/*
+ * Add to histogram
+ */
+void
+addHist(val,table,max)
+int val;
+int table[];
+int max;
+{
+    if (val>=max-2) {
+	table[max-2]++;
+    } else if (val<0) {
+	table[max-1]++;
+    } else{
+	table[val]++;
+    }
+}
+
+/*
+ * Sum two histograms, yielding a third.
+ */
+void
+sumHist(h1,h2,sum,max)
+int *h1, *h2, *sum, max;
+{
+    int i;
+    for (i=0;i<max;i++) {
+	sum[i] = h1[i]+h2[i];
+    }
+}
+
+/*
+ * Dump histogram.
+ * total is the requested total for dividing percentages.
+ * If -1, the real total will be used.
+ */
+void
+dumpHist(table,max,total)
+int *table;
+int max;
+int total;
+{
+    int maxUsed,i;
+    int cumul=0;
+    int realTotal;
+    for (maxUsed=max-2;maxUsed>0;maxUsed--) {
+	if (table[maxUsed]!=0) break;
+    }
+    realTotal = table[max-1];
+    for (i=0;i<=maxUsed;i++) {
+	realTotal += table[i];
+    }
+    if (total<0) {
+	total = realTotal;
+    }
+
+    printf("    #       amount         cumul\n");
+    for (i=0;i<=maxUsed;i++) {
+	cumul += table[i];
+	if (i==max-2) {
+	    printf(">=");
+	} else {
+	    printf("  ");
+	}
+	printf("%3d %5d (%5.2f) %5d (%5.2f)\n", i, table[i],
+		table[i]*100./total, cumul, cumul*100./total);
+    }
+    if (table[max-1]>0) {
+	printf("Neg: %d (%5.2f)\n", table[max-1], table[max-1]*100./total);
+    }
+    if (total == realTotal) {
+	printf("Total: %d\n", total);
+    } else {
+	printf("Sum: %d of %d = %5.2f%%\n", realTotal, total,
+		realTotal*100./total);
+    }
+}
+
+/*
+ * Dump histogram in xgraph format.
+ * total is the requested total for dividing percentages.
+ * If -1, the real total will be used.
+ */
+void
+dumpHistGraph(table,max,total,cumul,xoff)
+int *table;
+int max;
+int total;
+int cumul;
+float xoff;
+{
+    int maxUsed,i;
+    int cumulTotal=0;
+    int realTotal;
+
+    for (maxUsed=max-2;maxUsed>0;maxUsed--) {
+	if (table[maxUsed]!=0) break;
+    }
+    realTotal = table[max-1];
+    for (i=0;i<=maxUsed;i++) {
+	realTotal += table[i];
+    }
+    if (total<0) {
+	total = realTotal;
+    }
+
+    if (maxUsed==max-2) maxUsed--;
+    for (i=0;i<=maxUsed;i++) {
+	if (cumul) {
+	    cumulTotal += table[i];
+	} else {
+	    cumulTotal = table[i];
+	}
+	printf("%f %7.4f\n", i+xoff, cumulTotal*100./total);
+    }
+    printf("%f %7.4f\n", max+xoff, cumulTotal*100./total);
+}
+@
+
+
+1.7
+log
+@February version
+@
+text
+@d9 1
+a9 1
+#include <kernel/sospRecord.h>
+d45 4
+d60 3
+d300 3
+a302 2
+    namePtr = newID(&data[3],IFNEW,NULL, UNKNOWN);
+    (void)accessDir(ATTR_LOOKUP,namePtr,NULL,currHost, homeHost, UNKNOWN);
+d323 18
+a340 5
+    currHost = machine ; homeHost = machine; /*  *** Hack ! */
+
+    numSetAttrID++;
+    namePtr = newID(&data[3],IFNEW,NULL, UNKNOWN);
+    (void)accessDir(ATTR_MODIFY,namePtr,NULL,currHost, homeHost, UNKNOWN);
+d367 1
+a367 1
+    namePtr = newID(&data[3],IFNEW,NULL, type);
+d371 1
+a371 1
+	(void)accessDir(DIR_READ,namePtr,NULL,currHost, homeHost ,FS_DIRECTORY);
+d377 1
+a377 1
+	(void)accessDir(ATTR_MODIFY,namePtr,NULL,currHost, homeHost, UNKNOWN);
+d382 1
+a382 1
+    entryPtr = Hash_CreateEntry(streamTablePtr, &data[7], &created);
+d427 1
+a427 1
+    entryPtr = Hash_FindEntry(streamTablePtr, &data[1]);
+d529 1
+a529 1
+	    path[i] = newID(ID_NUM(i),IFNEW,NULL, FS_SYMBOLIC_LINK);
+d531 1
+a531 1
+	    path[i] = newID(ID_NUM(i),IFNEW,NULL, FS_DIRECTORY);
+d534 2
+a535 2
+    path[numIds-1] = newID(ID_NUM(numIds-1),IFNEW,NULL,UNKNOWN);
+    returnPath = newID(RETURN_ID,IFNEW,NULL, returnType);
+d605 1
+a605 1
+	    level =accessDir(NAME_LOOKUP,path[numIds-1],NULL,currHost,
+d621 1
+a621 1
+		    level =accessDir(ATTR_LOOKUP,returnPath,NULL,currHost,
+d629 4
+a632 1
+		    level =accessDir(ATTR_MODIFY,returnPath,NULL, currHost,
+d649 1
+a649 1
+			returnPath = newID(RETURN_ID,MAKENEW,NULL, returnType);
+d691 1
+a691 1
+		    returnPath = newID(RETURN_ID,MAKENEW,NULL, returnType);
+d741 4
+a744 2
+    printf("%d sec start, %d sec end\n", (int)firstSecs, (int)sec);
+    printf("Total # of seconds = %f\n", totalSecs);
+d947 5
+a951 3
+		    printf("      %s: %d %5.2f%% %5.2f%%\n", status(0x40000+i),
+		    statusTable[op][i+1], statusTable[op][i+1]*100./nlookups,
+		    statusTable[op][i+1]*100./ops[op]);
+d1028 1
+a1028 1
+	    printf("      %s: %d (%5.2f%%)\n", status(0x40000+i),
+a1159 1
+    int lru;
+d1264 1
+a1264 1
+	if (dirIDName != NULL) {
+d1270 1
+a1270 1
+	if (entryIDName != NULL) {
+d1287 1
+a1287 2
+	currHost = 0;
+	homeHost = 0;
+d1289 4
+d1413 1
+a1413 1
+    LRUentry *entry, *oldentry, *newentry;
+d1425 1
+a1425 2
+	    oldentry = &LRUlist[lru][machine];
+	    newentry = oldentry->down;
+a1428 1
+		oldentry = entry;
+d1434 4
+d1452 1
+a1452 2
+		oldentry = &LRUlist[lru][machine];
+		newentry = oldentry->down;
+a1453 1
+		    oldentry = entry;
+a1458 1
+		    oldentry = entry;
+d1516 1
+a1516 1
+    entryPtr = Hash_FindEntry(tablePtr, id);
+d1551 1
+a1551 1
+	entryPtr = Hash_CreateEntry(tablePtr, fileID, &created);
+d1559 1
+a1559 1
+		fprintf(stderr,"Reuse of entry\n");
+d1562 2
+a1563 2
+		    removeLRU(nameRecPtr->fileID);
+		    entryPtr = Hash_CreateEntry(tablePtr, fileID, &created);
+d1641 1
+a1641 1
+	entryPtr = Hash_FindEntry(tablePtr, namePtr->fileID);
+d1668 1
+a1668 1
+	entryPtr = Hash_FindEntry(tablePtr, fileID);
+d2190 1
+a2190 1
+	printf("%f %5.2f\n", i+xoff, cumulTotal*100./total);
+d2192 1
+a2192 1
+    printf("%f %5.2f\n", max+xoff, cumulTotal*100./total);
+@
+
+
+1.6
+log
+@*** empty log message ***
+@
+text
+@d18 5
+d24 1
+d43 2
+d107 1
+a107 1
+#define error(x) fprintf(stderr,"%18.18s: %s", ctime(&sec), x)
+d130 2
+a131 1
+#define MIG_MEAS 5
+d166 1
+d183 5
+a187 3
+int nRHits[NUM_LRU_LISTS+1] = {0}; /* Number of remote directory validates. */
+int nRValidates[NUM_LRU_LISTS+1] = {0}; /* Number of remote directory validates. */
+int nRRevalidates[NUM_LRU_LISTS+1] = {0}; /* Number of remote directory revalidates. */
+d216 4
+d224 2
+a225 2
+int ValidhistTable[NUM_LRU_LISTS+1][LEVEL_TABLE_SIZE] = {0}; /* LRU position when valid */
+int foundInvalidTable[NUM_LRU_LISTS+1][LEVEL_TABLE_SIZE] = {0}; /* LRU when invalid. */
+a227 1
+int usingMachinesTable[IMT_SIZE] = {0}; /* # machines using directory. */
+d245 1
+a245 1
+int accessDir _ARGS_((int function, file_id *dirID, file_id *entryID,
+d251 1
+a251 1
+void newID _ARGS_((file_id *fileID, int force, char *name, int type));
+d253 2
+d289 1
+d293 3
+a295 2
+    newID(&data[3],IFNEW,NULL, UNKNOWN);
+    (void)accessDir(ATTR_LOOKUP,&data[3],NULL,currHost, homeHost, UNKNOWN);
+d313 1
+d318 3
+a320 2
+    newID(&data[3],IFNEW,NULL, UNKNOWN);
+    (void)accessDir(ATTR_MODIFY,&data[3],NULL,currHost, homeHost, UNKNOWN);
+d346 1
+a346 1
+    newID(&data[3],IFNEW,NULL, type);
+d350 1
+a350 1
+	(void)accessDir(DIR_READ,&data[3],NULL,currHost, homeHost ,FS_DIRECTORY);
+d356 1
+a356 1
+	(void)accessDir(ATTR_MODIFY,&data[3],NULL,currHost, homeHost, UNKNOWN);
+d368 1
+d370 1
+a374 1
+    namePtr= hashID(&data[3]);
+d382 1
+d414 4
+d426 1
+d430 1
+d432 1
+d438 2
+d441 2
+a456 1
+    int level;
+d460 1
+d463 3
+d467 1
+d508 1
+a508 1
+	    newID(ID_NUM(i),IFNEW,NULL, FS_SYMBOLIC_LINK);
+d510 1
+a510 1
+	    newID(ID_NUM(i),IFNEW,NULL, FS_DIRECTORY);
+d513 2
+a514 2
+    newID(ID_NUM(numIds-1),IFNEW,NULL,UNKNOWN);
+    newID(RETURN_ID,IFNEW,NULL, returnType);
+d519 1
+a519 1
+	if ((hashID(ID_NUM(0))->flags)&PREFIX) {
+d522 1
+a522 1
+	    prefNum = hashID(ID_NUM(0))->flags&~PREFIX;
+d528 3
+a530 2
+		    (void)accessDir(NAME_LOOKUP,&prefixParts[prefNum]
+			    [partCnt], &prefixParts[prefNum][partCnt+4],
+d532 1
+d535 2
+a536 2
+		    (void)accessDir(NAME_LOOKUP,&prefixParts[prefNum]
+			    [partCnt], ID_NUM(0), currHost, homeHost,
+d538 1
+d551 1
+a551 1
+	    (void)accessDir(NAME_LOOKUP,ID_NUM(i),ID_NUM(i+1),currHost,
+d553 1
+d577 2
+a578 1
+	if (returnStatus == FS_FILE_NOT_FOUND ||
+d582 3
+a584 2
+		returnStatus==FS_DIR_NOT_EMPTY) {
+	    (void)accessDir(NAME_LOOKUP,ID_NUM(numIds-1),NULL,currHost,
+d586 1
+d600 1
+a600 1
+		    (void)accessDir(ATTR_LOOKUP,RETURN_ID,NULL,currHost,
+d602 1
+d608 1
+a608 1
+		    (void)accessDir(ATTR_MODIFY,RETURN_ID,NULL, currHost,
+d610 1
+d617 3
+a619 2
+		    (void)accessDir(NAMEATTR_REMOVE,ID_NUM(numIds-2),
+			    ID_NUM(numIds-1),currHost, homeHost, returnType);
+d624 5
+a628 3
+			newID(RETURN_ID,MAKENEW,NULL, returnType);
+			(void)accessDir(NAMEATTR_CREATE,ID_NUM(numIds-1),
+				RETURN_ID, currHost, homeHost, returnType);
+d636 3
+a638 2
+		    (void)accessDir(NAMEATTR_REMOVE,ID_NUM(numIds-2),
+			    ID_NUM(numIds-1), currHost, homeHost, returnType);
+d648 3
+a650 2
+		    (void)accessDir(NAME_MODIFY,ID_NUM(numIds-2),
+			    RETURN_ID, currHost, homeHost, returnType);
+d654 7
+d666 5
+a670 3
+		    newID(RETURN_ID,MAKENEW,NULL, returnType);
+		    (void)accessDir(NAMEATTR_CREATE,ID_NUM(numIds-1),
+			    RETURN_ID, currHost, homeHost, returnType);
+d679 4
+d688 6
+a694 1
+
+a711 1
+    char *type;
+d724 1
+a724 1
+	type = LRUWord[i];
+a752 3
+    printf("\nNumber of machines using directory:\n");
+    dumpHist(usingMachinesTable,IMT_SIZE, -1);
+
+d756 12
+a767 8
+    printf("##file GNumInvalid.x\n");
+    printf("BarGraph: 1\nBarWidth: .1\nNoLines: 1\n");
+    printf("TitleText: Number of invalidations\n");
+    printf("XUnitText: Number of invalidations\n");
+    printf("YUnitText: Percent\n");
+    printf("YStep: 10\nXStep: 1\nXLowLimit: 0\nXHighLimit: 5\n");
+    puts("ZeroWidth: 2\nXFormat: %2.0f\nYFormat: %3.0f\n");
+    printf("Device: Gremlin\nDisposition: To File\n");
+d769 2
+a770 2
+	printf("\n\"%s\n", graphTitles[i]);
+	dumpHistGraph(invalidatedMachinesTable[i],5, -1, TRUE, i/10.);
+d782 2
+a783 1
+    dumpLRU(NAME);
+d785 16
+a800 3
+    for (i=0;i<NUM_LRU_LISTS+1;i++) {
+	printf("##file %s\n%s",graphNames[i], GGRAPHSTR);
+	printf("TitleText: %s\n", graphTitles[i]);
+d803 5
+d809 2
+a810 4
+		100-nRValidates[i]*100./(nRValidates[i]+
+		nRRevalidates[i]+nRHits[i]),
+		100-nRValidates[i]*100./(nRValidates[i]+
+		nRRevalidates[i]+nRHits[i]));
+d815 1
+a815 1
+	    nRValidates[i]+nRRevalidates[i]+nRHits[i], TRUE, 0.0);
+d818 30
+a847 1
+	    nRValidates[i]+nRRevalidates[i]+nRHits[i], TRUE, 0.0);
+d851 10
+a860 6
+    printf("##file GInvSize.x\n");
+    printf("TitleText: Invalidations vs. size\n");
+    puts(GGRAPHSTR);
+    printf("YHighLimit: 7\n");
+    printf("YStep: 1\n");
+    printf("XLowLimit: 0\nXHighLimit: 50\nXStep: 10\n");
+d862 1
+a862 1
+	printf("\n\"%s\n", graphTitles[i]);
+d864 1
+a864 1
+	    nRValidates[i]+nRRevalidates[i]+nRHits[i], TRUE, 0.0);
+d868 10
+a877 6
+    printf("##file GIdleAge.x\n");
+    printf("TitleText: Idle age when used\n");
+    puts(GGRAPHSTR);
+    printf("XUnitText: seconds\n");
+    printf("YHighLimit: 100\n");
+    printf("XLowLimit: 0\nXHighLimit: %d\n", AGE_TABLE_SIZE);
+d879 3
+a881 1
+	printf("\n\"%s\n", graphTitles[i]);
+d892 1
+a892 1
+    int i,j;
+d897 6
+d929 26
+a954 10
+    printf("##file TMiscMeasure.d\n");
+    printf("Lookups\t%d\n", nlookups);
+    printf("Migrated lookups\t%d\n", nMigLookups);
+    printf("Accesses to directories\t%d\n", nCompLookups);
+    printf("Prefix references\t%d\n", prefixRef);
+    printf("Symbolic links\t%d\n", numLinksEncountered);
+    printf("/tmp accesses\t%d\n", tmpAccess);
+    printf("Directory opens as a file\t%d\n", numDirectoryOpens);
+    printf("Duration of trace (secs)\t%5.0f\n", totalSecs);
+    printf("##end\n");
+d957 10
+a966 4
+    printf("Accesses to open write file attributes\t%d\t%d\n",
+	    attributesWhileReading, -1);
+    printf("Accesses to open read file attributes\t%d\t%d\n",
+	    attributesWhileWriting, -1);
+d968 3
+a970 2
+    printf("GetAttrID\t%d\n", numGetAttrID); 
+    printf("SetAttrID\t%d\n", numSetAttrID); 
+d976 1
+a976 1
+	    printf("%s\t%d\t%5.2f\t%5.2f\t%5.2f\5t%5.2f\n", opname(op),
+d983 1
+a983 4
+    printf("_\nRename\t%d\n", numMoveOps);
+    printf("##end\n");
+
+    printf("\nStatus totals:\n");
+d990 6
+d1009 1
+a1009 1
+	type = LRUWord[i];
+d1017 1
+a1017 2
+		nRValidates[i], type, nRValidates[i]*100./(nRValidates[i]+
+		nRRevalidates[i]+nRHits[i]));
+d1021 2
+a1022 2
+	printf("%d total %s accesses (sum of the above)\n", nRValidates[i]+
+		nRRevalidates[i]+nRHits[i], type);
+a1122 2
+int numLRU[NUM_LRU_LISTS] = {0};
+int lruAge[20] = {0}; /* Total name hits. */
+a1130 1
+    int thisCount;
+a1153 17
+	{
+	    for (lru=0;lru<NUM_LRU_LISTS;lru++) {
+		thisCount = 0;
+		oldentry = &LRUlist[lru][machine];
+		for (;;numLRU[lru]++) {
+		    thisCount++;
+		    entry = oldentry->down;
+		    if (entry==NULL) {
+			break;
+		    }
+		    addHist((int)((sec-entry->lastAccess)/60),lruAge,20);
+		    oldentry = entry;
+		}
+		fprintf(stderr,"machine %d lru %d count %d\n", machine,
+			lru, thisCount);
+	    }
+	}
+a1188 6
+    for (lru=0;lru<NUM_LRU_LISTS;lru++) {
+	fprintf(stderr,"Total # of LRU entries: %d in list %d\n", numLRU[lru],
+		lru);
+    }
+    printf("Age in minutes of LRU entries at completion:\n");
+    dumpHist(lruAge,20, -1);
+d1222 1
+a1222 1
+accessDir(function, dirID, entryID, currHost, homeHost, type)
+d1224 2
+a1225 2
+    file_id *dirID;
+    file_id *entryID;
+a1229 2
+    nameRec *namePtr;
+    nameRec *dirIDName, *entryIDName;
+d1231 1
+a1231 1
+    int level;
+d1237 3
+a1239 2
+	if (dirID != NULL) {
+	    printf("(%x,%x,%x,%x)", dirID[0], dirID[1], dirID[2], dirID[3]);
+d1243 4
+a1246 3
+	if (entryID != NULL) {
+	    printf("/(%x,%x,%x,%x)\n", entryID[0], entryID[1], entryID[2],
+		    entryID[3]);
+d1251 2
+a1252 2
+    if (dirID==NULL) {
+	error("Warning: NULL dirID to accessDir\n");
+d1255 1
+a1255 2
+    if (dirID[0]==-1) {
+	numLinksEncountered++;
+a1259 2
+	fprintf(stderr,"%x,%x,%x,%x\n", dirID[0], dirID[1], dirID[2],
+		dirID[3]);
+d1264 1
+a1264 15
+    dirIDName = hashID(dirID);
+    if (dirIDName==NULL) {
+	newID(dirID,IFNEW,NULL, UNKNOWN);
+	dirIDName = hashID(dirID);
+    }
+    if (entryID != NULL) {
+	entryIDName = hashID(entryID);
+	if (entryIDName==NULL) {
+	    newID(entryID,IFNEW,NULL, type);
+	    entryIDName = hashID(entryID);
+	}
+    } else {
+	entryIDName = NULL;
+    }
+    migrated = (currHost != homeHost);
+d1268 1
+d1270 2
+a1271 2
+	    level = accessLRU(dirIDName,currHost,ATTR, FALSE, FALSE);
+	    level = accessLRU(dirIDName,homeHost,ATTR_MIG, FALSE, FALSE);
+d1274 3
+a1276 5
+	    level = accessLRU(dirIDName,homeHost,NAME_MIG, FALSE, FALSE);
+	    if (entryIDName != NULL) {
+		level = accessLRU(entryIDName,currHost,NAME_ENTRY, FALSE,
+		migrated);
+	    }
+d1279 2
+a1280 2
+	    level = accessLRU(dirIDName,currHost,ATTR, FALSE, FALSE);
+	    level = accessLRU(dirIDName,homeHost,ATTR_MIG, FALSE, FALSE);
+d1297 3
+a1299 3
+	    level = accessLRU(dirIDName,homeHost,NAME_MIG, FALSE, FALSE);
+	    level = accessLRU(dirIDName,currHost,ATTR, FALSE, FALSE);
+	    level = accessLRU(dirIDName,homeHost,ATTR_MIG, FALSE, FALSE);
+d1307 2
+a1308 4
+	    level = accessLRU(dirIDName,currHost,NAME, FALSE, migrated);
+	    level = accessLRU(dirIDName,homeHost,NAME_MIG, FALSE, FALSE);
+	    level = accessLRU(dirIDName,currHost,ATTR, FALSE, FALSE);
+	    level = accessLRU(dirIDName,homeHost,ATTR_MIG, FALSE, FALSE);
+d1315 2
+a1316 4
+	    level = accessLRU(dirIDName,currHost,NAME, FALSE, migrated);
+	    level = accessLRU(dirIDName,homeHost,NAME_MIG, FALSE, FALSE);
+	    level = accessLRU(dirIDName,currHost,ATTR, FALSE, FALSE);
+	    level = accessLRU(dirIDName,homeHost,ATTR_MIG, FALSE, FALSE);
+d1325 2
+d1328 2
+a1329 3
+	    level = accessLRU(dirIDName,homeHost,NAME_MIG, FALSE, FALSE);
+	    level = accessLRU(dirIDName,currHost,ATTR, FALSE, FALSE);
+	    level = accessLRU(dirIDName,homeHost,ATTR_MIG, FALSE, FALSE);
+d1333 3
+a1335 3
+	    level = accessLRU(entryIDName,currHost,ATTR, TRUE, FALSE);
+	    level = accessLRU(entryIDName,homeHost,ATTR_MIG, TRUE, FALSE);
+	    level = accessLRU(entryIDName,homeHost,NAME_ENTRY, TRUE, FALSE);
+d1338 2
+a1339 2
+		level = accessLRU(entryIDName,homeHost,NAME_MIG, TRUE,
+			FALSE);
+d1343 6
+d1350 3
+a1352 1
+	    level = accessLRU(dirIDName,homeHost,NAME_MIG, FALSE, FALSE);
+d1359 1
+a1359 1
+    return 0;
+a1368 15
+    int i;
+    int count = 0;
+    int count2 = 0;
+    if (namePtr->type < INVALID || namePtr->type>10) {
+	fprintf(stderr,"Bad type: %d\n", namePtr->type);
+    }
+    if (namePtr->type == FS_DIRECTORY) {
+	for (i=0;i<NUM_MACHINES;i++) {
+	    if (GET_MACHINEINFO(namePtr->machineInfo[NAME],i)!=0) {
+		count++;
+	    }
+	}
+	unmatchedOpens += namePtr->numberOfOpens;
+	addHist(count,usingMachinesTable,IMT_SIZE);
+    }
+a1382 1
+    Hash_Entry *hashEntryPtr;
+d1384 1
+a1384 1
+    int numLRUfreed = 0, numEntryfreed = 0;
+d1440 1
+a1440 8
+			if (entry->nameInfo->numUsers==0) {
+			    collectHashStatistics(entry->nameInfo);
+			    Hash_DeleteEntry(tablePtr, Hash_FindEntry(tablePtr,
+				    entry->nameInfo->fileID));
+			    free((char *)entry->nameInfo);
+			    entryCnt--;
+			    numEntryfreed++;
+			}
+d1446 1
+d1456 2
+a1457 2
+    fprintf(stderr,"GC removed %d LRU (%d null), %d names, max=%d, cnt=%d, numLRU=%d, %d lookups\n",
+	    numLRUfreed, nullRemove, numEntryfreed, gcMax, entryCnt, lruCount,
+d1459 5
+a1490 1
+	mypanic();
+d1503 1
+a1503 1
+void
+d1511 1
+a1511 1
+    nameRec *nameRecPtr;
+d1513 4
+a1516 1
+    int i;
+d1519 1
+a1519 1
+	return;
+d1524 3
+d1535 3
+d1545 1
+d1571 52
+a1622 3
+     if (entryCnt >= gcMax) {
+	 garbageCollect();
+     }
+a1632 1
+    Hash_Entry *entryPtr;
+d1668 1
+d1744 1
+d1781 2
+d1826 1
+d1852 1
+a1852 6
+    if (namePtr->numUsers==0) {
+	collectHashStatistics(namePtr);
+	Hash_DeleteEntry(tablePtr, Hash_FindEntry(tablePtr, namePtr->fileID));
+	free((char *)namePtr);
+	entryCnt--;
+    }
+d1875 25
+d1917 1
+d1946 6
+a1951 5
+	if (!new) {
+	    nRValidates[LRU]++;
+	    if (migrated) {
+		nRValidates[MIG_MEAS]++;
+	    }
+d1962 1
+a1962 1
+	if (migrated) {
+d1966 4
+d1973 1
+a1973 1
+	if (migrated) {
+d1976 3
+d1983 1
+a1983 1
+	if (migrated) {
+d1986 4
+@
+
+
+1.5
+log
+@*** empty log message ***
+@
+text
+@d16 2
+d78 2
+a79 1
+int gcMax = 5000;
+d81 1
+a81 1
+#define GC_REMOVE_TIME 3600
+d122 1
+d173 3
+a175 3
+int nRHits[NUM_LRU_LISTS] = {0}; /* Number of remote directory validates. */
+int nRValidates[NUM_LRU_LISTS] = {0}; /* Number of remote directory validates. */
+int nRRevalidates[NUM_LRU_LISTS] = {0}; /* Number of remote directory revalidates. */
+d208 2
+a209 2
+int ValidhistTable[NUM_LRU_LISTS][LEVEL_TABLE_SIZE] = {0}; /* LRU position when valid */
+int foundInvalidTable[NUM_LRU_LISTS][LEVEL_TABLE_SIZE] = {0}; /* LRU when invalid. */
+d211 1
+a211 1
+int invalidatedMachinesTable[IMT_SIZE] = {0}; /* # of machines invalidated. */
+a212 1
+int usedMachinesTable[IMT_SIZE] = {0}; /* # machines used directory. */
+a213 1
+int nameHitTable[LEVEL_TABLE_SIZE] = {0}; /* Total name hits. */
+d240 1
+a240 1
+void invalidateLRU _ARGS_((file_id *fileID, int machine, int LRU));
+d242 2
+a243 1
+int accessLRU _ARGS_((file_id *fileID, int machine, int LRU, int new));
+d253 2
+a254 1
+void dumpHistGraph _ARGS_((int *table, int max, int total, int cumul));
+a428 1
+    int hit=0;
+d490 1
+a490 1
+		    level =accessDir(NAME_LOOKUP,&prefixParts[prefNum]
+a492 1
+		    hit = MAX(hit,level);
+d495 1
+a495 1
+		    level =accessDir(NAME_LOOKUP,&prefixParts[prefNum]
+a497 1
+		    hit = MAX(hit,level);
+d510 1
+a510 1
+	    level =accessDir(NAME_LOOKUP,ID_NUM(i),ID_NUM(i+1),currHost,
+a511 1
+	    hit = MAX(hit,level);
+d540 1
+a540 1
+	    level =accessDir(NAME_LOOKUP,ID_NUM(numIds-1),NULL,currHost,
+a541 1
+	    hit = MAX(hit,level);
+d555 1
+a555 1
+		    level =accessDir(ATTR_LOOKUP,RETURN_ID,NULL,currHost,
+a556 1
+		    hit = MAX(hit,level);
+d562 1
+a562 1
+		    level =accessDir(ATTR_MODIFY,RETURN_ID,NULL, currHost,
+a563 1
+		    hit = MAX(hit,level);
+d570 1
+a570 1
+		    level =accessDir(NAMEATTR_REMOVE,ID_NUM(numIds-2),
+a571 1
+		    hit = MAX(hit,level);
+d577 1
+a577 1
+			level =accessDir(NAMEATTR_CREATE,ID_NUM(numIds-1),
+a578 1
+			hit = MAX(hit,level);
+d586 1
+a586 1
+		    level =accessDir(NAMEATTR_REMOVE,ID_NUM(numIds-2),
+a587 1
+		    hit = MAX(hit,level);
+d597 1
+a597 1
+		    level =accessDir(NAME_MODIFY,ID_NUM(numIds-2),
+a598 1
+		    hit = MAX(hit,level);
+d608 1
+a608 1
+		    level =accessDir(NAMEATTR_CREATE,ID_NUM(numIds-1),
+a609 1
+		    hit = MAX(hit,level);
+a618 3
+    if (hit != 9999) {
+	addHist(hit,nameHitTable,LEVEL_TABLE_SIZE);
+    }
+d632 1
+a632 1
+    "GNamecacheMig.x", "GAttrcacheMig.x"};
+d635 2
+a636 1
+    "Name cache performance (no mig)", "Attribute cache performance (no mig)"};
+a689 12
+    printf("##file %s\n","GMachUsingDir.x");
+    printf("BarGraph: 1\nBarWidth: .3\nNoLines: 1\n");
+    printf("TitleText: Number of machines ever used directory\n");
+    printf("XUnitText: Number of machines\n");
+    printf("YUnitText: Percent\n");
+    printf("YStep: 10\nXStep: 1\nXLowLimit: 0\nXHighLimit: 2\n");
+    puts("ZeroWidth: 2\nXFormat: %2.0f\nYFormat: %3.0f\n");
+    printf("Device: Gremlin\nDisposition: To File\n");
+    printf("\n\"Percent\n");
+    dumpHistGraph(usedMachinesTable,5, -1, FALSE);
+    printf("##end\n");
+
+d691 1
+a691 1
+    printf("BarGraph: 1\nBarWidth: .3\nNoLines: 1\n");
+d695 1
+a695 1
+    printf("YStep: 10\nXStep: 1\nXLowLimit: 0\nXHighLimit: 2\n");
+d698 4
+a701 2
+    printf("\n\"Percent\n");
+    dumpHistGraph(invalidatedMachinesTable,6, -1, TRUE);
+d714 1
+a714 1
+    for (i=0;i<NUM_LRU_LISTS;i++) {
+d728 1
+a728 1
+	    nRValidates[i]+nRRevalidates[i]+nRHits[i], TRUE);
+d731 1
+a731 5
+	    nRValidates[i]+nRRevalidates[i]+nRHits[i], TRUE);
+	if (i==NAME) {
+	    printf("\n\"%s\n", "hits over entire path");
+	    dumpHistGraph(nameHitTable, LEVEL_TABLE_SIZE, nlookups, TRUE);
+	}
+d744 1
+a744 1
+	    nRValidates[i]+nRRevalidates[i]+nRHits[i], TRUE);
+d756 1
+a756 1
+	dumpHistGraph(ageTable[i], AGE_TABLE_SIZE, -1, TRUE);
+d766 1
+a766 1
+    int i;
+d821 1
+a821 1
+	    printf("%s\t%d\t%5.2f\t%5.2f\t%5.2f\n", opname(op),
+d824 1
+d966 2
+d976 1
+d978 1
+d1000 17
+d1052 6
+a1098 1
+    int hit = 0;
+d1100 2
+d1122 1
+a1122 1
+	return hit;
+d1126 1
+a1126 1
+	return hit;
+d1136 2
+a1137 2
+    namePtr = hashID(dirID);
+    if (namePtr==NULL) {
+d1139 1
+d1142 2
+a1143 2
+	namePtr = hashID(entryID);
+	if (namePtr==NULL) {
+d1145 1
+d1147 2
+d1150 1
+d1155 2
+a1156 2
+	    level = accessLRU(dirID,currHost,ATTR, FALSE);
+	    level = accessLRU(dirID,homeHost,ATTR_MIG, FALSE);
+d1158 5
+a1162 5
+	    level = accessLRU(dirID,currHost,NAME, FALSE);
+	    hit = MAXHIT(hit,level);
+	    level = accessLRU(dirID,homeHost,NAME_MIG, FALSE);
+	    if (entryID != NULL) {
+		level = accessLRU(entryID,currHost,NAME_ENTRY, FALSE);
+d1166 3
+a1168 8
+#ifdef MULTI_OPS
+	    level = accessLRU(dirID,currHost,NAME, FALSE);
+	    hit = MAXHIT(hit,level);
+	    level = accessLRU(dirID,homeHost,NAME_MIG, FALSE);
+#endif
+	    level = accessLRU(dirID,currHost,ATTR, FALSE);
+	    level = accessLRU(dirID,homeHost,ATTR_MIG, FALSE);
+	    if (namePtr->openMode & FS_WRITE) {
+d1170 1
+a1170 1
+	    } else if (namePtr->openMode & FS_READ) {
+d1172 1
+a1172 1
+	    } else if (namePtr->openMode & FS_EXECUTE) {
+d1175 1
+a1175 1
+		if (namePtr->numberOfOpens>0) {
+d1183 4
+a1186 5
+	    level = accessLRU(dirID,currHost,NAME, FALSE);
+	    hit = MAXHIT(hit,level);
+	    level = accessLRU(dirID,homeHost,NAME_MIG, FALSE);
+	    level = accessLRU(dirID,currHost,ATTR, FALSE);
+	    level = accessLRU(dirID,homeHost,ATTR_MIG, FALSE);
+d1188 3
+a1190 3
+	    invalidateLRU(dirID,currHost,NAME); /* Dir no longer valid. */
+	    invalidateLRU(dirID,homeHost,NAME_MIG);
+	    invalidateLRU(entryID,currHost,NAME_ENTRY); /* Entry invalid. */
+d1194 4
+a1197 5
+	    level = accessLRU(dirID,currHost,NAME, FALSE);
+	    hit = MAXHIT(hit,level);
+	    level = accessLRU(dirID,homeHost,NAME_MIG, FALSE);
+	    level = accessLRU(dirID,currHost,ATTR, FALSE);
+	    level = accessLRU(dirID,homeHost,ATTR_MIG, FALSE);
+d1199 2
+a1200 2
+	    invalidateLRU(dirID,currHost,ATTR); /* Attrs no lonver valid. */
+	    invalidateLRU(dirID,homeHost,ATTR_MIG);
+d1204 9
+a1212 10
+	    level = accessLRU(dirID,currHost,NAME, FALSE);
+	    hit = MAXHIT(hit,level);
+	    level = accessLRU(dirID,homeHost,NAME_MIG, FALSE);
+	    level = accessLRU(dirID,currHost,ATTR, FALSE);
+	    level = accessLRU(dirID,homeHost,ATTR_MIG, FALSE);
+#endif
+	    invalidateLRU(dirID,currHost,NAME); /* Dir no longer valid. */
+	    invalidateLRU(dirID,homeHost,NAME_MIG);
+	    invalidateLRU(entryID,currHost,NAME_ENTRY); /* Entry invalid. */
+	    removeLRU(entryID);
+d1216 10
+a1225 11
+	    level = accessLRU(dirID,currHost,NAME, FALSE);
+	    hit = MAXHIT(hit,level);
+	    level = accessLRU(dirID,homeHost,NAME_MIG, FALSE);
+	    level = accessLRU(dirID,currHost,ATTR, FALSE);
+	    level = accessLRU(dirID,homeHost,ATTR_MIG, FALSE);
+#endif
+	    invalidateLRU(dirID,currHost,NAME); /* Directory no longer valid */
+	    invalidateLRU(dirID,homeHost,NAME_MIG);
+	    level = accessLRU(entryID,currHost,ATTR, TRUE);
+	    level = accessLRU(entryID,homeHost,ATTR_MIG, TRUE);
+	    level = accessLRU(entryID,homeHost,NAME_ENTRY, TRUE);
+d1227 3
+a1229 2
+		level = accessLRU(entryID,currHost,NAME, TRUE);
+		level = accessLRU(entryID,homeHost,NAME_MIG, TRUE);
+d1233 2
+a1234 3
+	    level = accessLRU(dirID,currHost,NAME, FALSE);
+	    hit = MAXHIT(hit,level);
+	    level = accessLRU(dirID,homeHost,NAME_MIG, FALSE);
+d1241 1
+a1241 1
+    return hit;
+a1261 3
+	    if (namePtr->everUsed[i]!=0) {
+		count2++;
+	    }
+a1264 1
+	addHist(count2,usedMachinesTable,IMT_SIZE);
+d1276 1
+d1278 2
+a1283 1
+#if 0
+d1290 3
+d1295 1
+d1297 1
+d1304 45
+a1348 5
+		if (count>GC_REMOVE_COUNT &&
+			sec-entry->lastAccess>GC_REMOVE_TIME) {
+		    entry->nameInfo->numUsers--;
+		    entry->nameInfo->numActiveUsers--;
+		    oldentry->down = NULL;
+a1349 10
+		    if (entry->nameInfo->numUsers==0) {
+			collectHashStatistics(entry->nameInfo);
+			Hash_DeleteEntry(tablePtr, Hash_FindEntry(tablePtr,
+				entry->nameInfo->fileID));
+			free((char *)entry->nameInfo);
+			entryCnt--;
+			numEntryfreed++;
+		    }
+		    SET_MACHINEINFO(entry->nameInfo->machineInfo[lru],machine,
+			    3);
+a1354 2
+    printf("Garbage collection removed %d LRU entries, %d name entries\n",
+	    numLRUfreed, numEntryfreed);
+d1356 3
+a1358 2
+	gcMax = entryCnt+100;
+	printf("Max raised to %d\n", gcMax);
+d1360 3
+a1362 1
+#endif
+d1461 1
+a1461 1
+     if (entryCnt > gcMax) {
+d1591 1
+d1594 1
+d1597 3
+d1611 2
+a1612 2
+invalidateLRU(fileID,machine,LRU)
+    file_id *fileID;
+a1619 1
+    nameRec *namePtr;
+a1621 1
+    namePtr = hashID(fileID);
+d1623 3
+a1625 2
+	printf("invalidateLRU(%x,%x,%x,%x: m: %d, l: %d\n", fileID[0],
+		fileID[1], fileID[2], fileID[3], machine, LRU);
+d1646 1
+a1646 3
+    if (LRU == 0) {
+	addHist(numMachinesInvalidated,invalidatedMachinesTable,IMT_SIZE);
+    }
+d1654 2
+a1655 2
+removeLRU(fileID)
+    file_id *fileID;
+a1661 2
+    nameRec *namePtr;
+    namePtr = hashID(fileID);
+d1666 2
+a1667 2
+	printf("removeLRU: %x,%x,%x,%x\n", fileID[0], fileID[1], fileID[2],
+		fileID[3]);
+d1691 1
+a1691 1
+	Hash_DeleteEntry(tablePtr, Hash_FindEntry(tablePtr, fileID));
+d1693 1
+d1705 2
+a1706 2
+accessLRU(fileID,machine,LRU, new)
+    file_id *fileID;
+d1710 1
+a1711 1
+    nameRec *namePtr;
+a1715 1
+    namePtr = hashID(fileID);
+d1718 3
+a1720 2
+	printf("accessLRU: (%x,%x,%x,%x): m: %d, LRU: %d\n", fileID[0],
+		fileID[1], fileID[2], fileID[3], machine, LRU);
+d1764 3
+d1777 4
+d1784 3
+d1791 4
+d1798 2
+a1799 1
+	error("LRU creation error");
+a1801 3
+    if (LRU==NAME) {
+	namePtr->everUsed[machine]=1;
+    }
+d1936 1
+a1936 1
+dumpHistGraph(table,max,total,cumul)
+d1941 1
+d1965 1
+a1965 1
+	printf("%3d %5.2f\n", i, cumulTotal*100./total);
+d1967 1
+a1967 1
+    printf("%3d %5.2f\n", max, cumulTotal*100./total);
+@
+
+
+1.4
+log
+@*** empty log message ***
+@
+text
+@d16 2
+d20 2
+d33 43
+d88 5
+d96 1
+a96 1
+#define error(x) fprintf(stderr,"%s: %s", timeStr, x)
+d163 2
+d211 1
+d228 1
+a228 1
+void accessDir _ARGS_((int function, file_id *dirID, file_id *entryID,
+d240 1
+a240 1
+int accessLRU _ARGS_((file_id *fileID, int machine, int LRU));
+d245 1
+d272 1
+a272 1
+    accessDir(ATTR_LOOKUP,&data[3],NULL,currHost, homeHost, UNKNOWN);
+d295 1
+a295 1
+    accessDir(ATTR_MODIFY,&data[3],NULL,currHost, homeHost, UNKNOWN);
+d325 1
+a325 1
+	accessDir(DIR_READ,&data[3],NULL,currHost, homeHost ,FS_DIRECTORY);
+d331 1
+a331 1
+	accessDir(ATTR_MODIFY,&data[3],NULL,currHost, homeHost, UNKNOWN);
+d350 2
+d391 2
+d404 1
+d419 1
+d425 1
+d436 5
+a440 5
+#if 0
+    printf("LOOKUP: hostID: %d, home: %d, %s, numIDs %d, op %s, type %d\n", 
+	    hostID, data[2], status(returnStatus), numIds,
+	    opname(op), returnType);
+#endif
+a450 3
+    if (lastOp == FS_DOMAIN_HARD_LINK && op != 0x8a) {
+	error("missing hardlink2");
+    }
+d487 2
+a488 2
+		    accessDir(NAME_LOOKUP,&prefixParts[prefNum][partCnt],
+			    &prefixParts[prefNum][partCnt+4],
+d490 1
+d493 4
+a496 2
+		    accessDir(NAME_LOOKUP,&prefixParts[prefNum][partCnt],
+			    ID_NUM(0), currHost, homeHost,FS_DIRECTORY);
+d509 3
+a511 2
+	    accessDir(NAME_LOOKUP,ID_NUM(i),ID_NUM(i+1),currHost, homeHost,
+		    i==numIds-2?FS_DIRECTORY:UNKNOWN);
+d535 9
+d556 3
+a558 2
+		    accessDir(ATTR_LOOKUP,RETURN_ID,NULL,currHost, homeHost,
+			    returnType);
+d564 3
+a566 2
+		    accessDir(ATTR_MODIFY,RETURN_ID,NULL, currHost, homeHost,
+			    returnType);
+d570 2
+a571 3
+		    error("Need to validated rmdir code\n");
+		    if (DIFF_FD(ID_NUM(numIds-1), RETURN_ID)) {
+			error("Expected same returnID (8)\n");
+d573 3
+a575 2
+		    accessDir(NAMEATTR_REMOVE,ID_NUM(numIds-2),RETURN_ID,
+			    currHost, homeHost, returnType);
+d581 3
+a583 2
+			accessDir(NAMEATTR_CREATE,ID_NUM(numIds-1),RETURN_ID,
+			    currHost, homeHost, returnType);
+d591 1
+a591 1
+		    accessDir(NAMEATTR_REMOVE,ID_NUM(numIds-2),
+d593 1
+d603 3
+a605 2
+		    accessDir(NAME_MODIFY,ID_NUM(numIds-2), RETURN_ID,
+			    currHost, homeHost, returnType);
+d615 3
+a617 2
+		    accessDir(NAMEATTR_CREATE,ID_NUM(numIds-1), RETURN_ID,
+			    currHost, homeHost, returnType);
+d627 6
+d654 1
+d752 4
+d783 1
+d823 1
+d880 1
+a880 1
+	printf("%d machine-%s invalidated (#machines with entry removed for invalidation\n", nMInvalidates[i],type);
+d1025 11
+a1035 8
+	    if (entry->nameInfo->machineInfo[LRU][machine] !=1) {
+		count--;
+	    } else {
+		time = sec - entry->lastAccess[LRU];
+		if (time<min[count]) min[count] = time;
+		if (time>max[count]) max[count] = time;
+		cnt[count]++;
+		avg[count] += time;
+d1061 5
+d1072 2
+d1086 1
+a1086 1
+void
+d1095 1
+d1098 17
+d1117 1
+a1117 1
+	return;
+d1121 1
+a1121 1
+	return;
+d1124 3
+a1126 2
+	error(sprintf(charBuf,"accessDir: negative machine for dir %x,%x,%x,%x\n",
+		dirID[0], dirID[1], dirID[2], dirID[3]));
+d1144 10
+a1153 3
+	    level = accessLRU(dirID,currHost,NAME);
+	    level = accessLRU(dirID,homeHost,NAME_MIG);
+	    level = accessLRU(entryID,currHost,NAME_ENTRY);
+d1156 7
+a1162 2
+	    level = accessLRU(dirID,currHost,ATTR);
+	    level = accessLRU(dirID,homeHost,ATTR_MIG);
+d1177 7
+d1189 7
+d1200 7
+d1213 7
+d1222 6
+a1227 4
+	    level = accessLRU(entryID,currHost,NAME);
+	    level = accessLRU(entryID,homeHost,NAME_MIG);
+	    if (level != -1) {
+		error("Created file already on LRU list\n");
+a1228 2
+	    level = accessLRU(entryID,currHost,ATTR);
+	    level = accessLRU(entryID,homeHost,ATTR_MIG);
+d1231 3
+a1233 2
+	    level = accessLRU(dirID,currHost,NAME);
+	    level = accessLRU(dirID,homeHost,NAME_MIG);
+d1240 1
+d1253 3
+d1258 1
+a1258 1
+	    if (namePtr->machineInfo[NAME][i]!=0) {
+d1284 1
+d1301 1
+a1301 1
+			sec-entry->lastAccess[lru]>GC_REMOVE_TIME) {
+d1303 1
+d1306 1
+a1306 2
+		    if (entry->nameInfo->numUsers==0 &&
+			    entry->nameInfo->numberOfOpens==0) {
+d1314 2
+a1315 1
+		    entry->nameInfo->machineInfo[lru][machine]=3;
+d1327 1
+d1355 1
+d1385 11
+a1395 4
+	if (created==FALSE && (force==MAKENEW ||
+		((nameRec *)entryPtr->clientData)->type == INVALID)) {
+	    collectHashStatistics((nameRec *)entryPtr->clientData);
+	    free(entryPtr->clientData);
+d1548 5
+a1552 3
+    LRUentry *entry, *oldentry;
+    int count;
+    CHECKLRU(LRU);
+d1584 4
+d1592 1
+a1592 1
+	    if (machineInfo[i]==1) {
+d1598 1
+a1598 1
+		machineInfo[i]=2;
+d1600 1
+a1600 1
+	    } else if (machineInfo[i]==3) {
+d1630 4
+d1638 1
+a1638 1
+	    if (machineInfo[i]!= 0) {
+d1643 4
+a1646 1
+		machineInfo[i]=0;
+d1651 4
+a1654 2
+    namePtr->numUsers=0;
+    if (namePtr->numberOfOpens==0) {
+d1669 1
+a1669 1
+accessLRU(fileID,machine,LRU)
+d1673 1
+d1677 3
+a1679 1
+    LRUentry *entry, *currEntry;
+d1681 14
+a1694 1
+    entry = searchLRU(namePtr, machine, &pos,LRU);
+d1696 1
+d1703 2
+d1721 1
+a1721 1
+    if (namePtr->machineInfo[LRU][machine]==0) {
+d1723 8
+a1730 3
+	nRValidates[LRU]++;
+    } else if (namePtr->machineInfo[LRU][machine]==1) {
+	if (currEntry->lastAccess[LRU]==0) {
+d1733 1
+a1733 1
+	    addHist((int)(sec-currEntry->lastAccess[LRU]),
+d1738 1
+a1738 1
+    } else if (namePtr->machineInfo[LRU][machine]==3) {
+d1746 3
+a1748 3
+    currEntry->lastAccess[LRU] = sec;
+    if (namePtr->machineInfo[LRU][machine] == 0) {
+	namePtr->numUsers++;
+d1750 1
+a1750 1
+    namePtr->machineInfo[LRU][machine]=1;
+d1758 34
+d1918 1
+@
+
+
+1.3
+log
+@*** empty log message ***
+@
+text
+@d759 1
+a759 1
+    printf("_\n",Rename\t%d\n", numMoveOps);
+a1668 1
+printf("_\n",Rename\t%d\n", 
+@
+
+
+1.2
+log
+@*** empty log message ***
+@
+text
+@d22 5
+d29 4
+d45 1
+a45 1
+#define CHECKLRU(x) if ((x)<0 || (x)>2) printf("LRU=%d at %d\n",x,__LINE__)
+d55 1
+d58 4
+d68 3
+d123 1
+d143 3
+d156 1
+d189 1
+d194 1
+a211 1
+    nameRec *namePtr;
+d214 1
+a231 1
+    int 
+d233 3
+a235 2
+    int homeHost = data[3];
+    nameRec *namePtr;
+d343 1
+d349 3
+d358 1
+a358 1
+    int op,returnStatus, numIds, hostID;
+d361 2
+d372 1
+a372 1
+    hostID = data[1];
+d378 5
+a382 3
+    if (hostID>=NUM_MACHINES) {
+	error(sprintf(charBuf,"***Invalid machine number: %d\n", hostID));
+	hostID = NUM_MACHINES-1;
+d384 1
+d388 12
+a399 1
+    machineTable[hostID]++;
+d557 6
+d570 5
+d577 1
+d579 2
+a580 11
+	if (i==NAME) {
+	    printf("\nName lookup statistics:\n");
+	    type = "Directory";
+	} else if (i==ATTR) {
+	    type = "Attribute";
+	    printf("\nAttribute lookup statistics:\n");
+	} else {
+	    type = "Directory (entry)";
+	    printf("\nEntry-based name lookup statistics:\n");
+	}
+	printf("-------------------%s--------------------------\n",type);
+d599 3
+a606 2
+    printf("\nNumber of machines invalidated per op:\n");
+    dumpHist(invalidatedMachinesTable,IMT_SIZE, -1);
+d612 81
+a692 1
+    dumpHist(usedMachinesTable,IMT_SIZE, -1);
+d730 32
+d782 2
+a783 10
+	if (i==NAME) {
+	    printf("\nName lookup statistics:\n");
+	    type = "name";
+	} else if (i==ATTR) {
+	    type = "attribute";
+	    printf("\nAttribute lookup statistics:\n");
+	} else {
+	    type = "name (entry)";
+	    printf("\nEntry-based name lookup statistics:\n");
+	}
+d868 7
+d903 56
+d1023 3
+a1025 2
+	    level = accessLRU(dirID,machine,NAME);
+	    level = accessLRU(entryID,machine,NAME_ENTRY);
+d1028 2
+a1029 1
+	    level = accessLRU(dirID,machine,ATTR);
+d1044 3
+a1046 2
+	    invalidateLRU(dirID,machine,NAME); /* Dir no longer valid. */
+	    invalidateLRU(entryID,machine,NAME_ENTRY); /* Entry invalid. */
+d1049 2
+a1050 1
+	    invalidateLRU(dirID,machine,ATTR); /* Attrs no lonver valid. */
+d1053 3
+a1055 2
+	    invalidateLRU(dirID,machine,NAME); /* Dir no longer valid. */
+	    invalidateLRU(entryID,machine,NAME_ENTRY); /* Entry invalid. */
+d1059 4
+a1062 2
+	    invalidateLRU(dirID,machine,NAME); /* Directory no longer valid */
+	    level = accessLRU(entryID,machine,NAME);
+d1066 2
+a1067 1
+	    level = accessLRU(entryID,machine,ATTR);
+d1070 2
+a1071 1
+	    level = accessLRU(dirID,machine,NAME);
+d1106 56
+d1208 1
+d1230 1
+d1232 1
+a1232 1
+		sprintf(nameRecPtr->name, "NEW%d", entryCnt);
+d1236 1
+d1239 1
+d1249 3
+d1267 1
+d1277 1
+d1281 1
+d1283 1
+d1412 1
+a1412 2
+		    error(sprintf(charBuf,"***(a)Removing file %s not in LRU\n",
+			    namePtr->name));
+d1417 2
+d1454 1
+a1454 2
+		    error(sprintf(charBuf,"***(b)Removing file %s not in LRU\n",
+			    namePtr->name));
+d1461 6
+d1484 1
+a1484 1
+    LRUentry *entry;
+d1491 1
+d1503 3
+d1514 6
+d1522 4
+d1530 4
+d1535 3
+a1537 1
+    namePtr->everUsed[machine]=1;
+d1631 39
+@
+
+
+1.1
+log
+@Initial revision
+@
+text
+@d10 2
+d18 2
+d22 4
+d35 4
+a38 1
+#define CHECKLRU(x) if ((x)!=0 && (x)!=1) printf("LRU=%d at %d\n",x,__LINE__)
+d45 2
+a46 2
+#define LEVEL_TABLE_SIZE	30
+#define IMT_SIZE 5
+d50 3
+d54 15
+d77 2
+a78 1
+#define ID_NUM(n) ((n<0)?NULL:&data[10+4*(n)])
+d80 2
+d83 2
+d87 1
+a87 1
+ *	Variables
+d92 1
+d95 7
+a101 8
+int nCompLookups[2] = {0}; /* Number of component lookups. */
+int nInvalidates[2] = {0}; /* Number of directory invalidates. */
+int nMInvalidates[2] = {0}; /* Number of directory-machine invalidates. */
+int nRevalidates[2] = {0}; /* Number of directory revalidates. */
+int nRHits[2] = {0}; /* Number of remote directory validates. */
+int nRValidates[2] = {0}; /* Number of remote directory validates. */
+int nRRevalidates[2] = {0}; /* Number of remote directory revalidates. */
+int nRRemoves[2] = {0}; /* Number of remote directory removes. */
+d109 16
+d129 3
+a131 3
+int ValidhistTable[2][LEVEL_TABLE_SIZE] = {0}; /* LRU position when valid */
+int foundInvalidTable[2][LEVEL_TABLE_SIZE] = {0}; /* LRU when invalid. */
+int InvalidhistTable[2][LEVEL_TABLE_SIZE] = {0}; /* LRU when invalidated.  */
+d133 4
+a136 1
+int usedMachinesTable[IMT_SIZE] = {0}; /* # machines using directory. */
+d146 1
+a146 4
+void dolookup _ARGS_((void));
+
+/* Print results of traces. */
+void donerecs _ARGS_((void));
+d151 2
+a152 4
+void accessblocks _ARGS_((trace_index first, trace_index last,
+	trace_data *data, int machine, int LRU));
+void accessblock _ARGS_((file_id *fileID, trace_data *data, int machine,
+	int LRU));
+a158 2
+void initHash _ARGS_((void));
+void loadHash _ARGS_((char *name, int type));
+d162 1
+a162 1
+void removeLRU _ARGS_((file_id *fileID, int LRU));
+d164 2
+a165 2
+void dumpLRU _ARGS_((int machine, int LRU));
+LRUentry * searchLRU _ARGS_((nameRec *recPtr, int machine, int *pos, int LRU));
+d170 2
+a171 1
+void dumpHist _ARGS_((int *table, int max));
+d175 147
+a321 1
+ *	Handle raw records and figure out the directories accessed
+d325 3
+a327 2
+dolookup(data)
+    trace_data *data;
+a330 1
+    int flags;
+d332 1
+d335 1
+a335 1
+	fprintf(stderr,"Warning: old version\n");
+d344 1
+a344 1
+    printf("LOOKUP: hostID: %d, home: %d, %s, numIDs %d, op %s\n", 
+d346 1
+a346 1
+	    opname(op));
+d349 1
+a349 1
+	fprintf(stderr,"***Invalid machine number: %d\n", hostID);
+d352 3
+d356 11
+a366 2
+    for (i=0;i<numIds;i++) {
+	(void)newID(ID_NUM(i),IFNEW,NULL, FS_DIRECTORY);
+d368 3
+a370 2
+    (void)newID(RETURN_ID,IFNEW,NULL, returnType);
+    if (op==0x8a) op = 17;
+d372 1
+a372 1
+    if ((op>=0 && op<11) || op==17) {
+d374 4
+a377 2
+	accessblocks(0,numIds-2,data,hostID, NAME);
+	if (numIds>0 && ((hashID(ID_NUM(0))->flags)&PREFIX)) {
+d379 13
+a391 1
+	    prefixRefNum[hashID(ID_NUM(0))->flags&~PREFIX]++;
+d393 27
+a419 16
+	switch (returnStatus) {
+	    case FS_FILE_NOT_FOUND:
+	    case FS_DIR_NOT_EMPTY:
+		if (numIds>0) {
+		    accessblock(ID_NUM(numIds-1),data,hostID,NAME);
+		}
+		break;
+	    case FS_FILE_EXISTS:
+	    case FS_LOCAL_OP_INVALID:
+	    case FS_LOOKUP_REDIRECT:
+	    case FS_NO_ACCESS:
+	    case SUCCESS:
+		break;
+	    default:
+		printf("Don't know how to handle status: %x\n", returnStatus);
+		break;
+d423 1
+d430 4
+a433 4
+		case 0: /* import */
+		case 1: /* export */
+		case 5: /* makedevice */
+		    printf("Wasn't expecting op %d\n", op);
+d435 6
+a440 2
+		case 3: /* getattrpath */
+		    accessblock(RETURN_ID,data,hostID,ATTR);
+d442 6
+a447 2
+		case 4: /* setattrpath */
+		    modifyblock(ID_NUM(numIds-1),data,hostID,NAME);
+a448 1
+		    modifyblock(ID_NUM(numIds-1),data,hostID,ATTR);
+d450 7
+a456 2
+		case 8: /* removedir */
+		    modifyblock(ID_NUM(numIds-2),data,hostID,NAME);
+a457 2
+		    removeLRU(ID_NUM(numIds-1),NAME);
+		    removeLRU(ID_NUM(numIds-1),ATTR);
+d459 2
+a460 2
+		case 2: /* open */
+		    if (numIds==0||DIFF_FD(ID_NUM(numIds-1), RETURN_ID)) {
+d462 3
+a464 5
+			if (numIds>0) {
+			    accessblock(ID_NUM(numIds-1),data,hostID,NAME);
+			    modifyblock(ID_NUM(numIds-1),data,hostID,NAME);
+			    modifies[2]++;
+			}
+a465 1
+		    accessblock(RETURN_ID,data,hostID,ATTR);
+d467 6
+a472 2
+		case 7: /* remove */
+		    modifyblock(ID_NUM(numIds-2),data,hostID,NAME);
+a473 1
+		    removeLRU(RETURN_ID,ATTR);
+d475 1
+a475 1
+		case 9: /* rename */
+d478 6
+a483 2
+		case 10: /* hardlink */
+		    modifyblock(ID_NUM(numIds-2),data,hostID,NAME);
+d486 1
+a486 1
+		case 17: /* hardlink, part 2 */
+d488 4
+a491 1
+		case 6: /* makedir */
+d493 2
+a494 2
+		    accessblock(ID_NUM(numIds-1),data,hostID,NAME);
+		    modifyblock(ID_NUM(numIds-1),data,hostID,NAME);
+a495 1
+		    modifyblock(ID_NUM(numIds-1),data,hostID,ATTR);
+d500 1
+a500 1
+	fprintf(stderr,"*** Bad op %x!\n", op);
+d516 3
+d522 30
+a551 2
+    printf("\nDirectory's depth in LRU list when found:\n");
+    dumpHist(ValidhistTable[NAME], LEVEL_TABLE_SIZE);
+d553 3
+a555 8
+    printf("\nDirectory's depth in LRU list when found invalid (consistency miss):\n");
+    dumpHist(foundInvalidTable[NAME], LEVEL_TABLE_SIZE);
+
+    printf("\nDirectory's depth in LRU list when invalidated:\n");
+    dumpHist(InvalidhistTable[NAME], LEVEL_TABLE_SIZE);
+
+    printf("\nAttribute's depth in LRU list when found:\n");
+    dumpHist(ValidhistTable[ATTR], LEVEL_TABLE_SIZE);
+a556 3
+    printf("\nAttributes's depth in LRU list when invalidated:\n");
+    dumpHist(InvalidhistTable[ATTR], LEVEL_TABLE_SIZE);
+
+d558 1
+a558 1
+    dumpHist(invalidatedMachinesTable,IMT_SIZE);
+d561 4
+a564 1
+    dumpHist(usedMachinesTable,IMT_SIZE);
+d571 1
+a571 1
+    int i,j;
+d588 4
+a591 4
+	    printf("  %s: %d (%5.2f%%), %d mods\n", opname(op), ops[op],
+		ops[op]*100./nOps, modifies[op]);
+	    printf("      %s: %d (%5.2f%%)\n", status(0), statusTable[op][0],
+		statusTable[op][0]*100./nlookups);
+d594 3
+a596 2
+		    printf("      %s: %d (%5.2f%%)\n", status(0x40000+i),
+		    statusTable[op][i+1], statusTable[op][i+1]*100./nlookups);
+d618 4
+a621 2
+    printf("Avg # components returned: %5.2f\n", ncomps/(float)nlookups);
+    for (i=0;i<1;i++) {
+d624 4
+d629 2
+a630 1
+	    printf("\nAttribute lookup statistics:\n");
+d632 13
+a644 8
+	printf("%d accesses to directories\n", nCompLookups[i]);
+	printf("%d directories invalidated\n", nInvalidates[i]);
+	printf("%d revalidates\n", nRevalidates[i]);
+	printf("\n%d machine-directories invalidated\n", nMInvalidates[i]);
+	printf("%d remote directory validates\n", nRValidates[i]);
+	printf("%d remote directory revalidates\n", nRRevalidates[i]);
+	printf("%d remote directory hits\n", nRHits[i]);
+	printf("%d remote directory removes\n", nRRemoves[i]);
+d646 2
+d660 1
+d667 1
+d674 7
+d683 38
+a720 1
+}
+d739 1
+a739 3
+ ****************************************************************************
+ *	Handle low-level operations (access directory, modify directory
+ ****************************************************************************
+d741 1
+a741 10
+
+/*
+ * Called when we access directory blocks.
+ * This routine just calls accessblock on a sequence of blocks.
+ */
+void
+accessblocks(first,last,data,machine,LRU)
+    trace_index first,last;
+    trace_data *data;
+    int machine;
+a743 5
+    int i;
+    CHECKLRU(LRU);
+    for (i=first;i<=last;i++) {
+	accessblock(ID_NUM(i),data,machine,LRU);
+    }
+d747 6
+d754 23
+a776 7
+ */
+void
+accessblock(fileID,data,machine,LRU)
+    file_id *fileID;
+    trace_data *data;
+    int machine;
+    int LRU;
+d780 2
+a781 4
+    int machineInfo;
+    CHECKLRU(LRU);
+    if (fileID==NULL) {
+	fprintf(stderr,"Warning: null accessblock\n");
+d784 3
+a786 5
+    namePtr = hashID(fileID);
+    nCompLookups[LRU]++;
+    if (namePtr->valid[LRU] == 0) {
+	namePtr->valid[LRU] = 1;
+	nRevalidates[LRU]++;
+d788 65
+a852 28
+    machineInfo = namePtr->machineInfo[LRU][machine];
+    level = accessLRU(fileID,machine,LRU);
+    if (machineInfo==0) {
+	nRValidates[LRU]++;
+    } else if (machineInfo==2) {
+	nRRevalidates[LRU]++;
+	addHist(level,foundInvalidTable[LRU],LEVEL_TABLE_SIZE);
+    } else {
+	nRHits[LRU]++;
+	addHist(level,ValidhistTable[LRU],LEVEL_TABLE_SIZE);
+    }
+}
+
+/*
+ * Called when we modify a directory block.
+ */
+void
+modifyblock(fileID,data,machine,LRU)
+    file_id *fileID;
+    int *data;
+    int machine;
+    int LRU;
+{
+    nameRec *namePtr;
+    CHECKLRU(LRU);
+    if (fileID==NULL) {
+	fprintf(stderr,"Warning: null modifyblock\n");
+	return;
+a853 5
+    namePtr = hashID(fileID);
+    namePtr->valid[LRU] = 0;
+    nInvalidates[LRU]++;
+    accessLRU(fileID,machine,LRU);
+    invalidateLRU(fileID,machine,LRU);
+d865 13
+a877 4
+    for (i=0;i<NUM_MACHINES;i++) {
+	if (namePtr->machineInfo[NAME][i]!=0) {
+	    count++;
+	}
+a878 1
+    addHist(count,usedMachinesTable,IMT_SIZE);
+d898 4
+d904 2
+a905 2
+	fprintf(stderr,"Id: %d %d %d %d missing from table\n", id[0], id[1],
+		id[2], id[3]);
+d923 1
+d926 1
+a927 1
+    nameRec *nameRecPtr;
+d929 1
+a929 1
+	fprintf(stderr,"Warning: null lookupID\n");
+a931 3
+    if (type != FS_FILE && type != FS_DIRECTORY) {
+	fprintf(stderr,"Wierd type: %d\n", type);
+    }
+d934 2
+a935 1
+	if (force==MAKENEW && created==FALSE) {
+d939 1
+d941 1
+a941 1
+	if (created==TRUE || force==MAKENEW) {
+a947 2
+	    nameRecPtr->valid[NAME] = 1;
+	    nameRecPtr->valid[ATTR] = 1;
+d956 7
+a962 2
+	} else if (((nameRec *)entryPtr->clientData)->type != type) {
+	    fprintf(stderr,"Warning: type change: %d to %d\n");
+d977 1
+a977 1
+	fprintf(stderr,"Warning: null lookupID\n");
+d983 1
+a983 1
+	    fprintf(stderr,"Warning: undefined lookupID\n");
+a1000 1
+    nameRec *nameRecPtr;
+d1007 3
+a1023 1
+    nameRec *nameRecPtr;
+d1025 2
+d1036 1
+d1039 18
+a1056 1
+	    hashID(id)->flags = PREFIX | (prefixCount++);
+a1067 2
+static LRUentry LRUlist[2][NUM_MACHINES] = {NULL};
+
+d1070 1
+a1070 1
+ * Also return the position on the list (first = 0).
+d1073 2
+a1074 2
+searchLRU(recPtr, machine, pos, LRU)
+nameRec *recPtr;
+d1084 1
+a1084 1
+    for (count=0;;count++) {
+d1089 1
+a1089 1
+	} else if (entry->nameInfo == recPtr) {
+d1110 1
+a1110 1
+    nameRec *recPtr;
+d1113 2
+a1114 2
+    recPtr = hashID(fileID);
+    machineInfo = recPtr->machineInfo[LRU];
+d1119 1
+a1119 1
+		entry = searchLRU(recPtr, i, &pos,LRU);
+d1121 2
+a1122 2
+		    fprintf(stderr,"***(a)Removing file %s not in LRU\n",
+			    recPtr->name);
+d1130 1
+d1139 1
+d1142 1
+a1142 1
+removeLRU(fileID,LRU)
+a1143 1
+    int LRU;
+d1148 1
+d1150 18
+a1167 12
+    nameRec *recPtr;
+    recPtr = hashID(fileID);
+    machineInfo = recPtr->machineInfo[LRU];
+    for (i=0;i<NUM_MACHINES;i++) {
+	if (machineInfo[i]!= 0) {
+	    entry = searchLRU(recPtr, i, &pos,LRU);
+	    if (entry==NULL) {
+		fprintf(stderr,"***(b)Removing file %s not in LRU\n",
+			recPtr->name);
+	    }
+	    machineInfo[i]=0;
+	    nRRemoves[LRU]++;
+d1185 1
+a1185 1
+    nameRec *recPtr;
+d1188 2
+a1189 2
+    recPtr = hashID(fileID);
+    entry = searchLRU(recPtr, machine, &pos,LRU);
+d1195 1
+a1195 1
+	entry->nameInfo = recPtr;
+d1206 15
+a1220 1
+    recPtr->machineInfo[LRU][machine]=1;
+d1256 13
+d1270 2
+d1274 1
+a1274 1
+dumpHist(table,max)
+d1277 1
+d1281 1
+a1281 1
+    int total;
+d1285 1
+a1285 1
+    total = table[max-1];
+d1287 1
+a1287 1
+	total += table[i];
+d1289 3
+d1307 6
+a1312 1
+    printf("Total: %d\n", total);
+@

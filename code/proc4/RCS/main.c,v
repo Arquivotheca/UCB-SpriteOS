@@ -1,0 +1,241 @@
+head     1.5;
+branch   ;
+access   ;
+symbols  ;
+locks    shirriff:1.5; strict;
+comment  @ * @;
+
+
+1.5
+date     91.11.21.15.57.49;  author shirriff;  state Exp;
+branches ;
+next     1.4;
+
+1.4
+date     91.10.24.23.58.09;  author shirriff;  state Exp;
+branches ;
+next     1.3;
+
+1.3
+date     91.02.08.16.23.32;  author shirriff;  state Exp;
+branches ;
+next     1.2;
+
+1.2
+date     91.01.22.15.51.59;  author shirriff;  state Exp;
+branches ;
+next     1.1;
+
+1.1
+date     91.01.11.12.18.17;  author shirriff;  state Exp;
+branches ;
+next     ;
+
+
+desc
+@@
+
+
+1.5
+log
+@*** empty log message ***
+@
+text
+@/*
+ * Program to process a trace file.
+ */
+#include <stdio.h>
+#include <stdlib.h>
+#include <signal.h>
+#include <sprite.h>
+#include <sysStats.h>
+#include <sosp.h>
+#include <namehash.h>
+
+char *prefixList = NULL;
+
+int thisLRU = 0;
+
+extern long sec;
+long firstSecs = -1;
+int debug = 0;
+
+
+void
+main(argc,argv)
+int argc;
+char **argv;
+{
+    char buf[1000];
+    Sys_TracelogRecord *tracePtr = (Sys_TracelogRecord *)buf;
+    char *name = argv[0];
+    int machine;
+    char *file = NULL;
+    int newArgc;
+    char **newArgv;
+
+    initHash();
+    while (argc > 1 && argv[1][0]=='-') {
+	if (argv[1][1]=='l' && argc>2) {
+	    thisLRU = atoi(argv[2]);
+	    printf("Doing LRU list %d\n", thisLRU);
+	    argc--;
+	    argv++;
+	} else if (argv[1][1]=='i' && argc>2) {
+	    loadHash(argv[2],0);
+	    argc--;
+	    argv++;
+	} else if (argv[1][1]=='p' && argc>2) {
+	    prefixList = argv[2];
+	    loadHash(prefixList,1);
+	    argc--;
+	    argv++;
+	} else if (argv[1][1]=='d') {
+	    debug++;
+	} else if (argv[1][1]=='s') {
+	    break;
+	} else if (argv[1][1]=='f') {
+	    file = argv[2];
+	    argc--;
+	    argv++;
+	}
+	argc--;
+	argv++;
+    }
+    if (argc<2 && file==NULL) {
+	fprintf(stderr,"Usage: sospread [-l #] [-i #] [-p prefixes] [-d]\n");
+	fprintf(stderr,"  [-f file] [-s dd.hh.mm -e dd.hh.mm] filenames(s)\n");
+	exit(1);
+    }
+    if (file != NULL) {
+        int i;
+	FILE *nameFile;
+#define MAX 500
+        nameFile = fopen(file,"r");
+	if (nameFile==NULL) {
+	    perror(file);
+	    exit(-1);
+	}
+	newArgv = (char **)malloc(MAX*sizeof(char *));
+	for (i=0;i<argc-1;i++) {
+	    newArgv[i] = (char *)malloc(strlen(argv[i+1])+1);
+	    strcpy(newArgv[i], argv[i+1]);
+	}
+	for (;i<MAX;i++) {
+	    if (fgets(buf,100,nameFile)==NULL) break;
+	    newArgv[i] = (char *)malloc(strlen(buf)+1);
+	    strcpy(newArgv[i], buf);
+	    newArgv[i][strlen(buf)-1]='\0';
+	}
+	newArgc = i;
+    } else {
+	newArgc = argc-1;
+	newArgv = argv+1;
+    }
+    if (initRead(name, newArgc, newArgv, NULL)<0) {
+	fprintf(stderr,"Initialization failed\n");
+	exit(-1);
+    }
+    while (1) {
+	machine = getNextRecordMerge((char *)&tracePtr);
+	if (machine<0) break;
+	dorec(tracePtr,machine);
+	if (firstSecs==-1) {
+	    firstSecs = sec;
+	}
+    }
+    fprintf(stderr,"Last machine was %d\n", machine);
+    donerecs();
+}
+@
+
+
+1.4
+log
+@February version
+@
+text
+@d9 1
+a9 1
+#include <getrec.h>
+d20 1
+d30 3
+d35 1
+a35 1
+    while (argv[1][0]=='-') {
+d52 6
+d62 3
+a64 2
+    if (argc<2) {
+	fprintf(stderr,"Usage: sospread filename(s)\n");
+d67 26
+a92 1
+    if (initRead(name, argc-1, argv+1,NULL)<0) {
+d104 1
+@
+
+
+1.3
+log
+@*** empty log message ***
+@
+text
+@d14 2
+d32 6
+a37 1
+	if (argv[1][1]=='i' && argc>2) {
+@
+
+
+1.2
+log
+@*** empty log message ***
+@
+text
+@d14 4
+a22 1
+    int i;
+a24 3
+    Sys_TracelogHeader hdr;
+    FILE *inFile;
+    traceFile inTraceFile;
+d39 2
+d57 3
+@
+
+
+1.1
+log
+@Initial revision
+@
+text
+@d5 1
+d10 1
+d14 1
+a18 2
+    int status;
+    int args[2];
+a19 1
+    char *dataPtr;
+d25 2
+d47 8
+a54 18
+    for (i=1;i<argc;i++) {
+	if (argc != 1) {
+	    printf("--- Processing %s ---\n", argv[i]);
+	}
+	inFile = fopen(argv[i],"r");
+	if (inFile==NULL) {
+	   perror("open");
+	   exit(-1);
+	}
+	inTraceFile.stream = inFile;
+
+	getHeader(&inTraceFile, &hdr);
+	printf("From %d (%s) %32.32s\n", hdr.machineID,
+		hdr.machineType, hdr.kernel);
+	while (getNextRecord(&inTraceFile,buf)==0) {
+	    dorec(tracePtr);
+	}
+	fclose(inFile);
+@

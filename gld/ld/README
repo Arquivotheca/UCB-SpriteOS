@@ -1,0 +1,22 @@
+
+This linker is the Gnu linker with some modifications that allow it
+to be used as a cross-linker between different machine types.
+
+You can change the target machine by defining `TARGET_MACHINE' in the
+Makefile.  If you do not define a TARGET_MACHINE it will default to
+the same as the host machine.
+
+It has been tested for the following hosts and targets:
+
+Host		Target          OS
+sun4		sun3,sun4	sunOS, sprite
+sun3		sun3,sun4	sunOS, sprite
+ds3100		sun3,sun4	sprite
+
+If you have any problems or questions, please send email to
+
+	rab@sprite.Berkeley.EDU
+
+If you successfully use this linker on systems other than those listed
+above, please let me know.
+

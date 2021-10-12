@@ -1,0 +1,38 @@
+\begin{table}[h]
+ \begin{center}
+ \begin{tabular} {|l|l|r|r|}
+	 \hline
+	 \hline
+    \zcol{|c|}{System call} & \zcol{c|}{Major use}& \multicolumn{2}{c|} {Number of calls} \\
+				    & & \multicolumn{1}{c|}{Handled on} &
+				    \multicolumn{1}{c|}{Sent} \\ 
+				    & & \multicolumn{1}{c|}{Remote Node} &
+				    \multicolumn{1}{c|}{Home} \\ 
+	 \hline
+	 \hline
+	Sig\_SetHoldMask & (used primarily by {\em csh\/}) 	&    3480 & \\
+	Fs\_Close        & close a file 	 	&    2278 & \\
+	Fs\_Read	 & read data from a file 	&    1998 & \\
+	Fs\_IOControl	 & file-specific operations		&    1675 & \\
+	Fs\_Write	 & write data to a file		&    922 & \\
+	Proc\_Wait	 & wait for a process to exit   & &   460 \\
+	Proc\_Fork	 & create a child process 	& &   386 \\
+	Fs\_GetNewID	 & duplicate a file descriptor	&    356 & \\
+	Sig\_SetAction	 & (used primarily by {\em csh\/}) 	&    301 & \\
+	Vm\_CreateVA	 & allocate more virtual memory &    275 & \\
+	 \hline
+	{\em All calls\/}& & 11528 &	2548 \\
+	 \hline
+	 \hline
+ \end{tabular}
+  \caption{Summary of the most commonly-invoked system calls, as well
+  as the total across all system calls.  The count of system calls is
+  from a sample
+  interactive session consisting of several compilations,
+  directory listings, and performance benchmarks.  Many of the most
+  common calls may be handled without forwarding them to the home node
+  of the calling process.
+  }
+  \label{numcalls}
+ \end{center}
+\end{table}

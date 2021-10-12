@@ -1,0 +1,50 @@
+This directory contains an executable version of cc1 for the sparc architecture
+that doesn't use register windows.
+
+The files varargs.[sh] are needed for programs that use varargs.  Such programs
+must be modified to include the provided varargs.h rather than the one in
+/usr/include.  Also, the program must be linked with varargs.s.
+
+To compile using this cc1 program, you should add the "-B" option to gcc
+so cause it locate this cc1 before the one install on the system.  For
+example if this program is in /users/mendel/newgcc/cc1, then invoke gcc
+with the option "-B/users/mendel/newgcc/" to get the modified compiler.
+
+The calling sequence used by this compiler is backwardly compatible with
+the normal SPARC calling sequence. This means that routines compiled with
+the existing compiler can call routines compiled by this compiler and
+vice-versa.
+
+The changes I made to the calling sequence are:
+
+a) To use %i4 (rather than %i6) as the frame pointer.  
+b) To use %i5 to save the return PC of a routine.
+
+The prolog of the subroutine does the following:
+
+1) Save into the stack frame the local and input registers used by the routine.
+   I use the same area as would be used by the overflow trap handlers 
+   (ie [%sp] to [%sp+0x40]).  
+
+2) Extend the stack and setup the new frame pointer in %i4. We do this by
+   add	%sp, -FRAME_SIZE, %sp; add   %sp, FRAME_SIZE, %i4
+
+3) Save the return PC in %i5.  The normal calling sequence left the return PC 
+   in %o7, we just mov %o7, %i5
+
+Routine execute with arguments and stack variables referenced using offsets
+from %i4 just as the Sun compiler uses %i6.
+
+
+The epilog does the following:
+
+1) Restore the saved PC into %o7,  mov %i5, %o7
+
+2) Save %i4 (the callers %sp) in %g1, mov %i4, %g1
+
+3) Restore the local and input registers we saved in the prolog.
+
+4) Return and restore the callers %sp from %g1: retl; mov %g1,%sp                               
+
+    Mendel Rosenblum (mendel@cs.stanford.edu)
+

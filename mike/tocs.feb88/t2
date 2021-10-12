@@ -1,0 +1,33 @@
+.(z C
+.(c
+.TS
+center, tab(;);
+| c s s s s |
+| c | c | c | c | c |
+| n | n | n | n | n |.
+.br
+_
+Server Traffic, Ignoring Cache Consistency
+_
+Client Cache Size;Blocks Read;Blocks Written;Total;Traffic Ratio
+=
+0 Mbyte;445815;172546;618361;100%
+_
+0.5 Mbyte;80754;93663;174417;28%
+_
+1 Mbyte;52377;93258;145635;24%
+_
+2 Mbytes;41767;93258;135025;22%
+_
+4 Mbytes;38165;93258;131423;21%
+_
+8 Mbytes;37007;93258;130265;21%
+_
+.TE
+.)c
+.(q
+\fBTable 2\fR.
+Traffic without cache consistency.  Similar to Table 1 except that
+cache consistency issues were ignored completely.
+.)q
+.)z

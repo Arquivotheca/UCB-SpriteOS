@@ -1,0 +1,78 @@
+# This is part of a GNU Makefile, included by the Makefiles in
+# each of the subdirectories.  This includes all of the common
+# stuff between assignments, so whenever you add a .h or .cc file,
+# put it in the appropriate HW#_H, HW#_C, and HW#_O list.
+#
+# Also whenever you change the include structure of your program, you should 
+# do a gmake depend in the subdirectory -- this will modify the Makefile.
+
+# You might want to play with the CFLAGS, but if you use -O it may
+# break the thread system.  You might want to use -fno-inline if
+# you need to call some inline functions from the debugger.
+#
+# Copyright (c) 1992 The Regents of the University of California.
+# All rights reserved.  See copyright.h for copyright notice and limitation 
+# of liability and disclaimer of warranty provisions.
+
+CFLAGS = -g -Wall -Wshadow -fwritable-strings $(INCPATH) $(DEFINES)
+LDFLAGS = -L/uns/lib
+
+# These definitions may change as the software is updated.
+CC = g++
+LD = g++
+AS = as
+
+PROGRAM = nachos
+
+HW1_H =	../hw1/list.h ../hw1/scheduler.h ../hw1/synch.h \
+	../hw1/synchlist.h ../hw1/system.h ../hw1/thread.h ../hw1/utility.h\
+	../machine/interrupt.h ../machine/timer.h ../hw1/copyright.h
+HW1_C =	../hw1/main.cc ../hw1/list.cc ../hw1/scheduler.cc ../hw1/synch.cc \
+	../hw1/synchlist.cc ../hw1/system.cc ../hw1/thread.cc ../hw1/utility.cc\
+	../hw1/test1.cc ../machine/interrupt.cc ../machine/timer.cc
+HW1_S = ../hw1/switch.s
+HW1_O =	main.o list.o scheduler.o synch.o synchlist.o system.o thread.o \
+	utility.o test1.o interrupt.o timer.o
+HW2_H =	../hw2/bitmap.h ../hw2/directory.h ../hw2/filehdr.h ../hw2/filesys.h \
+	../hw2/openfile.h ../hw2/synchdisk.h ../machine/disk.h
+HW2_C =	../hw2/bitmap.cc ../hw2/directory.cc ../hw2/filehdr.cc \
+	../hw2/filesys.cc ../hw2/test2.cc \
+	../hw2/openfile.cc ../hw2/synchdisk.cc ../machine/disk.cc
+HW2_O =	bitmap.o directory.o filehdr.o filesys.o test2.o openfile.o \
+	synchdisk.o disk.o
+HW3_H = ../hw3/addrspace.h ../machine/console.h ../machine/machine.h \
+	../machine/pte.h
+HW3_C = ../hw3/addrspace.cc ../hw3/exception.cc ../hw3/test3.cc\
+	../machine/console.cc ../machine/machine.cc ../machine/mipssim.cc \
+	../machine/pte.cc
+HW3_O = addrspace.o exception.o test3.o console.o machine.o mipssim.o pte.o
+HW4_H = 
+HW4_C = 
+HW4_O = 
+HW5_H = ../hw5/post.h ../machine/network.h
+HW5_C = ../hw5/test5.cc ../hw5/post.cc ../machine/network.cc
+HW5_O = test5.o post.o network.o
+
+S_OFILES = switch.o
+
+OFILES = $(C_OFILES) $(S_OFILES)
+
+$(PROGRAM): $(OFILES)
+	$(LD) $(OFILES) $(LDFLAGS) -o $(PROGRAM)
+
+$(C_OFILES): %.o:
+	$(CC) $(CFLAGS) -c $<
+
+switch.o: ../hw1/switch.s
+	$(AS) $(INCPATH) -o switch.o ../hw1/switch.s
+
+depend: $(CFILES) $(HFILES)
+	$(CC) $(INCPATH) -M $(CFILES) > makedep
+	echo '/^# DO NOT DELETE THIS LINE/+2,$$d' >eddep
+	echo '$$r makedep' >>eddep
+	echo 'w' >>eddep
+	ed - Makefile < eddep
+	rm eddep makedep 
+	echo '# DEPENDENCIES MUST END AT END OF FILE' >> Makefile
+	echo '# IF YOU PUT STUFF HERE IT WILL GO AWAY' >> Makefile
+	echo '# see make depend above' >> Makefile

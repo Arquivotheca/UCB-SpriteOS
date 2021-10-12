@@ -1,0 +1,25 @@
+These sources are based on the gdb 3.5.01 that was done for Mach 2.5.
+They have been hacked by a variety of people for use with Mach 3.0.
+
+The current sources know about local changes done by the
+Sprite-on-Mach project.  In particular, we have a private version of
+CThreads that includes the thread-local data support from the US
+(multi-server) CThreads package.  Theoretically you can replace our
+cthreads.h with a vanilla MK cthreads.h and gdb will not care.
+
+Version 3.5.04 has the following features:
+- Fixed a bug in the mips-specific code that would truncate stack
+  backtraces if you looked at multiple threads.
+
+Version 3.5.03 has the following features:
+- Improved support for DECstations (e.g., smarter about nested C
+  source files, able to translate MIPS exception codes to text strings).
+- Uses the GNU malloc.
+
+Version 3.5.02 has the following noteworthy features:
+- Better support for Mach 3.0: handles SIGINT and its handling of the
+  debuggee is much more robust (from OSF Grenoble).
+- Printing of Mach 3.0 CThread names is partially supported.  (The
+  main requirement is that the C Thread must be wired to a kernel
+  thread.)
+

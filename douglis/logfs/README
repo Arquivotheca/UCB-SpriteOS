@@ -1,0 +1,23 @@
+For IEEE conference proceedings.
+
+Most of the file names are self-explanatory.
+
+title.tex: 	for the title. Should be in upper-case.
+
+author.tex: 	the author(s).
+
+abstract.tex:	surprisingly enough, the abstract. The length is
+		limited.
+
+text.tex:	example of basic text.
+text_format.tex:format for the above. Half an IEEE column. One page is
+		two columns. For the future, I suggest we input
+		AppleWriter papers long enough to contain a whole IEEE
+		page. We just need another, larger feeder than the
+		standard one, and the corresponding paper.
+	
+table.tex:	nothing really special except the format. For tables.
+table_format.tex:format for having two column tables eating only half
+		of the column height (half of an IEEE page). It is
+		suggested to place the tables at the top of a page (or
+		at the bottom) rather than at the middle.

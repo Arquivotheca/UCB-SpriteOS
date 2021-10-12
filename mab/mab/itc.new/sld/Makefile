@@ -1,0 +1,26 @@
+# $Header: /sprite/src/benchmarks/itc/sld/RCS/Makefile,v 1.3 93/02/11 17:20:26 kupfer Exp $ SPRITE (Berkeley)
+
+# set to "-DUSG" if on a System V variant, "" if not.
+USE_USG =
+
+# set to "-D_HAS_VOIDPTR" on Sprite and "" elsewhere.
+FORCE_VOID = 
+
+# The FIRST_BYTE preprocessor variable should be set to HIGH if the
+# host machine puts the most significant byte of a number first (e.g.
+# 68000s), and otherwise should be set to LOW (e.g. VAXes).
+# 
+# The FLOATING_FORM variable should be set to IEEE if the host machine
+# uses IEEE format, or else to OTHER.
+#
+
+OBJS		= sld.o bsearch.o 
+
+CFLAGS		= -O $(USE_USG) $(FORCE_VOID) -DFIRST_BYTE=HIGH \
+			-DFLOATING_FORM=IEEE -DTARGET=HOST -I../sas
+
+../bin/sld:		$(OBJS)
+	$(CC) $(OBJS) -o ../bin/sld
+
+clean:
+	rm -f *.o ../bin/sld

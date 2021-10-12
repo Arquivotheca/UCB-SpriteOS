@@ -1,0 +1,15 @@
+
+This directory contains code and documentation for Nachos,
+a course project for teaching undergraduate operating systems.
+
+The text describing the assignments is in the sub-directory "doc"; 
+the code itself is in "code".
+
+We are in the process of revising both the code and the assignments
+to reflect feedback from using Nachos during the past semester.
+As a result, this directory reflects a snapshot of Nachos as of
+July 20, 1992.
+
+For an up-to-date version, send mail to tea@cs.berkeley.edu.
+
+tom

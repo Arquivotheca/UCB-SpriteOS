@@ -1,0 +1,3088 @@
+%!
+%%BoundingBox: (atend)
+%%Pages: (atend)
+%%DocumentFonts: (atend)
+%%EndComments
+%%BeginProlog
+%
+% FrameMaker postscript_prolog 3.0, for use with FrameMaker 3.0
+% This postscript_prolog file is Copyright (c) 1986-1991 Frame Technology
+% Corporation.  All rights reserved.  This postscript_prolog file may be
+% freely copied and distributed in conjunction with documents created using
+% FrameMaker.
+% NOTE
+% This file fixes the problem with NeWS printers dithering color output.
+% Any questions should be sent to mickey@magickingdom.eng.sun.com
+%
+% Known Problems:
+%	Due to bugs in Transcript, the 'PS-Adobe-' is omitted from line 1
+/FMversion (3.0) def 
+% Set up Color vs. Black-and-White
+
+/FMPrintInColor { % once-thru loop gimmick
+    % See if we're a NeWSprint printer
+     /currentcanvas where {
+        pop systemdict /separationdict known
+	exit
+     } if
+% originally had the following, which should always be false:
+%    /currentcanvas where {
+%        pop currentcanvas /Color known {
+%	    currentcanvas /Color get
+%	    exit
+%        } if
+%    } if
+    systemdict /colorimage known
+    systemdict /currentcolortransfer known and
+exit } loop def
+
+% Uncomment the following line to force b&w on color printer
+%   /FMPrintInColor false def
+/FrameDict 195 dict def 
+systemdict /errordict known not {/errordict 10 dict def
+		errordict /rangecheck {stop} put} if
+% The readline in 23.0 doesn't recognize cr's as nl's on AppleTalk
+FrameDict /tmprangecheck errordict /rangecheck get put 
+errordict /rangecheck {FrameDict /bug true put} put 
+FrameDict /bug false put 
+mark 
+% Some PS machines read past the CR, so keep the following 3 lines together!
+currentfile 5 string readline
+00
+0000000000
+cleartomark 
+errordict /rangecheck FrameDict /tmprangecheck get put 
+FrameDict /bug get { 
+	/readline {
+		/gstring exch def
+		/gfile exch def
+		/gindex 0 def
+		{
+			gfile read pop 
+			dup 10 eq {exit} if 
+			dup 13 eq {exit} if 
+			gstring exch gindex exch put 
+			/gindex gindex 1 add def 
+		} loop
+		pop 
+		gstring 0 gindex getinterval true 
+		} def
+	} if
+/FMVERSION {
+	FMversion ne {
+		/Times-Roman findfont 18 scalefont setfont
+		100 100 moveto
+		(FrameMaker version does not match postscript_prolog!)
+		dup =
+		show showpage
+		} if
+	} def 
+/FMLOCAL {
+	FrameDict begin
+	0 def 
+	end 
+	} def 
+	/gstring FMLOCAL
+	/gfile FMLOCAL
+	/gindex FMLOCAL
+	/orgxfer FMLOCAL
+	/orgproc FMLOCAL
+	/organgle FMLOCAL
+	/orgfreq FMLOCAL
+	/yscale FMLOCAL
+	/xscale FMLOCAL
+	/manualfeed FMLOCAL
+	/paperheight FMLOCAL
+	/paperwidth FMLOCAL
+/FMDOCUMENT { 
+	array /FMfonts exch def 
+	/#copies exch def
+	FrameDict begin
+	0 ne dup {setmanualfeed} if
+	/manualfeed exch def
+	/paperheight exch def
+	/paperwidth exch def
+	/yscale exch def
+	/xscale exch def
+	currenttransfer cvlit /orgxfer exch def
+	currentscreen cvlit /orgproc exch def
+	/organgle exch def /orgfreq exch def
+	setpapername 
+	manualfeed {true} {papersize} ifelse 
+	{manualpapersize} {false} ifelse 
+	{desperatepapersize} if
+	end 
+	} def 
+	/pagesave FMLOCAL
+	/orgmatrix FMLOCAL
+	/landscape FMLOCAL
+/FMBEGINPAGE { 
+	FrameDict begin 
+	/pagesave save def
+	3.86 setmiterlimit
+	/landscape exch 0 ne def
+	landscape { 
+		90 rotate 0 exch neg translate pop 
+		}
+		{pop pop}
+		ifelse
+	xscale yscale scale
+	/orgmatrix matrix def
+	gsave 
+	} def 
+/FMENDPAGE {
+	grestore 
+	pagesave restore
+	end 
+	showpage
+	} def 
+/FMFONTDEFINE { 
+	FrameDict begin
+	findfont 
+	ReEncode 
+	1 index exch 
+	definefont 
+	FMfonts 3 1 roll 
+	put
+	end 
+	} def 
+/FMFILLS {
+	FrameDict begin
+	array /fillvals exch def
+	end 
+	} def 
+/FMFILL {
+	FrameDict begin
+	 fillvals 3 1 roll put
+	end 
+	} def 
+/FMNORMALIZEGRAPHICS { 
+	newpath
+	0.0 0.0 moveto
+	1 setlinewidth
+	0 setlinecap
+	0 0 0 sethsbcolor
+	0 setgray 
+	} bind def
+	/fx FMLOCAL
+	/fy FMLOCAL
+	/fh FMLOCAL
+	/fw FMLOCAL
+	/llx FMLOCAL
+	/lly FMLOCAL
+	/urx FMLOCAL
+	/ury FMLOCAL
+/FMBEGINEPSF { 
+	end 
+	/FMEPSF save def 
+	/showpage {} def 
+	FMNORMALIZEGRAPHICS 
+	[/fy /fx /fh /fw /ury /urx /lly /llx] {exch def} forall 
+	fx fy translate 
+	rotate
+	fw urx llx sub div fh ury lly sub div scale 
+	llx neg lly neg translate 
+	} bind def
+/FMENDEPSF {
+	FMEPSF restore
+	FrameDict begin 
+	} bind def
+FrameDict begin 
+/setmanualfeed {
+%%BeginFeature *ManualFeed True
+	 statusdict /manualfeed true put
+%%EndFeature
+	} def
+/max {2 copy lt {exch} if pop} bind def
+/min {2 copy gt {exch} if pop} bind def
+/inch {72 mul} def
+/pagedimen { 
+	paperheight sub abs 16 lt exch 
+	paperwidth sub abs 16 lt and
+	{/papername exch def} {pop} ifelse
+	} def
+	/papersizedict FMLOCAL
+/setpapername { 
+	/papersizedict 14 dict def 
+	papersizedict begin
+	/papername /unknown def 
+		/Letter 8.5 inch 11.0 inch pagedimen
+		/LetterSmall 7.68 inch 10.16 inch pagedimen
+		/Tabloid 11.0 inch 17.0 inch pagedimen
+		/Ledger 17.0 inch 11.0 inch pagedimen
+		/Legal 8.5 inch 14.0 inch pagedimen
+		/Statement 5.5 inch 8.5 inch pagedimen
+		/Executive 7.5 inch 10.0 inch pagedimen
+		/A3 11.69 inch 16.5 inch pagedimen
+		/A4 8.26 inch 11.69 inch pagedimen
+		/A4Small 7.47 inch 10.85 inch pagedimen
+		/B4 10.125 inch 14.33 inch pagedimen
+		/B5 7.16 inch 10.125 inch pagedimen
+	end
+	} def
+/papersize {
+	papersizedict begin
+		/Letter {lettertray letter} def
+		/LetterSmall {lettertray lettersmall} def
+		/Tabloid {11x17tray 11x17} def
+		/Ledger {ledgertray ledger} def
+		/Legal {legaltray legal} def
+		/Statement {statementtray statement} def
+		/Executive {executivetray executive} def
+		/A3 {a3tray a3} def
+		/A4 {a4tray a4} def
+		/A4Small {a4tray a4small} def
+		/B4 {b4tray b4} def
+		/B5 {b5tray b5} def
+		/unknown {unknown} def
+	papersizedict dup papername known {papername} {/unknown} ifelse get
+	end
+	/FMdicttop countdictstack 1 add def 
+	statusdict begin stopped end 
+	countdictstack -1 FMdicttop {pop end} for 
+	} def
+/manualpapersize {
+	papersizedict begin
+		/Letter {letter} def
+		/LetterSmall {lettersmall} def
+		/Tabloid {11x17} def
+		/Ledger {ledger} def
+		/Legal {legal} def
+		/Statement {statement} def
+		/Executive {executive} def
+		/A3 {a3} def
+		/A4 {a4} def
+		/A4Small {a4small} def
+		/B4 {b4} def
+		/B5 {b5} def
+		/unknown {unknown} def
+	papersizedict dup papername known {papername} {/unknown} ifelse get
+	end
+	stopped 
+	} def
+/desperatepapersize {
+	statusdict /setpageparams known
+		{
+		paperwidth paperheight 0 1 
+		statusdict begin
+		{setpageparams} stopped pop 
+		end
+		} if
+	} def
+/savematrix {
+	orgmatrix currentmatrix pop
+	} bind def
+/restorematrix {
+	orgmatrix setmatrix
+	} bind def
+/dmatrix matrix def
+/dpi    72 0 dmatrix defaultmatrix dtransform
+    dup mul exch   dup mul add   sqrt def
+/freq dpi 18.75 div 8 div round dup 0 eq {pop 1} if 8 mul dpi exch div def
+/sangle 1 0 dmatrix defaultmatrix dtransform exch atan def
+/DiacriticEncoding [
+/.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef
+/.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef
+/.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef
+/.notdef /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef
+/.notdef /.notdef /.notdef /.notdef /space /exclam /quotedbl
+/numbersign /dollar /percent /ampersand /quotesingle /parenleft
+/parenright /asterisk /plus /comma /hyphen /period /slash /zero /one
+/two /three /four /five /six /seven /eight /nine /colon /semicolon
+/less /equal /greater /question /at /A /B /C /D /E /F /G /H /I /J /K
+/L /M /N /O /P /Q /R /S /T /U /V /W /X /Y /Z /bracketleft /backslash
+/bracketright /asciicircum /underscore /grave /a /b /c /d /e /f /g /h
+/i /j /k /l /m /n /o /p /q /r /s /t /u /v /w /x /y /z /braceleft /bar
+/braceright /asciitilde /.notdef /Adieresis /Aring /Ccedilla /Eacute
+/Ntilde /Odieresis /Udieresis /aacute /agrave /acircumflex /adieresis
+/atilde /aring /ccedilla /eacute /egrave /ecircumflex /edieresis
+/iacute /igrave /icircumflex /idieresis /ntilde /oacute /ograve
+/ocircumflex /odieresis /otilde /uacute /ugrave /ucircumflex
+/udieresis /dagger /.notdef /cent /sterling /section /bullet
+/paragraph /germandbls /registered /copyright /trademark /acute
+/dieresis /.notdef /AE /Oslash /.notdef /.notdef /.notdef /.notdef
+/yen /.notdef /.notdef /.notdef /.notdef /.notdef /.notdef
+/ordfeminine /ordmasculine /.notdef /ae /oslash /questiondown
+/exclamdown /logicalnot /.notdef /florin /.notdef /.notdef
+/guillemotleft /guillemotright /ellipsis /.notdef /Agrave /Atilde
+/Otilde /OE /oe /endash /emdash /quotedblleft /quotedblright
+/quoteleft /quoteright /.notdef /.notdef /ydieresis /Ydieresis
+/fraction /currency /guilsinglleft /guilsinglright /fi /fl /daggerdbl
+/periodcentered /quotesinglbase /quotedblbase /perthousand
+/Acircumflex /Ecircumflex /Aacute /Edieresis /Egrave /Iacute
+/Icircumflex /Idieresis /Igrave /Oacute /Ocircumflex /.notdef /Ograve
+/Uacute /Ucircumflex /Ugrave /dotlessi /circumflex /tilde /macron
+/breve /dotaccent /ring /cedilla /hungarumlaut /ogonek /caron
+] def
+/ReEncode { 
+	dup 
+	length 
+	dict begin 
+	{
+	1 index /FID ne 
+		{def} 
+		{pop pop} ifelse 
+	} forall 
+	0 eq {/Encoding DiacriticEncoding def} if 
+	currentdict 
+	end 
+	} bind def
+/graymode true def
+	/bwidth FMLOCAL
+	/bpside FMLOCAL
+	/bstring FMLOCAL
+	/onbits FMLOCAL
+	/offbits FMLOCAL
+	/xindex FMLOCAL
+	/yindex FMLOCAL
+	/x FMLOCAL
+	/y FMLOCAL
+/setpattern {
+	 /bwidth  exch def
+	 /bpside  exch def
+	 /bstring exch def
+	 /onbits 0 def  /offbits 0 def
+	 freq sangle landscape {90 add} if 
+		{/y exch def
+		 /x exch def
+		 /xindex x 1 add 2 div bpside mul cvi def
+		 /yindex y 1 add 2 div bpside mul cvi def
+		 bstring yindex bwidth mul xindex 8 idiv add get
+		 1 7 xindex 8 mod sub bitshift and 0 ne
+		 {/onbits  onbits  1 add def 1}
+		 {/offbits offbits 1 add def 0}
+		 ifelse
+		}
+		setscreen
+	 {} settransfer
+	 offbits offbits onbits add div FMsetgray
+	/graymode false def
+	} bind def
+/grayness {
+	FMsetgray
+	graymode not {
+		/graymode true def
+		orgxfer cvx settransfer
+		orgfreq organgle orgproc cvx setscreen
+		} if
+	} bind def
+	/HUE FMLOCAL
+	/SAT FMLOCAL
+	/BRIGHT FMLOCAL
+	/Colors FMLOCAL
+FMPrintInColor 
+	
+	{
+	/HUE 0 def
+	/SAT 0 def
+	/BRIGHT 0 def
+	% array of arrays Hue and Sat values for the separations [HUE BRIGHT]
+	/Colors   
+	[[0    0  ]    % black
+	 [0    0  ]    % white
+	 [0.00 1.0]    % red
+	 [0.37 1.0]    % green
+	 [0.60 1.0]    % blue
+	 [0.50 1.0]    % cyan
+	 [0.83 1.0]    % magenta
+	 [0.16 1.0]    % comment / yellow
+	 ] def
+      
+	/BEGINBITMAPCOLOR { 
+		BITMAPCOLOR} def
+	/BEGINBITMAPCOLORc { 
+		BITMAPCOLORc} def
+	/BEGINBITMAPTRUECOLOR { 
+		BITMAPTRUECOLOR } def
+	/BEGINBITMAPTRUECOLORc { 
+		BITMAPTRUECOLORc } def
+	/K { 
+		Colors exch get dup
+		0 get /HUE exch store 
+		1 get /BRIGHT exch store
+		  HUE 0 eq BRIGHT 0 eq and
+			{1.0 SAT sub setgray}
+			{HUE SAT BRIGHT sethsbcolor} 
+		  ifelse
+		} def
+	/FMsetgray { 
+		/SAT exch 1.0 exch sub store 
+		  HUE 0 eq BRIGHT 0 eq and
+			{1.0 SAT sub setgray}
+			{HUE SAT BRIGHT sethsbcolor} 
+		  ifelse
+		} bind def
+	}
+	
+	{
+	/BEGINBITMAPCOLOR { 
+		BITMAPGRAY} def
+	/BEGINBITMAPCOLORc { 
+		BITMAPGRAYc} def
+	/BEGINBITMAPTRUECOLOR { 
+		BITMAPTRUEGRAY } def
+	/BEGINBITMAPTRUECOLORc { 
+		BITMAPTRUEGRAYc } def
+	/FMsetgray {setgray} bind def
+	/K { 
+		pop
+		} def
+	}
+ifelse
+/normalize {
+	transform round exch round exch itransform
+	} bind def
+/dnormalize {
+	dtransform round exch round exch idtransform
+	} bind def
+/lnormalize { 
+	0 dtransform exch cvi 2 idiv 2 mul 1 add exch idtransform pop
+	} bind def
+/H { 
+	lnormalize setlinewidth
+	} bind def
+/Z {
+	setlinecap
+	} bind def
+	/fillvals FMLOCAL
+/X { 
+	fillvals exch get
+	dup type /stringtype eq
+	{8 1 setpattern} 
+	{grayness}
+	ifelse
+	} bind def
+/V { 
+	gsave eofill grestore
+	} bind def
+/N { 
+	stroke
+	} bind def
+/M {newpath moveto} bind def
+/E {lineto} bind def
+/D {curveto} bind def
+/O {closepath} bind def
+	/n FMLOCAL
+/L { 
+ 	/n exch def
+	newpath
+	normalize
+	moveto 
+	2 1 n {pop normalize lineto} for
+	} bind def
+/Y { 
+	L 
+	closepath
+	} bind def
+	/x1 FMLOCAL
+	/x2 FMLOCAL
+	/y1 FMLOCAL
+	/y2 FMLOCAL
+	/rad FMLOCAL
+/R { 
+	/y2 exch def
+	/x2 exch def
+	/y1 exch def
+	/x1 exch def
+	x1 y1
+	x2 y1
+	x2 y2
+	x1 y2
+	4 Y 
+	} bind def
+/RR { 
+	/rad exch def
+	normalize
+	/y2 exch def
+	/x2 exch def
+	normalize
+	/y1 exch def
+	/x1 exch def
+	newpath
+	x1 y1 rad add moveto
+	x1 y2 x2 y2 rad arcto
+	x2 y2 x2 y1 rad arcto
+	x2 y1 x1 y1 rad arcto
+	x1 y1 x1 y2 rad arcto
+	closepath
+	16 {pop} repeat
+	} bind def
+/C { 
+	grestore
+	gsave
+	R 
+	clip
+	} bind def
+	/FMpointsize FMLOCAL
+/F { 
+	FMfonts exch get
+	FMpointsize scalefont
+	setfont
+	} bind def
+/Q { 
+	/FMpointsize exch def
+	F 
+	} bind def
+/T { 
+	moveto show
+	} bind def
+/RF { 
+	rotate
+	0 ne {-1 1 scale} if
+	} bind def
+/TF { 
+	gsave
+	moveto 
+	RF
+	show
+	grestore
+	} bind def
+/P { 
+	moveto
+	0 32 3 2 roll widthshow
+	} bind def
+/PF { 
+	gsave
+	moveto 
+	RF
+	0 32 3 2 roll widthshow
+	grestore
+	} bind def
+/S { 
+	moveto
+	0 exch ashow
+	} bind def
+/SF { 
+	gsave
+	moveto
+	RF
+	0 exch ashow
+	grestore
+	} bind def
+/B { 
+	moveto
+	0 32 4 2 roll 0 exch awidthshow
+	} bind def
+/BF { 
+	gsave
+	moveto
+	RF
+	0 32 4 2 roll 0 exch awidthshow
+	grestore
+	} bind def
+/G { 
+	gsave
+	newpath
+	normalize translate 0.0 0.0 moveto 
+	dnormalize scale 
+	0.0 0.0 1.0 5 3 roll arc 
+	closepath fill
+	grestore
+	} bind def
+/A { 
+	gsave
+	savematrix
+	newpath
+	2 index 2 div add exch 3 index 2 div sub exch 
+	normalize 2 index 2 div sub exch 3 index 2 div add exch 
+	translate 
+	scale 
+	0.0 0.0 1.0 5 3 roll arc 
+	restorematrix
+	stroke
+	grestore
+	} bind def
+	/x FMLOCAL
+	/y FMLOCAL
+	/w FMLOCAL
+	/h FMLOCAL
+	/xx FMLOCAL
+	/yy FMLOCAL
+	/ww FMLOCAL
+	/hh FMLOCAL
+	/FMsaveobject FMLOCAL
+	/FMoptop FMLOCAL
+	/FMdicttop FMLOCAL
+/BEGINPRINTCODE { 
+	/FMdicttop countdictstack 1 add def 
+	/FMoptop count 4 sub def 
+	/FMsaveobject save def
+	userdict begin 
+	/showpage {} def 
+	FMNORMALIZEGRAPHICS 
+	3 index neg 3 index neg translate
+	} bind def
+/ENDPRINTCODE {
+	count -1 FMoptop {pop pop} for 
+	countdictstack -1 FMdicttop {pop end} for 
+	FMsaveobject restore 
+	} bind def
+/gn { 
+	0 
+	{	46 mul 
+		cf read pop 
+		32 sub 
+		dup 46 lt {exit} if 
+		46 sub add 
+		} loop
+	add 
+	} bind def
+	/str FMLOCAL
+/cfs { 
+	/str sl string def 
+	0 1 sl 1 sub {str exch val put} for 
+	str def 
+	} bind def
+/ic [ 
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0223
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0223
+	0
+	{0 hx} {1 hx} {2 hx} {3 hx} {4 hx} {5 hx} {6 hx} {7 hx} {8 hx} {9 hx}
+	{10 hx} {11 hx} {12 hx} {13 hx} {14 hx} {15 hx} {16 hx} {17 hx} {18 hx}
+	{19 hx} {gn hx} {0} {1} {2} {3} {4} {5} {6} {7} {8} {9} {10} {11} {12}
+	{13} {14} {15} {16} {17} {18} {19} {gn} {0 wh} {1 wh} {2 wh} {3 wh}
+	{4 wh} {5 wh} {6 wh} {7 wh} {8 wh} {9 wh} {10 wh} {11 wh} {12 wh}
+	{13 wh} {14 wh} {gn wh} {0 bl} {1 bl} {2 bl} {3 bl} {4 bl} {5 bl} {6 bl}
+	{7 bl} {8 bl} {9 bl} {10 bl} {11 bl} {12 bl} {13 bl} {14 bl} {gn bl}
+	{0 fl} {1 fl} {2 fl} {3 fl} {4 fl} {5 fl} {6 fl} {7 fl} {8 fl} {9 fl}
+	{10 fl} {11 fl} {12 fl} {13 fl} {14 fl} {gn fl}
+	] def
+	/sl FMLOCAL
+	/val FMLOCAL
+	/ws FMLOCAL
+	/im FMLOCAL
+	/bs FMLOCAL
+	/cs FMLOCAL
+	/len FMLOCAL
+	/pos FMLOCAL
+/ms { 
+	/sl exch def 
+	/val 255 def 
+	/ws cfs 
+	/im cfs 
+	/val 0 def 
+	/bs cfs 
+	/cs cfs 
+	} bind def
+400 ms 
+/ip { 
+	is 
+	0 
+	cf cs readline pop 
+	{	ic exch get exec 
+		add 
+		} forall 
+	pop 
+	
+	} bind def
+/wh { 
+	/len exch def 
+	/pos exch def 
+	ws 0 len getinterval im pos len getinterval copy pop
+	pos len 
+	} bind def
+/bl { 
+	/len exch def 
+	/pos exch def 
+	bs 0 len getinterval im pos len getinterval copy pop
+	pos len 
+	} bind def
+/s1 1 string def
+/fl { 
+	/len exch def 
+	/pos exch def 
+	/val cf s1 readhexstring pop 0 get def
+	pos 1 pos len add 1 sub {im exch val put} for
+	pos len 
+	} bind def
+/hx { 
+	3 copy getinterval 
+	cf exch readhexstring pop pop 
+	} bind def
+	/h FMLOCAL
+	/w FMLOCAL
+	/d FMLOCAL
+	/lb FMLOCAL
+	/bitmapsave FMLOCAL
+	/is FMLOCAL
+	/cf FMLOCAL
+/wbytes { 
+	dup 
+	8 eq {pop} {1 eq {7 add 8 idiv} {3 add 4 idiv} ifelse} ifelse
+	} bind def
+/BEGINBITMAPBWc { 
+	1 {} COMMONBITMAPc
+	} bind def
+/BEGINBITMAPGRAYc { 
+	8 {} COMMONBITMAPc
+	} bind def
+/BEGINBITMAP2BITc { 
+	2 {} COMMONBITMAPc
+	} bind def
+/COMMONBITMAPc { 
+	/r exch def
+	/d exch def
+	gsave
+	translate rotate scale /h exch def /w exch def
+	/lb w d wbytes def 
+	sl lb lt {lb ms} if 
+	/bitmapsave save def 
+	r                    
+	/is im 0 lb getinterval def 
+	ws 0 lb getinterval is copy pop 
+	/cf currentfile def 
+	w h d [w 0 0 h neg 0 h] 
+	{ip} image 
+	bitmapsave restore 
+	grestore
+	} bind def
+/BEGINBITMAPBW { 
+	1 {} COMMONBITMAP
+	} bind def
+/BEGINBITMAPGRAY { 
+	8 {} COMMONBITMAP
+	} bind def
+/BEGINBITMAP2BIT { 
+	2 {} COMMONBITMAP
+	} bind def
+/COMMONBITMAP { 
+	/r exch def
+	/d exch def
+	gsave
+	translate rotate scale /h exch def /w exch def
+	/bitmapsave save def 
+	r                    
+	/is w d wbytes string def
+	/cf currentfile def 
+	w h d [w 0 0 h neg 0 h] 
+	{cf is readhexstring pop} image
+	bitmapsave restore 
+	grestore
+	} bind def
+	/proc1 FMLOCAL
+	/proc2 FMLOCAL
+	/newproc FMLOCAL
+/Fmcc {
+    /proc2 exch cvlit def
+    /proc1 exch cvlit def
+    /newproc proc1 length proc2 length add array def
+    newproc 0 proc1 putinterval
+    newproc proc1 length proc2 putinterval
+    newproc cvx
+} bind def
+/ngrayt 256 array def
+/nredt 256 array def
+/nbluet 256 array def
+/ngreent 256 array def
+	/gryt FMLOCAL
+	/blut FMLOCAL
+	/grnt FMLOCAL
+	/redt FMLOCAL
+	/indx FMLOCAL
+	/cynu FMLOCAL
+	/magu FMLOCAL
+	/yelu FMLOCAL
+	/k FMLOCAL
+	/u FMLOCAL
+/colorsetup {
+	currentcolortransfer
+	/gryt exch def
+	/blut exch def
+	/grnt exch def
+	/redt exch def
+	0 1 255 {
+		/indx exch def
+		/cynu 1 red indx get 255 div sub def
+		/magu 1 green indx get 255 div sub def
+		/yelu 1 blue indx get 255 div sub def
+		/k cynu magu min yelu min def
+		/u k currentundercolorremoval exec def
+		nredt indx 1 0 cynu u sub max sub redt exec put
+		ngreent indx 1 0 magu u sub max sub grnt exec put
+		nbluet indx 1 0 yelu u sub max sub blut exec put
+		ngrayt indx 1 k currentblackgeneration exec sub gryt exec put
+	} for
+	{255 mul cvi nredt exch get}
+	{255 mul cvi ngreent exch get}
+	{255 mul cvi nbluet exch get}
+	{255 mul cvi ngrayt exch get}
+	setcolortransfer
+	{pop 0} setundercolorremoval
+	{} setblackgeneration
+	} bind def
+	/tran FMLOCAL
+/fakecolorsetup {
+	/tran 256 string def
+	0 1 255 {/indx exch def 
+		tran indx
+		red indx get 77 mul
+		green indx get 151 mul
+		blue indx get 28 mul
+		add add 256 idiv put} for
+	currenttransfer
+	{255 mul cvi tran exch get 255.0 div}
+	exch Fmcc settransfer
+} bind def
+/BITMAPCOLOR { 
+	/d 8 def
+	gsave
+	translate rotate scale /h exch def /w exch def
+	/bitmapsave save def 
+	colorsetup
+	/is w d wbytes string def
+	/cf currentfile def 
+	w h d [w 0 0 h neg 0 h] 
+	{cf is readhexstring pop} {is} {is} true 3 colorimage 
+	bitmapsave restore 
+	grestore
+	} bind def
+/BITMAPCOLORc { 
+	/d 8 def
+	gsave
+	translate rotate scale /h exch def /w exch def
+	/lb w d wbytes def 
+	sl lb lt {lb ms} if 
+	/bitmapsave save def 
+	colorsetup
+	/is im 0 lb getinterval def 
+	ws 0 lb getinterval is copy pop 
+	/cf currentfile def 
+	w h d [w 0 0 h neg 0 h] 
+	{ip} {is} {is} true 3 colorimage
+	bitmapsave restore 
+	grestore
+	} bind def
+/BITMAPTRUECOLORc { 
+        gsave
+        translate rotate scale /h exch def /w exch def
+        /bitmapsave save def 
+        
+        /is w string def
+        
+        ws 0 w getinterval is copy pop 
+        /cf currentfile def 
+        w h 8 [w 0 0 h neg 0 h] 
+        {ip} {gip} {bip} true 3 colorimage
+        bitmapsave restore 
+        grestore
+        } bind def
+/BITMAPTRUECOLOR { 
+        gsave
+        translate rotate scale /h exch def /w exch def
+        /bitmapsave save def 
+        /is w string def
+        /gis w string def
+        /bis w string def
+        /cf currentfile def 
+        w h 8 [w 0 0 h neg 0 h] 
+        { cf is readhexstring pop } 
+        { cf gis readhexstring pop } 
+        { cf bis readhexstring pop } 
+        true 3 colorimage 
+        bitmapsave restore 
+        grestore
+        } bind def
+/BITMAPTRUEGRAYc { 
+        gsave
+        translate rotate scale /h exch def /w exch def
+        /bitmapsave save def 
+        
+        /is w string def
+        
+        ws 0 w getinterval is copy pop 
+        /cf currentfile def 
+        w h 8 [w 0 0 h neg 0 h] 
+        {ip gip bip w gray} image
+        bitmapsave restore 
+        grestore
+        } bind def
+/ww FMLOCAL
+/r FMLOCAL
+/g FMLOCAL
+/b FMLOCAL
+/i FMLOCAL
+/gray { 
+        /ww exch def
+        /b exch def
+        /g exch def
+        /r exch def
+        0 1 ww 1 sub { /i exch def r i get .299 mul g i get .587 mul
+			b i get .114 mul add add r i 3 -1 roll floor cvi put } for
+        r
+        } bind def
+/BITMAPTRUEGRAY { 
+        gsave
+        translate rotate scale /h exch def /w exch def
+        /bitmapsave save def 
+        /is w string def
+        /gis w string def
+        /bis w string def
+        /cf currentfile def 
+        w h 8 [w 0 0 h neg 0 h] 
+        { cf is readhexstring pop 
+          cf gis readhexstring pop 
+          cf bis readhexstring pop w gray}  image
+        bitmapsave restore 
+        grestore
+        } bind def
+/BITMAPGRAY { 
+	8 {fakecolorsetup} COMMONBITMAP
+	} bind def
+/BITMAPGRAYc { 
+	8 {fakecolorsetup} COMMONBITMAPc
+	} bind def
+/ENDBITMAP {
+	} bind def
+end 
+	/ALDsave FMLOCAL
+	/ALDmatrix matrix def ALDmatrix currentmatrix pop
+/StartALD {
+	/ALDsave save def
+	 savematrix
+	 ALDmatrix setmatrix
+	} bind def
+/InALD {
+	 restorematrix
+	} bind def
+/DoneALD {
+	 ALDsave restore
+	} bind def
+%%EndProlog
+%%BeginSetup
+(3.0) FMVERSION
+1 1 612 792 0 1 17 FMDOCUMENT
+0 0 /Helvetica-Bold FMFONTDEFINE
+1 0 /Times-Roman FMFONTDEFINE
+2 0 /Times-Italic FMFONTDEFINE
+3 0 /Times-Bold FMFONTDEFINE
+4 0 /Courier FMFONTDEFINE
+5 0 /Helvetica FMFONTDEFINE
+6 0 /Courier-Bold FMFONTDEFINE
+7 1 /Symbol FMFONTDEFINE
+32 FMFILLS
+0 0 FMFILL
+1 0.1 FMFILL
+2 0.3 FMFILL
+3 0.5 FMFILL
+4 0.7 FMFILL
+5 0.9 FMFILL
+6 0.97 FMFILL
+7 1 FMFILL
+8 <0f1e3c78f0e1c387> FMFILL
+9 <0f87c3e1f0783c1e> FMFILL
+10 <cccccccccccccccc> FMFILL
+11 <ffff0000ffff0000> FMFILL
+12 <8142241818244281> FMFILL
+13 <03060c183060c081> FMFILL
+14 <8040201008040201> FMFILL
+16 1 FMFILL
+17 0.9 FMFILL
+18 0.7 FMFILL
+19 0.5 FMFILL
+20 0.3 FMFILL
+21 0.1 FMFILL
+22 0.03 FMFILL
+23 0 FMFILL
+24 <f0e1c3870f1e3c78> FMFILL
+25 <f0783c1e0f87c3e1> FMFILL
+26 <3333333333333333> FMFILL
+27 <0000ffff0000ffff> FMFILL
+28 <7ebddbe7e7dbbd7e> FMFILL
+29 <fcf9f3e7cf9f3f7e> FMFILL
+30 <7fbfdfeff7fbfdfe> FMFILL
+%%EndSetup
+%%Page: "16" 16
+%%BeginPaperSize: Letter
+%%EndPaperSize
+612 792 0 FMBEGINPAGE
+0 10 Q
+0 X
+0 K
+(16) 300.44 59.28 T
+1 F
+([16]) 90 713.33 T
+(Franklin Reynolds and Jef) 117 713.33 T
+(frey Heller) 222.03 713.33 T
+(. \322Kernel Support For Network Protocol Servers\323,) 265.05 713.33 T
+2 F
+(Pr) 467.96 713.33 T
+(oceedings) 477.58 713.33 T
+(of the USENIX Mach Symposium) 117 701.33 T
+1 F
+(, November 1991, 149\320162.) 249.69 701.33 T
+([17]) 90 677.33 T
+(Mendel Rosenblum and John K. Ousterhout. \322The Design and) 117 677.33 T
+(Implementation of a Log-Structured) 368.22 677.33 T
+(File System\323,) 117 665.33 T
+2 F
+(Pr) 173.92 665.33 T
+(oceedings of the Thirteenth ACM) 183.54 665.33 T
+(Symposium on Operating Systems Principles) 318.74 665.33 T
+1 F
+(,) 498.07 665.33 T
+(October 1991, 1\32015.) 117 653.33 T
+([18]) 90 629.33 T
+-0.36 (Ken W) 117 629.33 P
+-0.36 (. Shirrif) 144.3 629.33 P
+-0.36 (f and John K. Ousterhout. \322A T) 174.86 629.33 P
+-0.36 (race-Driven Analysis of Name and Attribute Caching in) 298.37 629.33 P
+0.06 (a Distributed System\323,) 117 617.33 P
+2 F
+0.06 (Pr) 210.11 617.33 P
+0.06 (oceedings of the W) 219.74 617.33 P
+0.06 (inter 1992 USENIX Confer) 294.8 617.33 P
+0.06 (ence) 402.81 617.33 P
+1 F
+0.06 (, January 1992, 315\320331.) 421.12 617.33 P
+([19]) 90 593.33 T
+(Brent W) 117 593.33 T
+(elch. \322Naming, State Management, and User) 150.34 593.33 T
+(-Level) 328.89 593.33 T
+(Extensions in the Sprite Distributed File) 357.48 593.33 T
+(System\323, PhD thesis, University) 117 581.33 T
+(of California, Berkeley) 248.6 581.33 T
+(, February 1990. Also available as T) 340.38 581.33 T
+(echnical) 485.13 581.33 T
+(Report UCB/CSD 90/567.) 117 569.33 T
+([20]) 90 545.33 T
+(Michael Y) 117 545.33 T
+(oung) 158.47 545.33 T
+2 F
+(et al) 180.95 545.33 T
+1 F
+(. \322The Duality of Memory and Communication in the Implementation of a) 198.45 545.33 T
+(Multiprocessor Operating System\323,) 117 533.33 T
+2 F
+(Pr) 261.35 533.33 T
+(oceedings of the 1) 270.98 533.33 T
+(1th Symposium on Operating Systems) 342.68 533.33 T
+(Principles) 117 521.33 T
+1 F
+(, November 1987, 63\32076.) 158.09 521.33 T
+FMENDPAGE
+%%EndPage: "16" 15
+%%Page: "15" 15
+612 792 0 FMBEGINPAGE
+0 10 Q
+0 X
+0 K
+(15) 300.44 59.28 T
+1 11 Q
+0.28 0.04 (drafts of the paper) 90 712.67 B
+0.28 0.04 (. Special thanks to John Ousterhout for providing the modif) 171.2 712.67 B
+0.28 0.04 (ied benchmark and) 437.22 712.67 B
+(for technical assistance and guidance.) 90 699.67 T
+3 12 Q
+( Refer) 117 663 T
+(ences) 148.41 663 T
+1 10 Q
+([1]) 90 638.33 T
+(Mary G. Baker) 117 638.33 T
+(, John H. Hartman, Michael D. Kupfer) 176.83 638.33 T
+(, Ken W) 330.75 638.33 T
+(. Shirrif) 363.42 638.33 T
+(f, and John K. Ousterhout.) 394.33 638.33 T
+(\322Measurements of a Distributed File System\323,) 117 626.33 T
+2 F
+(Pr) 304.38 626.33 T
+(oceedings of the Thirteenth ACM Symposium on) 314 626.33 T
+(Operating Systems Principles) 117 614.33 T
+1 F
+(, October 1991, 198\320212.) 235.82 614.33 T
+([2]) 90 590.33 T
+(Joseph Barrera III. private communication, September 1992.) 117 590.33 T
+([3]) 90 566.33 T
+(David L. Black) 117 566.33 T
+2 F
+(et al) 180.85 566.33 T
+1 F
+(. \322Microkernel Operating System) 198.34 566.33 T
+(Architecture and Mach\323,) 334.07 566.33 T
+2 F
+(Pr) 435.64 566.33 T
+(oceedings of the) 445.27 566.33 T
+(USENIX Micr) 117 554.33 T
+(okernel W) 172.98 554.33 T
+(orkshop) 212.86 554.33 T
+1 F
+(,) 245.06 554.33 T
+(April 1992, 1) 250.06 554.33 T
+(1\32029.) 303.27 554.33 T
+([4]) 90 530.33 T
+(David R. Cheriton, Gregory R. Whitehead, and Edward W) 117 530.33 T
+(. Sznyter) 350.35 530.33 T
+(. \322Binary Emulation of UNIX) 385.33 530.33 T
+(Using the V Kernel\323,) 117 518.33 T
+2 F
+(Pr) 204.43 518.33 T
+(oceedings of the) 214.06 518.33 T
+(Summer 1990 USENIX Confer) 281.51 518.33 T
+(ence) 403.56 518.33 T
+1 F
+(, June 1990, 73\32086.) 421.87 518.33 T
+([5]) 90 494.33 T
+(Eric C. Cooper and Richard P) 117 494.33 T
+(. Draves. \322C Threads\323, T) 235.26 494.33 T
+(echnical report CMU\320CS\32088\320154, Carnegie) 334.19 494.33 T
+(Mellon University) 117 482.33 T
+(, February 1988.) 189.92 482.33 T
+([6]) 90 458.33 T
+(F) 117 458.33 T
+(. Douglis and J. Ousterhout. \322T) 121.76 458.33 T
+(ransparent Process) 246.33 458.33 T
+(Migration: Design Alternatives and the Sprite) 323.49 458.33 T
+(Implementation\323,) 117 446.33 T
+2 F
+(Softwar) 189.73 446.33 T
+(e\321Practice & Experience 21) 220.46 446.33 T
+1 F
+(, 8, August 1991.) 337.87 446.33 T
+([7]) 90 422.33 T
+(David Finkel, Robert E. Kinicki, Aju John, Bradford Nichols, and Somesh Rao. \322Developing) 117 422.33 T
+(Benchmarks to Measure the Performance of the Mach Operating System\323,) 117 410.33 T
+2 F
+(Pr) 417.05 410.33 T
+(oceedings of the) 426.67 410.33 T
+(USENIX Mach W) 117 398.33 T
+(orkshop) 186.58 398.33 T
+1 F
+(, October 1990, 83\320100.) 218.78 398.33 T
+([8]) 90 374.33 T
+(Alessandro Forin, Joseph Barrera, and Richard Sanzi. \322The Shared Memory Server\323,) 117 374.33 T
+2 F
+(Pr) 459.23 374.33 T
+(oceedings of) 468.86 374.33 T
+(the W) 117 362.33 T
+(inter 1989 USENIX Confer) 139.49 362.33 T
+(ence) 247.67 362.33 T
+1 F
+(, January 1989, 229\320244.) 265.98 362.33 T
+([9]) 90 338.33 T
+(David Golub, Randall Dean, Alessandro Forin, and Richard Rashid. \322UNIX as an Application) 117 338.33 T
+(Program\323,) 117 326.33 T
+2 F
+(Pr) 160.86 326.33 T
+(oceedings of the) 170.48 326.33 T
+(Summer 1990 USENIX Confer) 237.93 326.33 T
+(ence) 359.99 326.33 T
+1 F
+(, June 1990, 87\32096.) 378.3 326.33 T
+([10]) 90 302.33 T
+(M. D. Hill) 117 302.33 T
+2 F
+(et al) 161.15 302.33 T
+1 F
+(. \322Design Decisions in SPUR\323,) 178.64 302.33 T
+2 F
+(IEEE Computer 19) 305.51 302.33 T
+1 F
+(, 1) 382.12 302.33 T
+(1,) 391.75 302.33 T
+(November 1986, 8\32022.) 401.74 302.33 T
+([1) 90 278.33 T
+(1]) 97.96 278.33 T
+(Daniel P) 117 278.33 T
+(. Julin, Jonathan J. Chew) 150.59 278.33 T
+(, J. Mark Stevenson, Paulo Guedes, Paul Neves, and Paul Roy) 249.61 278.33 T
+(.) 497.41 278.33 T
+(\322Generalized Emulation Services for Mach 3.0\321Overview) 117 266.33 T
+(, Experiences and Current Status\323,) 353.38 266.33 T
+2 F
+(Pr) 117 254.33 T
+(oceedings of the USENIX Mach Symposium) 126.62 254.33 T
+1 F
+(, November 1991, 13\32026.) 301.78 254.33 T
+([12]) 90 230.33 T
+(Y) 117 230.33 T
+(ousef A. Khalidi and Michael N. Nelson. \322An Implementation of UNIX on an Object-oriented) 123.22 230.33 T
+(Operating System\323,) 117 218.33 T
+2 F
+(Pr) 198.34 218.33 T
+(oceedings of the) 207.96 218.33 T
+(W) 275.41 218.33 T
+(inter 1993 USENIX Confer) 283.19 218.33 T
+(ence) 391.37 218.33 T
+1 F
+(, January 1993, 469\320480.) 409.68 218.33 T
+([13]) 90 194.33 T
+(Dejan S. Milojicic, W) 117 194.33 T
+(olfgang Zint, Andreas Dangel, and Peter Giese. \322T) 204.2 194.33 T
+(ask Migration on T) 406.12 194.33 T
+(op of the) 482.32 194.33 T
+(Mach Microkernel\323,) 117 182.33 T
+2 F
+(Pr) 201.09 182.33 T
+(oceedings of the Thir) 210.72 182.33 T
+(d USENIX Mach Symposium) 295.02 182.33 T
+1 F
+(, April 1993.) 410.22 182.33 T
+([14]) 90 158.33 T
+(J. Ousterhout, A. Cherenson, F) 117 158.33 T
+(. Douglis, M. Nelson, and B. W) 240.01 158.33 T
+(elch. \322The Sprite Network Operating) 366.08 158.33 T
+(System\323,) 117 146.33 T
+2 F
+(IEEE Computer 21) 155.87 146.33 T
+1 F
+(, 2, February 1988, 23\32036.) 232.49 146.33 T
+([15]) 90 122.33 T
+(John K. Ousterhout. \322Why Aren\325) 117 122.33 T
+(t Operating Systems Getting Faster) 249.5 122.33 T
+(As Fast as Hardware?\323,) 392.47 122.33 T
+2 F
+(Pr) 117 110.33 T
+(oceedings of the Summer 1990 USENIX Confer) 126.62 110.33 T
+(ence) 316.13 110.33 T
+1 F
+(,) 334.44 110.33 T
+(June 1990, 247\320256.) 339.44 110.33 T
+FMENDPAGE
+%%EndPage: "15" 14
+%%Page: "14" 14
+612 792 0 FMBEGINPAGE
+0 10 Q
+0 X
+0 K
+(14) 300.44 59.28 T
+1 11 Q
+0.12 (Beside additional development, it would be useful to conduct research using the Sprite server) 90 712.67 P
+0.12 (. For) 501.12 712.67 P
+0.28 0.02 (example, it would be interesting to compare the performance of the Sprite server with the perfor-) 90 699.67 B
+0.28 0.09 (mance of a similar server that uses Mach IPC for remote device access or for process migration) 90 686.67 B
+([13].) 90 673.67 T
+3 12 Q
+(8.) 90 637 T
+(Conclusions) 117 637 T
+1 11 Q
+0.28 0.1 (Porting Sprite to Mach was a mixed success. On the one hand, it greatly reduced the amount of) 90 615.67 B
+-0.26 (machine-dependent code in Sprite, which should make Sprite much easier to port to new hardware.) 90 602.67 P
+0.28 0.02 (The asynchronous interfaces provided by Mach require some unpleasant complexity in the Sprite) 90 589.67 B
+0.28 0.03 (server) 90 576.67 B
+0.28 0.03 (, but this complexity is manageable. On the other hand, the server is almost unusably slow) 116.57 576.67 B
+0.28 0.03 (,) 519.25 576.67 B
+0.05 (even after a couple months of tuning, and it appears that much work is still needed to bring perfor-) 90 563.67 P
+(mance within striking distance of the native system.) 90 550.67 T
+0.28 0.07 (At least one third of the performance gap results from the distributed nature of Sprite. However) 90 525.67 B
+0.28 0.07 (,) 519.25 525.67 B
+0.22 (the slowdown is not primarily due to RPC latency or throughput problems. Rather) 90 512.67 P
+0.22 (, it is due to the) 453.16 512.67 P
+0.28 0.23 (Sprite server) 90 499.67 B
+0.28 0.23 (\325) 149.48 499.67 B
+0.28 0.23 (s heavy use of an external pager) 152.76 499.67 B
+0.28 0.23 (, plus problems such as Sprite\325) 302.23 499.67 B
+0.28 0.23 (s inability to use) 444.95 499.67 B
+0.28 0.23 (mapped f) 90 486.67 B
+0.28 0.23 (iles to avoid copy overhead. The lesson here seems to be that there is more to high-) 132.7 486.67 B
+0.03 (per) 90 473.67 P
+0.03 (formance distributed systems than fast communication, and although Mach shows promise as a) 104.03 473.67 P
+0.06 (general platform for distributed computing, it still has some serious shortcomings. For some prob-) 90 460.67 P
+0.26 (lems \050e.g., copy-on-write for external pagers\051 it should be possible to \336x Mach, but in other cases) 90 447.67 P
+0.14 (\050e.g., use of mapped \336les for performance\051, it may be necessary to redesign the distributed system) 90 434.67 P
+(instead.) 90 421.67 T
+0.04 (If one asks whether it is worth porting an existing system to run on top of Mach, the answer seems) 90 396.67 P
+0.28 0.23 (to be \322it depends.\323 For a research system like Sprite, with its small development community) 90 383.67 B
+0.28 0.23 (,) 519.25 383.67 B
+-0.11 (increased portability seems attractive enough to warrant a lar) 90 370.67 P
+-0.11 (ge one-time porting and tuning ef) 356.77 370.67 P
+-0.11 (fort.) 503.39 370.67 P
+0.28 0.02 (On the other hand, a lar) 90 357.67 B
+0.28 0.02 (ge commercial vendor) 195.34 357.67 B
+0.28 0.02 (, particularly a hardware vendor that would have to) 294.05 357.67 B
+0.28 0.04 (do its own Mach ports, would probably be better of) 90 344.67 B
+0.28 0.04 (f to spend the time redesigning internal inter-) 319.84 344.67 B
+0.28 0.22 (faces. There are other potential advantages to running on Mach, such as interoperability with) 90 331.67 B
+0.28 0.03 (dif) 90 318.67 B
+0.28 0.03 (ferent environments, but portability by itself seems inadequate justif) 102.3 318.67 B
+0.28 0.03 (ication to convert existing) 406.1 318.67 B
+(code to use Mach.) 90 305.67 T
+3 12 Q
+(9.) 90 269 T
+(A) 117 269 T
+(vailability) 124.77 269 T
+1 11 Q
+2.44 1.38 (The sources for the Sprite server are available via anonymous ftp from) 90 247.67 B
+4 F
+0.66 0.16 (sprite.berke) 90 234.67 B
+0.66 0.16 (ley.edu) 171 234.67 B
+1 F
+0.28 0.16 ( \050aka) 218.25 234.67 B
+4 F
+0.66 0.16 (allspice.berkeley.edu) 244.15 234.67 B
+1 F
+0.28 0.16 (\051. Please note that the sources) 385.9 234.67 B
+0.28 0.1 (are intended only for browsing, as they may not build in a standard Mach environment, and the) 90 221.67 B
+(server will not run outside of a Sprite cluster) 90 208.67 T
+(.) 285.29 208.67 T
+3 12 Q
+(Acknowledgments) 117 172 T
+1 11 Q
+0.28 0.18 (This work was supported in part by the Open Software Foundation and in part by the Defense) 90 150.67 B
+0.28 0.22 (Advanced Research Projects Agency and the National Aeronautics and Space Administration) 90 137.67 B
+0.11 (under contract NAG2\320591. SunSoft, Inc. provided the time and facilities for producing this paper) 90 124.67 P
+0.11 (.) 519.25 124.67 P
+0.11 (The Sprite group and the Mach community both provided valuable technical assistance during the) 90 111.67 P
+0.28 0.1 (project. M.) 90 98.67 B
+0.28 0.1 (Satya) 142.78 98.67 B
+0.28 0.1 (narayanan developed the original Andrew benchmark. Brent Callaghan, Dejan) 167.7 98.67 B
+0.28 0.23 (Milojicic, John Ousterhout, and the conference referees provided many helpful comments on) 90 85.67 B
+FMENDPAGE
+%%EndPage: "14" 13
+%%Page: "13" 13
+612 792 0 FMBEGINPAGE
+0 10 Q
+0 X
+0 K
+(13) 300.44 59.28 T
+3 12 Q
+(5.2.4) 90 712 T
+(overhead in exec\050\051) 126 712 T
+1 11 Q
+0.28 0.01 (The fourth biggest bottleneck is in) 90 695.67 B
+4 F
+0.66 0.01 (exec) 245.68 695.67 B
+1 F
+0.28 0.01 (, which appears to spend about 8 seconds in the Andrew) 272.07 695.67 B
+0.28 0.05 (benchmark faulting in new heap and stack pages. The problem here is that the) 90 682.67 B
+4 F
+0.66 0.05 (exec) 443.05 682.67 B
+1 F
+0.28 0.05 ( code in the) 469.63 682.67 B
+-0.1 (Sprite server currently destroys the heap and stack and then creates new ones. This causes an addi-) 90 669.67 P
+0.28 0.1 (tional 8,300 external pager calls to the Sprite server) 90 656.67 B
+0.28 0.1 (, primarily to create zero-f) 323.92 656.67 B
+0.28 0.1 (ill heap and stack) 442.87 656.67 B
+0.28 0.29 (pages, with each call taking an estimated millisecond of overhead. W) 90 643.67 B
+0.28 0.29 (e expect that we could) 416.46 643.67 B
+(reclaim at least 7 of the 8 seconds by changing the server to reuse the old heap and stack.) 90 630.67 T
+3 12 Q
+(5.2.5) 90 605 T
+(\322system call\323 overhead) 126 605 T
+1 11 Q
+0.28 0.11 (The f) 90 588.67 B
+0.28 0.11 (ifth biggest bottleneck, which accounts for another 8 seconds of benchmark time, is in the) 113.7 588.67 B
+0.28 0.05 (Sprite server) 90 575.67 B
+0.28 0.05 (\325) 147.11 575.67 B
+0.28 0.05 (s \322system call\323 code, which processes Matchmaker RPCs from user processes. The) 150.21 575.67 B
+0.28 0.34 (slowdown appears to come from a context switch that happens every time a new request is) 90 562.67 B
+0.28 0.09 (received. The problem is that the server thread that receives a user request is not the thread that) 90 549.67 B
+0.08 (processes it. The intent of this design was to avoid a race between getting a request and reclaiming) 90 536.67 P
+0.28 0.16 (an entry in the process control table. The correct approach, which would eliminate the context) 90 523.67 B
+(switch, would be to use no-senders noti\336cation for reclaiming process table entries.) 90 510.67 T
+3 12 Q
+(6.) 90 474 T
+(Evaluation) 117 474 T
+1 11 Q
+(This section evaluates the Sprite server according to the design goals in Section 3.) 90 452.67 T
+(1.) 90 433.67 T
+2 F
+0.28 0.05 (Portability) 103.75 433.67 B
+1 F
+0.28 0.05 (. The Sprite server appears to be highly portable. As shown in Figure 4, it contains) 151.2 433.67 B
+0.08 (less code than an equivalent Sprite kernel, plus there is very little machine-dependent code and) 103.75 421.42 P
+0.28 0.02 (essentially no assembly code. The unimplemented code from native Sprite is mostly machine-) 103.75 409.18 B
+(independent, so a fully functional Sprite server should still be very portable.) 103.75 396.93 T
+(2.) 90 378.69 T
+2 F
+0.04 (Simplicity) 103.75 378.69 P
+1 F
+0.04 (. Although the Sprite server is not as simple as we\325d like \050because of the design com-) 146.98 378.69 P
+0.28 0.09 (plications described in Section 3\051, most of the Sprite server design and implementation were) 103.75 366.44 B
+0.28 0.04 (straightforward, so we believe that the server met its simplicity goal. Furthermore, debugging) 103.75 354.2 B
+0.28 0.15 (the server with) 103.75 341.95 B
+4 F
+0.66 0.15 (gdb) 175.04 341.95 B
+1 F
+0.28 0.15 ( was generally easy) 195.26 341.95 B
+0.28 0.15 (. In fact, we were able to track down bugs that were) 283.98 341.95 B
+(inherited from native Sprite and had long been puzzling the Sprite group.) 103.75 329.71 T
+(3.) 90 311.46 T
+2 F
+0.28 0.01 (Minimize changes) 103.75 311.46 B
+1 F
+0.28 0.01 (. Porting Sprite to Mach involved an acceptably small number of changes to) 183.82 311.46 B
+0.28 0.06 (native Sprite. Most of the server code is identical to the kernel code from which it is derived,) 103.75 299.22 B
+0.19 (and we made few changes to Sprite\325) 103.75 286.97 P
+0.19 (s internal interfaces. Furthermore, the Sprite server runs in) 263.56 286.97 P
+0.28 0.01 (an existing Sprite cluster) 103.75 274.73 B
+0.28 0.01 (. No changes\321other than adding a new machine type\321were made to) 213.19 274.73 B
+(the native Sprite systems to accommodate the Sprite server) 103.75 262.48 T
+(.) 362.51 262.48 T
+(4.) 90 244.24 T
+2 F
+0.28 0.05 (Performance) 103.75 244.24 B
+1 F
+0.28 0.05 (. Unfortunately) 161.61 244.24 B
+0.28 0.05 (, the server did not meet the performance goal. Assuming that we) 228.98 244.24 B
+0.19 (can apply the \336xes that we know of or expect to see soon, the expected performance should be) 103.75 231.99 P
+0.28 0.15 (about 155 seconds for the Andrew benchmark, which is only 60% of native Sprite\325) 103.75 219.75 B
+0.28 0.15 (s perfor-) 483.14 219.75 B
+0.28 0.12 (mance. W) 103.75 207.5 B
+0.28 0.12 (e believe that additional tuning could reduce the benchmark time even further) 148.63 207.5 B
+0.28 0.12 (, but) 501.72 207.5 B
+(this would probably require another 3\3206 months of work.) 103.75 195.26 T
+3 12 Q
+(7.) 90 159.35 T
+(Futur) 117 159.35 T
+(e work) 146.77 159.35 T
+1 11 Q
+0.2 (As mentioned earlier in the paper) 90 138.01 P
+0.2 (, the Sprite server project has been discontinued. If development) 237.33 138.01 P
+0.28 0.1 (were to continue, the obvious f) 90 125.01 B
+0.28 0.1 (irst task would be to continue performance tuning. More work is) 229.83 125.01 B
+0.28 0.16 (needed to make the Sprite server perform adequately on the Andrew benchmark, and there are) 90 112.01 B
+0.11 (other benchmarks that the server should be tested on [7]. Furthermore, a production-quality Sprite) 90 99.01 P
+(server would require the remaining functionality mentioned in Sections 3 and 4.) 90 86.01 T
+FMENDPAGE
+%%EndPage: "13" 12
+%%Page: "12" 12
+612 792 0 FMBEGINPAGE
+0 10 Q
+0 X
+0 K
+(12) 300.44 59.28 T
+3 12 Q
+(5.2.1) 90 712 T
+(overhead in fork\050\051) 126 712 T
+1 11 Q
+0.28 0.07 (The lar) 90 695.67 B
+0.28 0.07 (gest single bottleneck is currently in) 122.01 695.67 B
+4 F
+0.66 0.07 (fork) 288.24 695.67 B
+1 F
+0.28 0.07 (, which spends an extra 45 seconds during the) 314.9 695.67 B
+0.02 (benchmark copying the parent\325) 90 682.67 P
+0.02 (s heap and stack. This copying is necessary because Mach does not) 226.44 682.67 P
+(currently support copy-on-write for externally managed memory objects.) 90 669.67 T
+0.28 0.14 (The UNIX server avoids this problem by using the default pager for the heap and stack, which) 90 644.67 B
+0.28 0.05 (does support copy-on-write. It is not feasible to make the Sprite server the default pager because) 90 631.67 B
+0.28 0.19 (the default pager interface lacks the necessary hooks to support Sprite process migration. The) 90 618.67 B
+-0.1 (cor) 90 605.67 P
+-0.1 (rect solution is for Mach to support copy-on-write for externally managed objects. This support) 104.03 605.67 P
+(should appear as part of Joe Barrera\325) 90 592.67 T
+(s work to support distributed memory multiprocessors [2].) 251.08 592.67 T
+3 12 Q
+(5.2.2) 90 567 T
+(overhead in copyin\050\051 and copyout\050\051) 126 567 T
+1 11 Q
+0.22 (The second biggest bottleneck is in) 90 550.67 P
+4 F
+0.52 (copyin) 248.76 550.67 P
+1 F
+0.22 ( and) 288.31 550.67 P
+4 F
+0.52 (copyout) 310.1 550.67 P
+1 F
+0.22 (. This bottleneck accounts for 18 sec-) 356.24 550.67 P
+(onds of the benchmark time, and it is primarily associated with user) 90 537.67 T
+4 F
+(read) 390.56 537.67 T
+1 F
+( and) 416.93 537.67 T
+4 F
+(write) 438.29 537.67 T
+1 F
+( calls.) 471.25 537.67 T
+0.22 (The UNIX server uses mapped \336les to avoid this problem [9]. That is, the emulation library maps) 90 512.67 P
+0.28 0.29 (a portion of the f) 90 499.67 B
+0.28 0.29 (ile into the process\325) 169.51 499.67 B
+0.28 0.29 (s address space. The library satisf) 262.13 499.67 B
+0.28 0.29 (ies) 420.64 499.67 B
+4 F
+0.66 0.29 (read) 437.02 499.67 B
+1 F
+0.28 0.29 ( and) 464.54 499.67 B
+4 F
+0.66 0.29 (write) 487.89 499.67 B
+1 F
+0.18 (requests by copying directly from or into this mapped region. Unfortunately) 90 486.67 P
+0.18 (, native Sprite doesn\325) 425.22 486.67 P
+0.18 (t) 518.94 486.67 P
+0.26 (support consistent access to mapped \336les that are shared by multiple clients; it only supports con-) 90 473.67 P
+0.07 (sistent access using explicit) 90 460.67 P
+4 F
+-0.17 (read) 213.62 460.67 P
+1 F
+0.07 ( and) 239.98 460.67 P
+4 F
+-0.17 (write) 261.2 460.67 P
+1 F
+0.07 ( calls [1]. Thus we could change the Sprite server to) 294.16 460.67 P
+-0.17 (use mapped \336les for) 90 447.67 P
+4 F
+-0.4 (read) 180.88 447.67 P
+1 F
+-0.17 ( and) 207.25 447.67 P
+4 F
+-0.4 (write) 228.27 447.67 P
+1 F
+-0.17 (, but \336rst we would have to \336x native Sprite to provide con-) 261.23 447.67 P
+(sistent shared access to the \336les.) 90 434.67 T
+0.28 0.11 (Fortunately) 90 409.67 B
+0.28 0.11 (, there are other options that are worth investigating. Instrumentation shows that the) 141.18 409.67 B
+0.25 (bottleneck results not from extra copying, but from the Mach kernel calls needed for the server to) 90 396.67 P
+0.08 (access the user process\325) 90 383.67 P
+0.08 (s address space. So, for example, it may suf) 194.28 383.67 P
+0.08 (\336ce for the server to cache one) 386.66 383.67 P
+0.06 (or more mappings into the process\325) 90 370.67 P
+0.06 (s address space and use those mapped regions for) 244.42 370.67 P
+4 F
+-0.14 (copyin) 463.89 370.67 P
+1 F
+0.06 ( and) 503.44 370.67 P
+4 F
+-0.6 (copyout) 90 357.67 P
+1 F
+-0.25 (. Alternatively) 136.14 357.67 P
+-0.25 (, it may be acceptable for the Sprite server to used mapped \336les in the nor-) 198.65 357.67 P
+0.28 0.07 (mal \050unshared\051 case, switching to explicit) 90 344.67 B
+4 F
+0.66 0.07 (read) 280.57 344.67 B
+1 F
+0.28 0.07 ( and) 307.22 344.67 B
+4 F
+0.66 0.07 (write) 329.49 344.67 B
+1 F
+0.28 0.07 ( calls only when the f) 362.8 344.67 B
+0.28 0.07 (ile is open for) 459.44 344.67 B
+(writing on multiple clients, which happens infrequently [1].) 90 331.67 T
+3 12 Q
+(5.2.3) 90 306 T
+(RPC latency) 126 306 T
+1 11 Q
+0.28 0.07 (The third biggest bottleneck, which we estimate to be around 1) 90 289.67 B
+0.28 0.07 (1 seconds for the Andrew bench-) 373.18 289.67 B
+0.28 0.03 (mark, is higher Sprite RPC latency) 90 276.67 B
+0.28 0.03 (, despite the improvements that were made during tuning. The) 244.79 276.67 B
+0.28 0.07 (Sprite server requires 2.2 ms to do a null RPC to a native Sprite system, whereas a native Sprite) 90 263.67 B
+0.28 0.26 (system can do the same operation in 0.8 ms. W) 90 250.67 B
+0.28 0.26 (e suspect that most of the time is spent in the) 310.32 250.67 B
+-0.22 (net) 90 237.67 P
+-0.22 (work input path \050packet \336lter) 103.43 237.67 P
+-0.22 (, etc.\051, though we did not have time to verify this through measure-) 230.24 237.67 P
+(ments.) 90 224.67 T
+(Assuming that Mach is responsible for most of the slowdown, there are two ways to \336x it:) 90 199.67 T
+(1.) 90 180.67 T
+0.28 0.02 (Improve general network performance. The work described by Reynolds and Heller [16] is an) 103.74 180.67 B
+(example of this approach.) 103.75 168.42 T
+(2.) 90 150.18 T
+0.22 (Reduce the number of RPCs. Instrumentation shows that 36% of the Sprite RPCs that are gen-) 103.74 150.18 P
+0.28 0.29 (erated by the Andrew benchmark are) 103.75 137.93 B
+4 F
+0.66 0.29 (open) 280.84 137.93 B
+1 F
+0.28 0.29 ( RPCs. Adding a name cache would probably) 308.36 137.93 B
+(reduce this number considerably [18], though it would require changes to native Sprite.) 103.75 125.69 T
+FMENDPAGE
+%%EndPage: "12" 11
+%%Page: "11" 11
+612 792 0 FMBEGINPAGE
+0 10 Q
+0 X
+0 K
+(1) 300.72 59.28 T
+(1) 305.73 59.28 T
+1 11 Q
+0.28 0.04 (The other major performance f) 90 712.67 B
+0.28 0.04 (ix was in the way that) 227.08 712.67 B
+4 F
+0.66 0.04 (exec) 328.5 712.67 B
+1 F
+0.28 0.04 ( copied in environment and ar) 355.02 712.67 B
+0.28 0.04 (gument) 488.85 712.67 B
+0.28 0.05 (strings from a user process. Originally the process would pass an array of string addresses to the) 90 699.67 B
+0.28 0.02 (server) 90 686.67 B
+0.28 0.02 (, and the server would copy each string in one at a time. By changing the Matchmaker stub) 116.5 686.67 B
+0.03 (and Sprite emulation code to pass the strings in with the) 90 673.67 P
+4 F
+0.06 (exec) 338.41 673.67 P
+1 F
+0.03 ( request, we were able to reduce the) 364.78 673.67 P
+(benchmark time by 17 seconds.) 90 660.67 T
+3 12 Q
+(5.2) 90 627 T
+(Curr) 117 627 T
+(ent performance pr) 142.76 627 T
+(oblems) 242.46 627 T
+1 11 Q
+0.28 0.07 (Unfortunately) 90 609.67 B
+0.28 0.07 (, this still leaves a 146 second gap between native Sprite and the Sprite server) 151.85 609.67 B
+0.28 0.07 (. W) 501.65 609.67 B
+0.28 0.07 (e) 517.12 609.67 B
+0.2 (can explain about 97 seconds of this gap \050see Figure 7\051, and we have ideas for how to \336x some of) 90 596.67 P
+0.28 0.03 (the problems. W) 90 583.67 B
+0.28 0.03 (e know where most of the remaining 49 seconds are being spent, but not what is) 163.11 583.67 B
+0.28 0.06 (causing the delays. T) 90 570.67 B
+0.28 0.06 (uning stopped in July 1992 when the Sprite server project was brought to a) 184.53 570.67 B
+(close.) 90 557.67 T
+0.28 0.12 (The rest of this section will explain the current top 5 understood or partially understood bottle-) 90 532.67 B
+(necks.) 90 519.67 T
+90 72 522 720 C
+126 123.6 486 516 C
+188.12 248.51 296.12 284.51 R
+0.5 H
+2 Z
+10 X
+0 K
+N
+188.12 306.11 296.12 316.91 R
+N
+188.12 316.91 296.12 327.71 R
+N
+188.12 327.71 296.12 342.11 R
+N
+188.12 342.11 296.12 367.31 R
+N
+188.12 367.31 296.12 392.51 R
+N
+188.14 392.52 296.14 457.32 R
+N
+188.12 248.51 296.12 457.31 R
+1 H
+0 X
+N
+5 9 Q
+(faults during fork \05045\051\240) 314.12 411.16 T
+(copyin/copyout overhead \05018\051\240) 314.12 375.81 T
+(unknown \05015\051) 314.12 349.96 T
+(additional RPC latency \0501) 314.12 331.96 T
+(1\051\240) 414.85 331.96 T
+(faults during exec \0508\051\240) 314.14 320.16 T
+(system call overhead \0508\051\240) 314.14 309.36 T
+(other understood problems \05015\051) 314.12 288.76 T
+(other partially understood problems \05026\051) 314.12 263.56 T
+296.12 392.51 303.32 392.51 2 L
+10 X
+N
+296.12 367.31 303.32 367.31 2 L
+N
+296.12 342.11 303.32 342.11 2 L
+N
+296.12 327.71 303.32 327.71 2 L
+N
+296.12 316.91 303.32 316.91 2 L
+N
+296.12 306.11 303.32 306.11 2 L
+N
+296.12 284.51 303.32 284.51 2 L
+N
+180.92 392.51 188.12 392.51 2 L
+N
+180.92 367.31 188.12 367.31 2 L
+N
+180.92 342.11 188.12 342.11 2 L
+N
+180.92 327.71 188.12 327.71 2 L
+N
+180.92 316.91 188.12 316.91 2 L
+N
+180.92 306.11 188.12 306.11 2 L
+N
+180.92 284.51 188.12 284.51 2 L
+N
+162 127.2 450 219.71 R
+7 X
+V
+0 X
+1.57 (FIGURE 7. Remaining performance problems.) 162 213.71 P
+1 F
+1.41 (This graph illustrates the) 356.64 213.71 P
+0.08 (current performance gap between the Sprite server and native Sprite for one run) 162 204.71 P
+0.41 (of the Andrew benchmark. The numbers in parentheses tell how many seconds) 162 195.71 P
+-0.2 (are lost to each problem. Problems marked with a dagger \050) 162 186.71 P
+5 F
+-0.22 (\240) 370.42 186.71 P
+1 F
+-0.2 (\051 are discussed in the) 375.42 186.71 P
+1.12 (main text. \322Unknown\323 refers to time that has not been accounted for) 162 177.71 P
+1.12 (. \322Other) 419.93 177.71 P
+0.08 (understood problems\323 refers to well-understood problems that are not discussed) 162 168.71 P
+1.12 (in the paper) 162 159.71 P
+1.12 (. \322Other partially understood problems\323 refers to problems where) 206.17 159.71 P
+162 141.71 450 147.71 C
+162 145.7 450 145.7 2 L
+0.25 H
+2 Z
+0 X
+0 K
+N
+126 123.6 486 516 C
+1 9 Q
+0 X
+0 K
+(only the general area of the problem is known \050e.g., somewhere in) 162 150.71 T
+4 F
+(fork) 402.36 150.71 T
+1 F
+(\051.) 423.93 150.71 T
+162 464.51 162 248.51 2 L
+1 H
+2 Z
+N
+158.4 428.51 165.6 428.51 2 L
+N
+158.4 392.51 165.6 392.51 2 L
+N
+158.4 356.51 165.6 356.51 2 L
+N
+158.4 320.51 165.6 320.51 2 L
+N
+158.4 284.51 165.6 284.51 2 L
+N
+158.4 248.51 165.6 248.51 2 L
+N
+5 F
+(50) 144.89 316.91 T
+(25) 144.89 280.91 T
+(75) 144.89 352.91 T
+(100) 140.4 388.91 T
+158.4 464.51 165.6 464.51 2 L
+N
+(125) 140.4 424.91 T
+(150) 140.4 460.91 T
+(total time lost) 136.8 484.25 T
+(\050seconds\051) 141.29 475.25 T
+90 72 522 720 C
+0 0 612 792 C
+FMENDPAGE
+%%EndPage: "11" 10
+%%Page: "10" 10
+612 792 0 FMBEGINPAGE
+0 10 Q
+0 X
+0 K
+(10) 300.44 59.28 T
+1 11 Q
+0.28 0.04 (faulting in the same pages for commonly used programs like) 90 363.47 B
+4 F
+0.66 0.04 (cp) 363.98 363.47 B
+1 F
+0.28 0.04 ( and) 377.24 363.47 B
+4 F
+0.66 0.04 (grep) 399.32 363.47 B
+1 F
+0.28 0.04 (. Re-enabling the text) 425.83 363.47 B
+(cache reduced the benchmark run time by 130 seconds.) 90 350.47 T
+(RPC performance in the Sprite server suf) 90 325.47 T
+(fered for several reasons:) 271.04 325.47 T
+(1.) 90 306.47 T
+-0.15 (The UNIX server used a packet \336lter that accepted all packets. Thus Sprite operations would be) 103.74 306.47 P
+0.1 (delayed while the UNIX server read and discarded Sprite RPC packets. The solution was to \336x) 103.75 294.22 P
+(the UNIX server) 103.75 281.98 T
+(\325) 177.37 281.98 T
+(s packet \336lter to ignore Sprite RPC packets.) 180.43 281.98 T
+(2.) 90 263.73 T
+0.28 0.08 (Early versions of the server used synchronous network writes, even though they were slower) 103.74 263.73 B
+0.28 0.06 (than asynchronous writes. This problem was a consequence of native Sprite\325) 103.75 251.49 B
+0.28 0.06 (s interface to the) 447.17 251.49 B
+-0.11 (network driver) 103.75 239.24 P
+-0.11 (, and it was compounded by a server bug. Fortunately) 168.18 239.24 P
+-0.11 (, changing the RPC code to) 402.32 239.24 P
+0.28 0.09 (use Mach meant that the writes could all be asynchronous, which is how the server currently) 103.75 227 B
+(operates.) 103.75 214.75 T
+(3.) 90 196.51 T
+0.28 0.01 (The Sprite server was generally unable to make inband write requests because of the 128-byte) 103.74 196.51 B
+0.28 0.07 (size limit for inband) 103.75 184.26 B
+4 F
+0.66 0.07 (device) 198.02 184.26 B
+1 F
+0.28 0.07 ( requests. This was unfortunate because inband writes were ten) 238.01 184.26 B
+0.28 0.26 (times faster than out-of-band writes \0500.18 ms versus 1.8 ms\051. By raising the size limit for) 103.75 172.02 B
+-0.25 (inband writes to 300 bytes, we were able to get the Sprite server to use inband writes for 90% of) 103.75 159.77 P
+(the packets that it sent.) 103.75 147.53 T
+0.13 (The combination of these \336xes reduced the null Sprite RPC time from 4 ms to 2.2 ms. Overall the) 90 132.28 P
+0.28 0.11 (RPC improvements \050latency and throughput\051 translated to a 41-second speedup for the Andrew) 90 119.28 B
+(benchmark.) 90 106.28 T
+162 370.8 450 720 C
+5 9 Q
+0 X
+0 K
+(500) 212.07 682.8 T
+233.64 504.58 251.64 657.72 R
+7 X
+V
+1 H
+2 Z
+0 X
+N
+162 378 450 455.4 R
+7 X
+V
+0 X
+1.57 (FIGURE 6. Sprite server performance.) 162 449.4 P
+1 F
+1.41 (This chart shows the run time of) 325.19 449.4 P
+0.81 (successive versions of the Sprite server for the Andrew benchmark. V) 162 440.4 P
+0.81 (ersion 7) 420.48 440.4 P
+0.14 (was the \336rst version run with the benchmark. V) 162 431.4 P
+0.14 (ersion 9 cached unused program) 333.12 431.4 P
+0.65 (text. V) 162 422.4 P
+0.65 (ersions 1) 186.11 422.4 P
+0.65 (1 and 17 improved RPC performance. V) 218.63 422.4 P
+0.65 (ersion 14 used a faster) 367.04 422.4 P
+2.64 (version of) 162 413.4 P
+4 F
+6.33 (exec) 206.26 413.4 P
+5 F
+2.93 (.) 227.83 413.4 P
+1 F
+2.64 ( The chart also compares the Sprite server with related) 230.33 413.4 P
+1.2 (systems. Note that the Ultrix and native Sprite \336gures are for remote access,) 162 404.4 P
+162 386.4 450 392.4 C
+162 390.39 450 390.39 2 L
+0.25 H
+2 Z
+0 X
+0 K
+N
+162 370.8 450 720 C
+1 9 Q
+0 X
+0 K
+(while the Mach UNIX \336gure is for local access.) 162 395.4 T
+251.64 504.58 269.64 611.14 R
+1 H
+2 Z
+N
+269.64 504.58 287.64 598.9 R
+N
+287.64 504.58 305.64 593.14 R
+N
+305.64 504.58 323.64 590.26 R
+N
+233.67 504.6 233.67 684.6 2 L
+N
+233.67 666.6 230.07 666.6 2 L
+N
+233.67 684.6 230.07 684.6 2 L
+N
+233.67 648.6 230.07 648.6 2 L
+N
+233.67 630.6 230.07 630.6 2 L
+N
+233.67 612.6 230.07 612.6 2 L
+N
+233.67 594.6 230.07 594.6 2 L
+N
+233.67 576.6 230.07 576.6 2 L
+N
+233.67 558.6 230.07 558.6 2 L
+N
+233.67 540.6 230.07 540.6 2 L
+N
+233.67 522.6 230.07 522.6 2 L
+N
+233.64 504.58 230.04 504.58 2 L
+N
+5 F
+(400) 212.07 646.8 T
+(300) 212.07 610.8 T
+(200) 212.07 574.8 T
+(100) 212.07 537.65 T
+233.67 571.2 338.07 571.2 2 L
+8 X
+N
+233.67 547.8 338.07 547.8 2 L
+N
+233.67 537 338.07 537 2 L
+N
+0 X
+(Ultrix/NFS) 343.47 569.4 T
+(Mach UNIX) 343.47 546.17 T
+(native Sprite) 343.47 535.2 T
+(run time \050seconds\051) 204.43 702 T
+233.22 469.8 323.22 482.4 R
+7 X
+V
+0 X
+(server version) 250.01 476.4 T
+(7) 238.62 493.57 T
+(9) 256.62 493.2 T
+(1) 272.82 493.2 T
+(1) 277.16 493.2 T
+(14) 290.82 493.2 T
+(17) 308.82 493.59 T
+0 0 612 792 C
+FMENDPAGE
+%%EndPage: "10" 9
+%%Page: "9" 9
+612 792 0 FMBEGINPAGE
+0 10 Q
+0 X
+0 K
+(9) 303.22 59.28 T
+3 12 Q
+(5.) 90 456.4 T
+(Performance) 117 456.4 T
+1 11 Q
+0.02 (Due to time constraints, we primarily used only one benchmark to tune the Sprite server: the mod-) 90 435.07 P
+0.28 0 (if) 90 422.07 B
+0.28 0 (ied Andrew benchmark [15]. This benchmark copies a f) 96.11 422.07 B
+0.28 0 (ile tree, scans the tree several times, and) 343.37 422.07 B
+0.28 0.17 (then compiles some window system code. It causes the Sprite server to generate around 8,200) 90 409.07 B
+(Sprite RPCs.) 90 396.07 T
+0.28 0.01 (This section discusses performance f) 90 371.07 B
+0.28 0.01 (ixes to early versions of the server) 252.62 371.07 B
+0.28 0.01 (, plus current performance) 404.96 371.07 B
+0.28 0 (problems. All the performance numbers in this section were obtained on a DECStation 5000 with) 90 358.07 B
+-0.17 (at least 32 megabytes of memory) 90 345.07 P
+-0.17 (, using \336les stored on a native Sprite \336le server) 233.99 345.07 P
+-0.17 (. RPC times are for) 438.14 345.07 P
+0.28 0.17 (two DECstation 5000s, one running native Sprite, the other running either the Sprite server or) 90 332.07 B
+(native Sprite.) 90 319.07 T
+3 12 Q
+(5.1) 90 285.4 T
+(Curr) 117 285.4 T
+(ent status and early tuning) 142.76 285.4 T
+1 11 Q
+0.28 0.22 (As shown in Figure 6, a diskless native Sprite workstation runs the Andrew benchmark in 91) 90 268.07 B
+-0.21 (sec) 90 255.07 P
+-0.21 (onds. The UNIX server \050version UX34\051 and Ultrix 4.2 need around 1) 104.03 255.07 P
+-0.21 (18 seconds using \336les on a) 405.54 255.07 P
+-0.2 (local disk. For an Ultrix 4.2 system accessing the \336les via NFS, the time goes up to 141 or 186 sec-) 90 242.07 P
+0.28 0.2 (onds, depending on whether the NFS server has a Prestoserve accelerator) 90 229.07 B
+0.28 0.2 (. The Sprite server) 428.27 229.07 B
+0.28 0.2 (\325) 514.47 229.07 B
+0.28 0.2 (s) 517.72 229.07 B
+(fast) 90 216.07 T
+(est time for the benchmark is 237 seconds.) 105.86 216.07 T
+-0.25 (Early versions of the Sprite server required 425 seconds to run the benchmark. Figure 6 shows suc-) 90 191.07 P
+0.28 0.22 (cessive improvements in the server) 90 178.07 B
+0.28 0.22 (\325) 253.26 178.07 B
+0.28 0.22 (s performance, which benef) 256.54 178.07 B
+0.28 0.22 (itted from three general f) 384.42 178.07 B
+0.28 0.22 (ixes:) 500.38 178.07 B
+0.28 0.09 (caching of text \050code\051 segments, reduced Sprite RPC latency) 90 165.07 B
+0.28 0.09 (, and more ef) 363.97 165.07 B
+0.28 0.09 (f) 423.77 165.07 B
+0.28 0.09 (icient string manage-) 426.92 165.07 B
+(ment in) 90 152.07 T
+4 F
+(exec) 126.01 152.07 T
+1 F
+(.) 152.38 152.07 T
+0.23 (Although native Sprite caches unused program text, we originally disabled the cache in the Sprite) 90 127.07 P
+0.01 (server so that we wouldn\325) 90 114.07 P
+0.01 (t have to deal with the \336le system and virtual memory code for detecting) 203.26 114.07 P
+0.28 0.15 (and removing stale text pages. Unfortunately) 90 101.07 B
+0.28 0.15 (, this meant that the server spent much of its time) 295.17 101.07 B
+162 464.4 450 720 C
+162 478.8 450 504 R
+7 X
+0 K
+V
+5 9 Q
+0 X
+1.48 (FIGURE 5. Code disposition, changing the Sprite kernel to the Sprite) 162 498 P
+162 480 450 486 C
+162 483.98 450 483.98 2 L
+0.25 H
+2 Z
+0 X
+0 K
+N
+162 464.4 450 720 C
+5 9 Q
+0 X
+0 K
+(server) 162 489 T
+(.) 186.47 489 T
+222.52 521.99 294.52 701.99 R
+7 X
+V
+1 H
+2 Z
+0 X
+N
+222.52 521.99 294.52 637.19 R
+6 X
+V
+0 X
+N
+222.52 655.19 294.52 701.99 R
+8 X
+N
+5 10 Q
+0 X
+(39K lines deleted) 312.52 673.11 T
+(14K lines rewritten) 312.52 644.39 T
+(90K lines unchanged) 312.52 575.99 T
+222.52 637.19 294.52 655.19 R
+13 X
+V
+0 X
+N
+0 0 612 792 C
+FMENDPAGE
+%%EndPage: "9" 8
+%%Page: "8" 8
+612 792 0 FMBEGINPAGE
+0 10 Q
+0 X
+0 K
+(8) 303.22 59.28 T
+1 11 Q
+0.28 0.08 (As shown in Figure 4, porting Sprite to Mach let us get rid of almost all the machine-depen) 90 712.67 B
+0.28 0.08 (dent) 502.84 712.67 B
+0.28 0.07 (code in Sprite. A Sprite DECStation kernel with the same functionality as the Sprite server con-) 90 699.67 B
+-0.24 (tains roughly 143,000 lines of code, of which 27,000 lines are machine-dependent, including 3,600) 90 686.67 P
+0.24 (lines of assembly code. The Sprite server contains 1) 90 673.67 P
+0.24 (1) 320.03 673.67 P
+0.24 (1,000 lines of code, of which 1,300 lines are) 325.12 673.67 P
+(machine-dependent. The server contains 4 lines of assembly code to help debug locking errors.) 90 660.67 T
+1 9 Q
+(3) 507.7 665.07 T
+1 11 Q
+0.28 0.08 (Figure 5 shows how much code changed in converting the Sprite kernel to the Sprite server) 90 321.87 B
+0.28 0.08 (. W) 501.63 321.87 B
+0.28 0.08 (e) 517.12 321.87 B
+-0.25 (kept about 90,000 lines of code \05063%\051. W) 90 308.87 P
+-0.25 (e threw away another 39,000 lines of code \05027%\051, and we) 271.32 308.87 P
+0.22 (rewrote the remaining code, about 14,000 lines \05010%\051, for use with Mach. The thrown away code) 90 295.87 P
+0.28 0.25 (consisted of low-level \050and often machine-dependent\051 code for device, process, and memory) 90 282.87 B
+0.28 0.1 (man) 90 269.87 B
+0.28 0.1 (agement, plus code that duplicated Mach functionality \050e.g., the process scheduler) 109.21 269.87 B
+0.28 0.1 (, a kernel) 480.01 269.87 B
+0.21 (debugger) 90 256.87 P
+0.21 (, and various C utility routines\051. Most of the rewritten code was for process and memory) 130.44 256.87 P
+0.28 0.12 (management, Matchmaker RPC processing \050system calls in native Sprite\051, and Sprite\325) 90 243.87 B
+0.28 0.12 (s internal) 480.03 243.87 B
+(lock package.) 90 230.87 T
+0.28 0.09 (T) 90 205.87 B
+0.28 0.09 (o support the missing functionality mentioned earlier in this section, we would have to port an) 96.03 205.87 B
+0.28 0.03 (additional 58,000 lines of code, of which 2,400 lines are machine-dependent. About 52,000 lines) 90 192.87 B
+0.28 0.04 (of this code would probably stay the same, another 2,000 lines would probably get thrown away) 90 179.87 B
+0.28 0.04 (,) 519.25 179.87 B
+(and the remaining 4,000 lines would probably require rewriting.) 90 166.87 T
+90 95.01 522 108.01 C
+72 103.01 180 103.01 2 L
+0.25 H
+2 Z
+0 X
+0 K
+N
+0 0 612 792 C
+1 9 Q
+0 X
+0 K
+(3.  The server obtains routines such as) 90 89.01 T
+4 F
+(bcopy) 229.53 89.01 T
+1 F
+( from the UNIX C library that is provided with Mach. Because the Sprite) 256.49 89.01 T
+(group would not have to maintain this code, it is not included in the Sprite server line counts.) 90 79.01 T
+162 343.2 450 657 C
+162 354 450 372 R
+7 X
+0 K
+V
+162 357 450 363 C
+162 360.98 450 360.98 2 L
+0.25 H
+2 Z
+0 X
+0 K
+N
+162 343.2 450 657 C
+5 9 Q
+0 X
+0 K
+(FIGURE 4. Comparison of code sizes \050source lines\051.) 162 366 T
+208.8 458.4 280.8 631.2 R
+1 H
+2 Z
+N
+331.2 458.4 403.2 591.6 R
+N
+208.8 598.8 280.8 631.2 R
+10 X
+V
+0 X
+N
+331.2 590.16 403.2 591.6 R
+10 X
+V
+0 X
+N
+209.73 436.8 281.73 451.2 R
+7 X
+V
+5 10 Q
+0 X
+(native Sprite) 217.96 444.53 T
+332.13 436.8 404.13 451.2 R
+7 X
+V
+0 X
+(Sprite server) 339.81 444.53 T
+209.73 386.4 231.33 400.8 R
+7 X
+V
+0 X
+N
+209.73 408 231.33 422.4 R
+10 X
+V
+0 X
+N
+238.53 382.8 389.73 397.2 R
+7 X
+V
+0 X
+(machine-independent code) 238.53 390.54 T
+238.53 404.4 389.73 418.8 R
+7 X
+V
+0 X
+(machine-dependent code) 238.53 412.14 T
+292.53 530.4 299.73 530.4 2 L
+N
+292.53 602.4 299.73 602.4 2 L
+N
+5 9 Q
+(60K) 303.33 526.8 T
+(120K) 303.33 598.8 T
+292.53 566.4 299.73 566.4 2 L
+N
+292.53 548.4 299.73 548.4 2 L
+N
+292.53 512.4 299.73 512.4 2 L
+N
+292.53 494.4 299.73 494.4 2 L
+N
+292.53 476.4 299.73 476.4 2 L
+N
+292.53 584.4 299.73 584.4 2 L
+N
+292.53 620.4 299.73 620.4 2 L
+N
+292.53 638.4 299.73 638.4 2 L
+N
+296.13 638.4 296.13 458.4 2 L
+N
+292.53 458.4 299.73 458.4 2 L
+N
+0 0 612 792 C
+FMENDPAGE
+%%EndPage: "8" 7
+%%Page: "7" 7
+612 792 0 FMBEGINPAGE
+0 10 Q
+0 X
+0 K
+(7) 303.22 59.28 T
+1 11 Q
+0.28 0.06 (because the Sprite server does not handle time slice interrupts, it cannot guarantee that user pro-) 90 712.67 B
+0.28 0.09 (cesses will notice attempts to kill or suspend them. Thus, unlike in native Sprite, user pro) 90 699.67 B
+0.28 0.09 (cesses) 494.1 699.67 B
+0.28 0.01 (must be able to kill or suspend other user processes. This requirement led to many changes in the) 90 686.67 B
+0.28 0.26 (locking strategy for the process management and signals code in the Sprite server) 90 673.67 B
+0.28 0.26 (, and these) 472.16 673.67 B
+(changes were the source of many bugs.) 90 660.67 T
+3 12 Q
+(3.5) 90 627 T
+(Asynchr) 117 627 T
+(onous signal delivery) 160.09 627 T
+1 11 Q
+0.28 0.17 (An additional problem with signals was how to invoke a user signal handler for asynchronous) 90 609.67 B
+0.28 0.07 (sig) 90 596.67 B
+0.28 0.07 (nals \050that is, when a process invokes) 103.04 596.67 B
+4 F
+0.66 0.07 (kill) 270.73 596.67 B
+1 F
+0.28 0.07 ( on some other process\051. The basic idea is simple:) 297.4 596.67 B
+0.05 (suspend the tar) 90 583.67 P
+0.05 (get process, push the call frame for the handler onto the stack, change the process\325) 155.8 583.67 P
+0.05 (s) 517.72 583.67 P
+(program counter to invoke the handler) 90 570.67 T
+(, and resume the process.) 258.29 570.67 T
+0.28 0.17 (The problem is that if the process is, say) 90 545.67 B
+0.28 0.17 (, doing a Mach system call, the handler should not be) 275.98 545.67 B
+-0.27 (invoked until the process returns from the kernel. There are ways to deal with this problem, such as) 90 532.67 P
+6 F
+(\245) 90 513.67 T
+1 F
+(carefully examining the process to see what it\325) 103.74 513.67 T
+(s doing) 307.87 513.67 T
+6 F
+(\245) 90 497.67 T
+1 F
+(having a dedicated thread in the user process to handle signal synchronization) 103.74 497.67 T
+(but at \336rst glance these approaches seemed like they might be slow or too complex to get right.) 90 481.67 T
+0.28 0.07 (The Sprite server currently uses an approach similar to that of the UNIX server) 90 456.67 B
+0.28 0.07 (. Each call to the) 446.14 456.67 B
+0.04 (Sprite server returns a \337ag telling whether there is a pending signal that has a registered handler) 90 443.67 P
+0.04 (. If) 509.22 443.67 P
+0.21 (there is such a signal, the emulation code gets the signal information from the server and calls the) 90 430.67 P
+0.1 (handler before returning from the original call. This solution is not ideal \050a signal handler can\325) 90 417.67 P
+0.1 (t be) 505.72 417.67 P
+0.02 (called until the program makes a Sprite request\051, but it was adequate for a prototype. In re) 90 404.67 P
+0.02 (trospect,) 484.47 404.67 P
+0.28 0.15 (the \322dedicated thread\323 approach, which is how the V [4] and Spring [12] projects handled this) 90 391.67 B
+(problem, might have been the better choice.) 90 378.67 T
+3 12 Q
+(4.) 90 342 T
+(Status and code measur) 117 342 T
+(ements) 238.38 342 T
+1 11 Q
+0.12 (Despite the problems mentioned in the previous section, the Sprite server works and is about 75%) 90 320.67 P
+0.28 0.05 (complete. This section explains the server) 90 307.67 B
+0.28 0.05 (\325) 278.37 307.67 B
+0.28 0.05 (s current status and presents some code size measure-) 281.48 307.67 B
+(ments.) 90 294.67 T
+-0.15 (One person \050the author\051 developed the Sprite server over a period of 19 months. The \336rst 7 months) 90 269.67 P
+-0.26 (of the project were a halftime ef) 90 256.67 P
+-0.26 (fort; the remaining 12 months were full-time, including 2.5 months) 229.21 256.67 P
+0.16 (of performance tuning. Development began on a Sun 3 but later moved to a DECStation 5000. T) 90 243.67 P
+0.16 (o) 516.5 243.67 P
+-0.19 (simplify debugging, the Sprite server runs as a UNIX application, but it only depends on UNIX for) 90 230.67 P
+(\322console\323 access and for obtaining Mach privileged ports.) 90 217.67 T
+0.28 0.1 (The Sprite server supports standard UNIX programs like) 90 192.67 B
+4 F
+0.66 0.1 (vi) 350.01 192.67 B
+1 F
+0.28 0.1 (,) 363.4 192.67 B
+4 F
+0.66 0.1 (gcc) 369.38 192.67 B
+1 F
+0.28 0.1 (, and) 389.47 192.67 B
+4 F
+0.66 0.1 (make) 414.76 192.67 B
+1 F
+0.28 0.1 (. Nonetheless, the) 441.55 192.67 B
+(implementation is incomplete, lacking features such as) 90 179.67 T
+6 F
+(\245) 90 160.67 T
+1 F
+(binary compatibility \050with either the vendor operating system or native Sprite\051) 103.74 160.67 T
+6 F
+(\245) 90 144.67 T
+1 F
+(local disk access) 103.74 144.67 T
+6 F
+(\245) 90 128.67 T
+1 F
+(support for debugging user processes) 103.74 128.67 T
+6 F
+(\245) 90 112.67 T
+1 F
+(process migration) 103.74 112.67 T
+FMENDPAGE
+%%EndPage: "7" 6
+%%Page: "6" 6
+612 792 0 FMBEGINPAGE
+0 10 Q
+0 X
+0 K
+(6) 303.22 59.28 T
+1 11 Q
+0.28 0.39 (Now suppose that a second user process wants to map the same f) 90 712.67 B
+0.28 0.39 (ile in after the server has) 402.26 712.67 B
+0.28 0.13 (requested cleaning but before the server has received the callback RPC. Should the server wait) 90 699.67 B
+0.28 0 (until the old) 90 686.67 B
+4 F
+0.66 0 (Vm_Segment) 146.74 686.67 B
+1 F
+0.28 0 ( is gone before creating the new one? Such an approach might lead to) 212.71 686.67 B
+0.28 0.72 (performance problems or deadlocks. Alternatively) 90 673.67 B
+0.28 0.72 (, should the server try to reuse the) 346.05 673.67 B
+4 F
+0.57 (Vm_Seg) 90 660.67 P
+0.57 (ment) 129.55 660.67 P
+1 F
+0.24 (? This would complicate code that is already somewhat hairy) 155.92 660.67 P
+0.24 (. Or should the server) 426.16 660.67 P
+0.28 0.09 (create a new) 90 647.67 B
+4 F
+0.66 0.09 (Vm_Segment) 149.63 647.67 B
+1 F
+0.28 0.09 (? This would invalidate an initial assumption in the server) 216.45 647.67 B
+0.28 0.09 (\325) 479.41 647.67 B
+0.28 0.09 (s design,) 482.55 647.67 B
+(which was that at most one) 90 634.67 T
+4 F
+(Vm_Segment) 212.06 634.67 T
+1 F
+( would exist at any time for a given \336le.) 277.98 634.67 T
+0.28 0.12 (The Sprite server currently takes the f) 90 609.67 B
+0.28 0.12 (irst choice: it waits for the old) 261.54 609.67 B
+4 F
+0.66 0.12 (Vm_Segment) 401.98 609.67 B
+1 F
+0.28 0.12 ( to go away) 469.06 609.67 B
+0.28 0.03 (before creating a new one. This approach did not seem to cause problems during development or) 90 596.67 B
+0.12 (tuning. Nonetheless, for production use it may be better to reuse the) 90 583.67 P
+4 F
+0.28 (Vm_Segment) 392.26 583.67 P
+1 F
+0.12 (, at least while) 458.18 583.67 P
+(the segment is being cleaned.) 90 570.67 T
+3 12 Q
+(3.3) 90 537 T
+(copyin\050\051 failur) 117 537 T
+(es) 190.41 537 T
+1 11 Q
+0.28 0.03 (Another problem that cropped up during development was how to implement) 90 519.67 B
+4 F
+0.66 0.03 (copyin) 437.86 519.67 B
+1 F
+0.28 0.03 ( correctly) 477.6 519.67 B
+0.28 0.03 (.) 519.25 519.67 B
+0.28 0.12 (One obvious implementation of) 90 506.67 B
+4 F
+0.66 0.12 (copyin) 236.91 506.67 B
+1 F
+0.28 0.12 ( uses) 277.18 506.67 B
+4 F
+0.66 0.12 (vm_read) 302.87 506.67 B
+1 F
+0.28 0.12 ( to get the desired bytes from the user) 349.85 506.67 B
+0.28 0.03 (process and then uses) 90 493.67 B
+4 F
+0.66 0.03 (vm_write) 189.48 493.67 B
+1 F
+0.28 0.03 ( or) 242.48 493.67 B
+4 F
+0.66 0.03 (bcopy) 257.81 493.67 B
+1 F
+0.28 0.03 ( to write the bytes into the server) 290.93 493.67 B
+0.28 0.03 (\325) 438.77 493.67 B
+0.28 0.03 (s buf) 441.86 493.67 B
+0.28 0.03 (fer) 463.77 493.67 B
+1 9 Q
+0.22 0.03 (2) 476.07 498.07 B
+1 11 Q
+0.28 0.03 (. Such an) 480.59 493.67 B
+0.28 0.01 (implementation is simple to code, and it can leave much of the error checking to) 90 480.67 B
+4 F
+0.66 0.01 (vm_read) 450.47 480.67 B
+1 F
+0.28 0.01 ( \050e.g.,) 496.66 480.67 B
+(to verify that the given user address range is valid\051.) 90 467.67 T
+0.28 0.24 (Unfortunately) 90 442.67 B
+0.28 0.24 (,) 154 442.67 B
+4 F
+0.66 0.24 (vm_read) 160.25 442.67 B
+1 F
+0.28 0.24 ( only checks whether the user) 208.05 442.67 B
+0.28 0.24 (\325) 346.99 442.67 B
+0.28 0.24 (s address range is mapped; it doesn\325) 350.28 442.67 B
+0.28 0.24 (t) 518.94 442.67 B
+0.25 (check whether the bytes are actually accessible. If any page in the requested range is not in mem-) 90 429.67 P
+0.28 0.09 (ory) 90 416.67 B
+0.28 0.09 (, the server won\325) 104.19 416.67 B
+0.28 0.09 (t discover an accessibility problem until it tries to use the bytes, the page-in) 180.13 416.67 B
+0.28 0 (fails, and the server gets an address exception. This design might be acceptable for a system such) 90 403.67 B
+-0.14 (as UNIX, because the backing store is usually a local disk, and failures should be very rare. Unfor-) 90 390.67 P
+0.28 0.09 (tunately) 90 377.67 B
+0.28 0.09 (, this design is not acceptable for Sprite because the backing store is a Sprite f) 125.39 377.67 B
+0.28 0.09 (ile server) 477.95 377.67 B
+0.28 0.09 (,) 519.25 377.67 B
+(which is subject to arbitrary \050and sometimes frequent\051 failures.) 90 364.67 T
+0.03 (This means that the Sprite server must catch its own addressing exceptions. The exception handler) 90 339.67 P
+0.28 0.03 (must check whether the exception happened during a) 90 326.67 B
+4 F
+0.66 0.03 (copyin) 329.64 326.67 B
+1 F
+0.28 0.03 ( or) 369.35 326.67 B
+4 F
+0.66 0.03 (copyout) 384.64 326.67 B
+1 F
+0.28 0.03 (, so that it can either) 430.96 326.67 B
+0.01 (panic or cause the copy operation to fail gracefully) 90 313.67 P
+0.01 (. The Sprite server does not currently have such) 312.5 313.67 P
+0.28 0.12 (an exception handler) 90 300.67 B
+0.28 0.12 (, but f) 184.03 300.67 B
+0.28 0.12 (ile server failures were infrequent enough that they did not seriously) 210.75 300.67 B
+0.28 0.11 (impede development or tuning. Nonetheless, it would be necessary to add an address exception) 90 287.67 B
+(handler before putting the Sprite server in production use.) 90 274.67 T
+3 12 Q
+(3.4) 90 241 T
+(Maintaining internal interfaces) 117 241 T
+1 11 Q
+0.28 0.1 (Maintaining Sprite\325) 90 223.67 B
+0.28 0.1 (s internal interfaces also required some ef) 177.89 223.67 B
+0.28 0.1 (fort. Native Sprite is like UNIX in) 366.59 223.67 B
+0.28 0.18 (that user processes run in \322kernel mode\323 after an interrupt or after causing a trap. As a conse-) 90 210.67 B
+0.26 (quence, native Sprite was designed so that a process can kill or suspend only itself. An attempt to) 90 197.67 P
+0.03 (kill or suspend a dif) 90 184.67 P
+0.03 (ferent process is simply a request, which the tar) 176.94 184.67 P
+0.03 (get process eventually acts on.) 385.47 184.67 P
+0.28 0.22 (In contrast, the Sprite server is a separate Mach task that user processes invoke via RPCs. T) 90 159.67 B
+0.28 0.22 (o) 516.5 159.67 B
+0.28 0.01 (main) 90 146.67 B
+0.28 0.01 (tain the illusion of a \322current process\323 that has trapped into the kernel, the Sprite server uses) 112 146.67 B
+-0.1 (the C Threads local data package to bind a user process to the thread that is handling that process\325) 90 133.67 P
+-0.1 (s) 517.72 133.67 P
+0.17 (RPC. Unfortunately) 90 120.67 P
+0.17 (, this approach has some problems. First, special care is needed, e.g., in) 177.34 120.67 P
+4 F
+0.4 (exit) 495.63 120.67 P
+1 F
+0.28 0.17 (and) 90 107.67 B
+4 F
+0.66 0.17 (exec) 109.55 107.67 B
+1 F
+0.28 0.17 (, to ensure that the threads correctly manage internal resources like buf) 136.58 107.67 B
+0.28 0.17 (fers. Second,) 462.68 107.67 B
+90 85.01 522 98.01 C
+72 93.01 180 93.01 2 L
+0.25 H
+2 Z
+0 X
+0 K
+N
+0 0 612 792 C
+1 9 Q
+0 X
+0 K
+(2.  Of the two,) 90 79.01 T
+4 F
+(bcopy) 144.17 79.01 T
+1 F
+( is simpler and usually faster; see Section 5.2.2.) 171.13 79.01 T
+FMENDPAGE
+%%EndPage: "6" 5
+%%Page: "5" 5
+612 792 0 FMBEGINPAGE
+0 10 Q
+0 X
+0 K
+(5) 303.22 59.28 T
+4 11 Q
+0.66 0.02 (Vm_MakeAcces) 90 712.67 B
+0.66 0.02 (sible) 169.3 712.67 B
+1 F
+0.28 0.02 (. Note that Step 2 requires that the Sprite server know the name port for) 202.35 712.67 B
+-0.26 (every memory object that it has created. Unfortunately) 90 699.67 P
+-0.26 (, Mach uses an asynchronous callback to tell) 327.91 699.67 P
+0.28 0.69 (the Sprite server what each memory object\325) 90 686.67 B
+0.28 0.69 (s name port is. During early development) 311.44 686.67 B
+4 F
+0.66 0.35 (Vm_MakeAc) 90 673.67 B
+0.66 0.35 (cessible) 152.49 673.67 B
+1 F
+0.28 0.35 ( frequently failed because it was unable to f) 208.04 673.67 B
+0.28 0.35 (ind the name port that) 417.08 673.67 B
+4 F
+0.66 0.09 (vm_region) 90 660.67 B
+1 F
+0.28 0.09 ( had returned, which happened because Mach had not yet registered the name port) 150.14 660.67 B
+0.1 (with the server) 90 647.67 P
+0.1 (. The \336x for this problem was to have the code in Step 2 read from the user address) 154.9 647.67 P
+0.05 (before looking up the name port. This forced Mach to \336nish initializing the memory object, which) 90 634.67 P
+(provided the name port to the server) 90 621.67 T
+(.) 248.66 621.67 T
+0.14 (For a more involved example, consider what the Sprite server must do to clean up when a process) 90 419.69 P
+0.28 0.63 (with a mapped f) 90 406.69 B
+0.28 0.63 (ile exits. As shown in Figure 3, Sprite represents the mapped f) 170.75 406.69 B
+0.28 0.63 (ile as a) 486.53 406.69 B
+4 F
+0.66 0.08 (Vm_Seg) 90 393.69 B
+0.66 0.08 (ment) 130 393.69 B
+1 F
+0.28 0.08 (, which contains a handle for the f) 156.66 393.69 B
+0.28 0.08 (ile as well as ports for the corresponding Mach) 310.1 393.69 B
+0.28 0.03 (memory object. When the process exits, the server asks the kernel to clean any dirty pages in the) 90 380.69 B
+-0.19 (memory object. It then asks the kernel to delete the memory object. Eventually the kernel responds) 90 367.69 P
+0 (with a callback RPC, informing the server that it can null out its remaining references to the mem-) 90 354.69 P
+(ory object and free the) 90 341.69 T
+4 F
+(Vm_Segment) 191.59 341.69 T
+1 F
+(.) 257.51 341.69 T
+162 441.03 450 618 C
+162 486.02 450 594.03 R
+7 X
+0 K
+V
+1 11 Q
+0 X
+(1.) 162 586.69 T
+0.28 0.09 (Use) 175.74 586.69 B
+4 F
+0.66 0.09 (vm_region) 196.2 586.69 B
+1 F
+0.28 0.09 ( to get the name port of the memory object) 256.3 586.69 B
+(for the given user address.) 175.75 574.45 T
+(2.) 162 556.2 T
+0.28 0.27 (Use the name port to f) 175.74 556.2 B
+0.28 0.27 (ind the memory object \050e.g., using a) 280.45 556.2 B
+(hash table or linked list in the server\051.) 175.75 543.96 T
+(3.) 162 525.71 T
+0.28 0.03 (Convert the user address to the corresponding memory object) 175.74 525.71 B
+(of) 175.75 513.47 T
+(fset.) 184.7 513.47 T
+(4.) 162 495.22 T
+(Map the memory object page into the Sprite server) 175.74 495.22 T
+(.) 398.49 495.22 T
+162 457.23 450 471.62 R
+7 X
+V
+162 456.62 450 462.62 C
+162 460.61 450 460.61 2 L
+0.25 H
+2 Z
+0 X
+0 K
+N
+162 441.03 450 618 C
+5 9 Q
+0 X
+0 K
+(FIGURE 2. Steps for Vm_MakeAccessible.) 162 465.62 T
+0 0 612 792 C
+162 96.82 450 338.02 C
+1 H
+0 Z
+0 X
+0 K
+90 450 9 4.9 217.44 257.93 A
+208.44 258.43 227.19 286.68 R
+7 X
+V
+226.44 286.33 226.44 258.43 2 L
+2 Z
+0 X
+N
+162 110.86 450 128.86 R
+7 X
+V
+162 113.86 450 119.86 C
+162 117.85 450 117.85 2 L
+0.25 H
+2 Z
+0 X
+0 K
+N
+162 96.82 450 338.02 C
+5 9 Q
+0 X
+0 K
+(FIGURE 3. Data structures for a mapped \336le.) 162 122.86 T
+7 X
+90 450 9 4.5 217.44 286.33 G
+1 H
+0 Z
+0 X
+90 450 9 4.5 217.44 286.33 A
+208.22 286.33 208.22 258.47 2 L
+2 Z
+N
+244.44 182.83 298.44 236.83 R
+N
+352.44 182.83 406.44 236.83 R
+N
+325.44 326.83 325.44 146.83 2 L
+7 X
+V
+3 H
+11 X
+N
+5 10 Q
+0 X
+(Mach) 353.2 150.74 T
+(Sprite) 272.33 150.74 T
+1 F
+(Vm_Segment) 244.44 245.83 T
+(memory_object) 343.7 246.61 T
+303.64 233.83 298.44 236.83 303.64 239.83 303.64 236.83 4 Y
+V
+347.24 239.83 352.44 236.83 347.24 233.83 347.24 236.83 4 Y
+V
+303.64 236.83 347.24 236.83 2 L
+1 H
+0 Z
+N
+228.02 249.05 226.44 254.84 232.24 253.31 230.13 251.18 4 Y
+V
+244.44 236.83 230.13 251.17 2 L
+2 Z
+N
+(Fs_Stream) 208.44 299.83 T
+0 0 612 792 C
+FMENDPAGE
+%%EndPage: "5" 4
+%%Page: "4" 4
+612 792 0 FMBEGINPAGE
+0 10 Q
+0 X
+0 K
+(4) 303.22 59.28 T
+1 11 Q
+0.28 0.01 (W) 90 712.67 B
+0.28 0.01 (ith two exceptions, the Sprite server required no changes to the standard Mach 3.0 distribution.) 99.94 712.67 B
+0.28 0.1 (\050This doesn\325) 90 699.67 B
+0.28 0.1 (t count a few bug f) 146.53 699.67 B
+0.28 0.1 (ixes which have since been incorporated into the Mach release.\051) 231.91 699.67 B
+0.28 0.05 (The f) 90 686.67 B
+0.28 0.05 (irst exception was a couple small changes to improve networking performance; see Section) 113.41 686.67 B
+0.28 0.07 (5.1 for details. The second exception was to adopt the thread-local data package from the multi-) 90 673.67 B
+0.28 0.21 (server [1) 90 660.67 B
+0.28 0.21 (1] version of C Threads. This package made it easier for the Sprite server to bind an) 130.51 660.67 B
+0.28 0.14 (inter) 90 647.67 B
+0.28 0.14 (nal thread to a specif) 110.83 647.67 B
+0.28 0.14 (ic Sprite user process while handling a request from that process \050see) 205.88 647.67 B
+(Section 3.4\051.) 90 634.67 T
+0.28 0.13 (The Sprite server and emulation code use Mach IPC only for local communication. For remote) 90 609.67 B
+0.28 0.01 (communication, the Sprite server uses Sprite RPCs; Mach serves only as a high-level interface to) 90 596.67 B
+0.28 0.2 (the network. There were two reasons for this approach. First, it required no changes to native) 90 583.67 B
+0.28 0.18 (Sprite servers. Second, we believed that using Mach IPC for remote communication would be) 90 570.67 B
+(slow because of performance problems with the) 90 557.67 T
+4 F
+(netmsg) 303.27 557.67 T
+1 F
+( server) 342.82 557.67 T
+(.) 371.8 557.67 T
+0.28 0.04 (One dif) 90 532.67 B
+0.28 0.04 (ference between the UNIX and Sprite servers is how the emulation code is set up in each) 123.61 532.67 B
+0.02 (user process. The UNIX emulation code lives at a \336xed address, is inherited when a process forks,) 90 519.67 P
+0.28 0.05 (and is typically invoked by redirecting a system trap. The Sprite emulation code does not have a) 90 506.67 B
+0.28 0.11 (dedicated address space; it is simply a part of the C runtime library and is invoked by a normal) 90 493.67 B
+0.28 0.02 (procedure call. The disadvantage of this approach is that it complicates binary compatibility) 90 480.67 B
+0.28 0.02 (. The) 499.05 480.67 B
+0.28 0.02 (advantage is that it was easy to implement, and we could change it later \050e.g., after initial tuning\051) 90 467.67 B
+(without throwing away much code.) 90 454.67 T
+-0.27 (A more important dif) 90 429.67 P
+-0.27 (ference between the UNIX and Sprite servers is how they use external pagers.) 182.66 429.67 P
+0.28 0.02 (The UNIX server provides an external pager for mapped f) 90 416.67 B
+0.28 0.02 (iles, including program text, but it uses) 348.15 416.67 B
+0.28 0.04 (the Mach default pager for swap storage \050i.e., a process\325) 90 403.67 B
+0.28 0.04 (s heap and stack\051. The Sprite server pro-) 340.83 403.67 B
+-0.11 (vides an external pager that backs the entire address space of a user process, including its heap and) 90 390.67 P
+0.07 (stack. This design lets a process page from a network \336le server) 90 377.67 P
+0.07 (, as is done in native Sprite. Sprite) 371.05 377.67 P
+0.28 0.04 (uses network paging to support diskless operation\321almost all Sprite workstations are diskless\321) 90 364.67 B
+(and to support process migration.) 90 351.67 T
+0.2 (Most of these changes were straightforward to design and implement. Nonetheless, some changes) 90 326.67 P
+0.28 0.32 (presented unexpected dif) 90 313.67 B
+0.28 0.32 (f) 207.99 313.67 B
+0.28 0.32 (iculties. Many of the problems were related in some way to asyn-) 211.37 313.67 B
+0.28 0.02 (chronous interactions between the Sprite server) 90 300.67 B
+0.28 0.02 (, Sprite user processes, and Mach. The rest of this) 300.16 300.67 B
+0.28 0.32 (section will discuss some of the problems that arose during design and testing. None of the) 90 287.67 B
+0.28 0.15 (prob) 90 274.67 B
+0.28 0.15 (lems was insurmountable, but each required extra time to get the details of the design and) 110.75 274.67 B
+(implementation right.) 90 261.67 T
+3 12 Q
+(3.2) 90 228 T
+(Shar) 117 228 T
+(ed data structur) 141.44 228 T
+(es) 223.84 228 T
+1 11 Q
+0.28 0.26 (Some data structures, such as memory objects and process table entries, are logically shared) 90 210.67 B
+0.28 0.06 (between the Sprite server and Mach, and special care is needed to ensure that the data structures) 90 197.67 B
+(are managed correctly) 90 184.67 T
+(.) 186.9 184.67 T
+0.26 (For example, consider the Sprite internal routine) 90 159.67 P
+4 F
+0.64 (Vm_MakeAccessible) 307.89 159.67 P
+1 F
+0.26 (, which converts a user) 419.95 159.67 P
+-0.15 (address range to a kernel address range and guarantees that the kernel can access the range without) 90 146.67 P
+0.28 0.06 (faulting. The native Sprite kernel uses this routine in some places instead of) 90 133.67 B
+4 F
+0.66 0.06 (copyin) 434.28 133.67 B
+1 9 Q
+0.22 0.06 (1) 474.21 138.07 B
+1 11 Q
+0.28 0.06 ( to access) 478.77 133.67 B
+0.28 1.19 (user memory) 90 120.67 B
+0.28 1.19 (. Figure 2 outlines the steps for a Mach-based implementation of) 160.3 120.67 B
+90 95.01 522 108.01 C
+72 103.01 180 103.01 2 L
+0.25 H
+2 Z
+0 X
+0 K
+N
+0 0 612 792 C
+1 9 Q
+0 X
+0 K
+(1.  The actual name of the Sprite routine is) 90 89.01 T
+4 F
+(Vm_CopyIn) 245.51 89.01 T
+1 F
+(, but we\325ll generally use the names of UNIX equivalents) 294.04 89.01 T
+(throughout the paper) 90 79.01 T
+(.) 164.39 79.01 T
+FMENDPAGE
+%%EndPage: "4" 3
+%%Page: "3" 3
+612 792 0 FMBEGINPAGE
+0 10 Q
+0 X
+0 K
+(3) 303.22 59.28 T
+1 11 Q
+0.28 0.13 (The result is the system shown in Figure 1. User processes communicate with the Sprite server) 90 712.67 B
+0.28 0.04 (using Matchmaker RPCs, which use Mach interprocess communication \050IPC\051 as a transport. The) 90 699.67 B
+-0.16 (emulation code in each process can also make direct kernel requests \050e.g., to allocate scratch mem-) 90 686.67 P
+0.28 0.12 (ory\051. The Sprite server manipulates user processes and performs I/O by sending requests to the) 90 673.67 B
+0.28 0 (kernel. The server also acts as an external pager [20], so that Sprite f) 90 660.67 B
+0.28 0 (ile servers can provide back-) 394.45 660.67 B
+(ing store for processes.) 90 647.67 T
+0.28 0.17 (For some code, particularly for device management, the native Sprite routines mapped well to) 90 258.51 B
+-0.15 (Mach primitives, so they could be replaced by a simple facade. A few routines, such as the process) 90 245.51 P
+-0.23 (scheduler and the kernel debugger stub, did not require any replacement code at all. Other code did) 90 232.51 P
+-0.18 (require substantial rewriting, though as Section 4 shows, this was a small fraction of the total code.) 90 219.51 P
+(The rewritten code includes) 90 206.51 T
+6 F
+(\245) 90 187.51 T
+1 F
+0.28 0.09 (the guts of) 103.74 187.51 B
+4 F
+0.66 0.09 (fork) 154.81 187.51 B
+1 F
+0.28 0.09 ( and) 181.55 187.51 B
+4 F
+0.66 0.09 (exec) 203.92 187.51 B
+1 F
+0.28 0.09 (, which required substantial changes to work with the Mach task) 230.65 187.51 B
+(and thread primitives.) 103.75 174.51 T
+6 F
+(\245) 90 158.51 T
+1 F
+(the \322system call\323 code, which had to accept Matchmaker RPC requests instead of traps.) 103.74 158.51 T
+6 F
+(\245) 90 142.51 T
+1 F
+(an internal lock package, which was rewritten to sit on top of C Threads.) 103.74 142.51 T
+6 F
+(\245) 90 126.51 T
+1 F
+0.28 0.06 (the virtual memory code, which was rewritten to use Mach primitives and to provide a Sprite) 103.74 126.51 B
+(external pager) 103.75 113.51 T
+(.) 165.68 113.51 T
+162 279.85 450 644 C
+207.39 550.19 279.39 622.19 R
+0.5 H
+2 Z
+0 X
+0 K
+N
+207.39 514.19 279.39 550.19 R
+N
+207.39 442.19 405.39 478.19 R
+N
+333.39 514.19 405.39 622.19 R
+N
+5 10 Q
+(user process) 214.59 582.5 T
+(emulation) 221.79 535.7 T
+(library) 228.99 525.7 T
+(Sprite server) 340.59 564.59 T
+(Mach kernel) 279.39 456.59 T
+162 263.7 450 335.7 R
+7 X
+V
+5 9 Q
+0 X
+5.83 (FIGURE 1. Architecture of Sprite on Mach.) 162 329.7 P
+1 F
+5.24 (Each user process) 375.13 329.7 P
+4.9 (communicates with the Sprite server via emulation routines that use) 162 320.7 P
+2.02 (Matchmaker RPCs instead of system calls. The emulation routines and the) 162 311.7 P
+2 (server can also make direct kernel requests. The kernel mediates access to) 162 302.7 P
+162 284.7 450 290.7 C
+162 288.68 450 288.68 2 L
+0.25 H
+2 Z
+0 X
+0 K
+N
+162 279.85 450 644 C
+1 9 Q
+0 X
+0 K
+(devices like terminals, disks, and the network.) 162 293.7 T
+1 H
+0 Z
+90 450 13.67 4.9 303.7 391.29 A
+290.03 391.79 318.51 420.04 R
+7 X
+V
+317.37 419.69 317.37 391.79 2 L
+2 Z
+0 X
+N
+7 X
+90 450 13.67 4.5 303.7 419.69 G
+0 Z
+0 X
+90 450 13.67 4.5 303.7 419.69 A
+290.01 419.72 290.01 391.86 2 L
+2 Z
+N
+267.58 355.79 353.9 355.79 331.46 366.79 412.59 366.79 4 L
+0.5 H
+1 Z
+N
+213.64 391.8 250.54 429.01 R
+7 X
+V
+1 H
+2 Z
+0 X
+N
+218.03 396.09 246.42 424.72 R
+7 X
+V
+0 X
+N
+219.43 380.82 244.18 380.82 247.71 370.19 215.9 370.19 4 Y
+7 X
+V
+0 X
+N
+219.43 377.27 M
+ 217.18 381.01 207.39 387.15 216.06 391.22 D
+N
+222.96 377.29 240.63 377.29 2 L
+N
+219.42 373.75 244.17 373.75 2 L
+N
+222.39 508.99 225.39 514.19 228.39 508.99 225.39 508.99 4 Y
+V
+228.39 483.38 225.39 478.19 222.39 483.38 225.39 483.38 4 Y
+V
+225.39 508.99 225.39 483.38 2 L
+0.5 H
+0 Z
+N
+386.19 508.99 389.19 514.19 392.19 508.99 389.19 508.99 4 Y
+V
+392.19 483.38 389.19 478.19 386.19 483.38 389.19 483.38 4 Y
+V
+389.19 508.99 389.19 483.38 2 L
+N
+240.92 508.11 243.39 514.19 247.42 509.01 244.17 508.56 4 Y
+V
+2 Z
+189 270 63 36 306.39 514.19 A
+356.35 509.01 360.39 514.19 362.86 508.11 359.61 508.56 4 Y
+V
+270 351 63 36 297.39 514.19 A
+299.79 436.99 302.79 442.19 305.79 436.99 302.79 436.99 4 Y
+V
+305.79 429.39 302.79 424.19 299.79 429.39 302.79 429.39 4 Y
+V
+302.79 436.99 302.79 429.39 2 L
+0 Z
+N
+222.39 436.99 225.39 442.19 228.39 436.99 225.39 436.99 4 Y
+V
+228.39 434.78 225.39 429.59 222.39 434.78 225.39 434.78 4 Y
+V
+225.39 436.99 225.39 434.78 2 L
+N
+369.99 436.99 372.99 442.19 375.99 436.99 372.99 436.99 4 Y
+V
+375.99 373.58 372.99 368.39 369.99 373.58 372.99 373.58 4 Y
+V
+372.99 436.99 372.99 373.58 2 L
+N
+0 0 612 792 C
+FMENDPAGE
+%%EndPage: "3" 2
+%%Page: "2" 2
+612 792 0 FMBEGINPAGE
+0 10 Q
+0 X
+0 K
+(2) 303.22 59.28 T
+3 12 Q
+(2.) 90 712 T
+(Why mix Sprite and Mach?) 117 712 T
+1 11 Q
+0.28 0.04 (The Sprite project became interested in Mach for three reasons: to make Sprite more portable, to) 90 690.67 B
+0.05 (make Sprite easier to distribute to external sites, and to verify whether Mach is a suitable platform) 90 677.67 P
+(for building distributed systems.) 90 664.67 T
+0.28 0.24 (The Sprite group at Berkeley has always been small \0505\3208 people\051, and very few sites outside) 90 639.67 B
+0.28 0.24 (Ber) 90 626.67 B
+0.28 0.24 (keley run Sprite. T) 106.57 626.67 B
+0.28 0.24 (ime spent doing ports, or time spent preparing and supporting external) 193.88 626.67 B
+0.28 0.08 (releases, is time that cannot be spent doing research, and a small group cannot easily af) 90 613.67 B
+0.28 0.08 (ford this) 484.14 613.67 B
+0.28 0.15 (lost time. W) 90 600.67 B
+0.28 0.15 (e hoped that by implementing Sprite as a Mach-based server) 145.53 600.67 B
+0.28 0.15 (, we could rely on the) 422.21 600.67 B
+0.06 (Mach community to write most of the code to support new hardware \050e.g., device drivers and low-) 90 587.67 P
+-0.1 (level memory management code\051. W) 90 574.67 P
+-0.1 (e also hoped that by distributing Sprite as a server) 251.35 574.67 P
+-0.1 (, rather than) 469.42 574.67 P
+-0.2 (as a complete operating system, we could reduce the amount of time that our staf) 90 561.67 P
+-0.2 (f spent supporting) 443.06 561.67 P
+(external sites.) 90 548.67 T
+0.28 0.21 (On the other hand, we were concerned about the potential performance loss of a server) 90 523.67 B
+0.28 0.21 (-based) 492.29 523.67 B
+0.28 0.04 (sys) 90 510.67 B
+0.28 0.04 (tem. Although the UNIX server [9] had demonstrated that a server) 104.15 510.67 B
+0.28 0.04 (-based UNIX system could) 400.97 510.67 B
+0.28 0.19 (perform adequately) 90 497.67 B
+0.28 0.19 (, and the shared memory server [8] had demonstrated that Mach was suf) 178.65 497.67 B
+0.28 0.19 (f) 511.67 497.67 B
+0.28 0.19 (i-) 514.91 497.67 B
+0.28 0.25 (ciently f) 90 484.67 B
+0.28 0.25 (lexible to support a system like Sprite, there were no servers that provided complete) 128.23 484.67 B
+0.28 0.01 (oper) 90 471.67 B
+0.28 0.01 (ating system support with heavy reliance on the network. W) 109.56 471.67 B
+0.28 0.01 (e concluded that Sprite would be) 375.98 471.67 B
+(an excellent test case for Mach\325) 90 458.67 T
+(s ability to support high-functionality distributed systems.) 228.81 458.67 T
+3 12 Q
+(3.) 90 422 T
+(Server design and issues) 117 422 T
+1 11 Q
+(Four design goals for the Sprite server emer) 90 400.67 T
+(ged from the project goals listed in Section 2.) 282.94 400.67 T
+(1.) 90 381.67 T
+-0.12 (The server should have as little machine-dependent code as possible, so as to make it more por-) 103.74 381.67 P
+(table.) 103.75 369.42 T
+(2.) 90 351.18 T
+(The design should be simple, so as not to complicate future Sprite research.) 103.74 351.18 T
+(3.) 90 332.93 T
+0.12 (The design should minimize changes to existing Sprite code, so as to reduce development time) 103.74 332.93 P
+(and to simplify the eventual integration of new features and bug \336xes from native Sprite.) 103.75 320.69 T
+(4.) 90 302.44 T
+0.28 0.04 (Performance should be comparable to native Sprite, though slight performance degradation is) 103.74 302.44 B
+(acceptable in return for improved portability) 103.75 290.2 T
+(.) 298.62 290.2 T
+0.16 (These goals led to a design that is generally similar to that of the UNIX server) 90 265.95 P
+0.16 (. Nonetheless, there) 435.03 265.95 P
+0.28 0.24 (are important dif) 90 252.95 B
+0.28 0.24 (ferences between the two servers. Furthermore, there were important design) 168.21 252.95 B
+(issues that our reading of the Mach literature had not prepared us for) 90 239.95 T
+(.) 390.84 239.95 T
+3 12 Q
+(3.1) 90 206.29 T
+(Design overview) 117 206.29 T
+1 11 Q
+0.28 0.16 (As a f) 90 188.95 B
+0.28 0.16 (irst approximation, Mach can be thought of as a high-level abstract machine. It provides) 117.15 188.95 B
+0.28 0.31 (pro) 90 175.95 B
+0.28 0.31 (cesses, scheduling, a simple interface for accessing a process\325) 105.57 175.95 B
+0.28 0.31 (s memory) 398.23 175.95 B
+0.28 0.31 (, and a machine-) 443.91 175.95 B
+0.28 0.31 (indepen) 90 162.95 B
+0.28 0.31 (dent interface for accessing local devices such as disks or networks. The C Threads) 126.95 162.95 B
+-0.22 (library) 90 149.95 P
+-0.22 ([5] provides threads, locks, and condition variables. Thus the \336rst step in porting Sprite was) 122.04 149.95 P
+0.28 0.17 (to replace low-level native code from the Sprite kernel with equivalent Mach-based code. The) 90 136.95 B
+0.28 0 (sec) 90 123.95 B
+0.28 0 (ond step was to replace system call stubs in Sprite\325) 104.04 123.95 B
+0.28 0 (s C runtime library with emulation routines) 329.77 123.95 B
+0.28 0.05 (that make Matchmaker RPC requests to the Sprite server) 90 110.95 B
+0.28 0.05 (. These steps are similar to the transfor-) 344.05 110.95 B
+(mation that was used to port UNIX to Mach [3, 9].) 90 97.95 T
+FMENDPAGE
+%%EndPage: "2" 1
+%%Page: "1" 1
+612 792 0 FMBEGINPAGE
+90 18.04 522 67.54 R
+7 X
+0 K
+V
+1 8 Q
+0 X
+0.19 (Permission has been granted by the USENIX Association to reprint the above article, which appeared in) 90 62.2 P
+2 F
+0.19 (The) 428.11 62.2 P
+0.19 (Pr) 442.29 62.2 P
+0.19 (oceedings of the Thir) 449.99 62.2 P
+0.19 (d) 518 62.2 P
+(USENIX Mach Symposium) 90 52.2 T
+1 F
+(, April 1993. Copyright) 176.16 52.2 T
+7 F
+(\343) 255.45 52.2 T
+1 F
+( USENIX Association, 1993.) 261.77 52.2 T
+3 14 Q
+-0.1 (Sprite on Mach) 260.42 674.67 S
+3 12 Q
+(Michael D. Kupfer) 257.86 641 T
+(University of California, Berkeley\240) 216.39 621 T
+0 9 Q
+0.76 (Sprite is a distributed operating system that supports a fast, single-image network) 126 587 P
+2.24 (\336le system and transparent process migration. Over a period of 19 months we) 126 575 P
+1.03 (ported Sprite to run as a server on top of the Mach 3.0 microkernel. Although the) 126 563 P
+0.64 (resulting server does not implement some Sprite features, it can run in an existing) 126 551 P
+(Sprite cluster) 126 539 T
+(, and it supports standard UNIX programs like vi, gcc, and make.) 182.94 539 T
+2.54 (Porting Sprite to Mach was generally straightforward, though there were some) 126 517 P
+3.76 (dif\336culties. Many of the problems were related to asynchronous interactions) 126 505 P
+1.08 (between the Sprite server) 126 493 P
+1.08 (, Mach, and Sprite user processes. Others resulted from) 238.13 493 P
+(trying to maintain native Sprite\325) 126 481 T
+(s internal interfaces in the Sprite server) 260.01 481 T
+(.) 428.35 481 T
+1.18 (The Sprite server is 22% smaller than an equivalent Sprite kernel, and it contains) 126 459 P
+3.56 (almost no machine-dependent code. These improvements should signi\336cantly) 126 447 P
+0.91 (simplify porting Sprite to new hardware platforms. Unfortunately) 126 435 P
+0.91 (, the Sprite server) 407.35 435 P
+0.63 (runs the Andrew benchmark at only 38% of the speed of native Sprite. None of the) 126 423 P
+0.64 (performance problems appears insurmountable, but they could require a long time) 126 411 P
+(to track down and \336x.) 126 399 T
+3 12 Q
+(1.) 90 362 T
+(Intr) 117 362 T
+(oduction) 137.43 362 T
+1 11 Q
+0.28 0.35 (Sprite is a distributed operating system that was developed at the University of California,) 90 340.67 B
+0.09 (Berke) 90 327.67 P
+0.09 (ley [14]. It features a fast, single-image network \336le system [19], transparent process migra-) 116.23 327.67 P
+-0.12 (tion [6], and a high-performance log-structured local \336le system [17]. Sprite was originally written) 90 314.67 P
+0.28 0.03 (from scratch to support the SPUR multiprocessor project at Berkeley [10], so the kernel is multi-) 90 301.67 B
+(threaded and uses \336ne-grain locking.) 90 288.67 T
+0.28 0.03 (W) 90 263.67 B
+0.28 0.03 (e have ported the Sprite kernel to run as a server on top of Mach 3.0. The server does not have) 99.52 263.67 B
+0.13 (complete Sprite functionality) 90 250.67 P
+0.13 (, but it can run most UNIX commands as a client of native Sprite \336le) 217.72 250.67 P
+0.28 0.01 (servers. W) 90 237.67 B
+0.28 0.01 (e used the modif) 136.48 237.67 B
+0.28 0.01 (ied Andrew benchmark [15] to partially tune the server and to analyze) 209.79 237.67 B
+(the remaining performance problems.) 90 224.67 T
+-0.26 (Section 2 of this paper explains why we ported Sprite to Mach. Section 3 sketches the design of the) 90 199.67 P
+0.28 0.06 (Sprite server and discusses a few of the problems that arose during design and testing. Section 4) 90 186.67 B
+0.24 (shows how the Sprite server is smaller and more portable than native Sprite. Section 5 shows that) 90 173.67 P
+-0.15 (the server is signi\336cantly slower than native Sprite, and it explains some of the known bottlenecks.) 90 160.67 P
+0.28 0.13 (Section 6 evaluates the Sprite server) 90 147.67 B
+0.28 0.13 (, and Section 7 lists possible future work. Section 8 closes) 255.45 147.67 B
+(with some general conclusions from the project.) 90 134.67 T
+90 72 522 111.6 R
+7 X
+V
+90 98.6 522 111.6 C
+72 106.6 180 106.6 2 L
+0.25 H
+2 Z
+0 X
+0 K
+N
+0 0 612 792 C
+1 9 Q
+0 X
+0 K
+(\240 Author) 90 92.6 T
+(\325) 122.53 92.6 T
+(s current address: SunSoft, Inc., 2550 Garcia A) 125.03 92.6 T
+(venue, MS MTV05-40, Mountain V) 294.1 92.6 T
+(iew) 423.86 92.6 T
+(, CA 94043-1) 436.26 92.6 T
+(100.) 485.11 92.6 T
+4 F
+(kupfer@eng.sun.com) 90 82.6 T
+FMENDPAGE
+%%EndPage: "1" 0
+%%Trailer
+%%BoundingBox: 0 0 612 792
+%%Pages: 16 -1
+%%DocumentFonts: Helvetica-Bold
+%%+ Times-Roman
+%%+ Times-Italic
+%%+ Times-Bold
+%%+ Courier
+%%+ Helvetica
+%%+ Courier-Bold
+%%+ Symbol

@@ -1,0 +1,225 @@
+head     1.2;
+branch   ;
+access   ;
+symbols  ;
+locks    shirriff:1.2; strict;
+comment  @ * @;
+
+
+1.2
+date     90.12.01.22.24.11;  author shirriff;  state Exp;
+branches ;
+next     1.1;
+
+1.1
+date     90.12.01.22.21.37;  author shirriff;  state Exp;
+branches ;
+next     ;
+
+
+desc
+@@
+
+
+1.2
+log
+@*** empty log message ***
+@
+text
+@/*
+ * Program to process a trace file.
+ */
+#include <stdio.h>
+#include <signal.h>
+#include <sprite.h>
+#include <sysStats.h>
+#include <getrec.h>
+
+main(argc,argv)
+int argc;
+char **argv;
+{
+    int status;
+    int args[2];
+    int i;
+    char *dataPtr;
+    char buf[1000];
+    Sys_TracelogRecord *tracePtr = (Sys_TracelogRecord *)buf;
+    Sys_TracelogHeader hdr;
+    FILE *inFile;
+    traceFile inTraceFile;
+
+    if (argc<2) {
+	fprintf(stderr,"Usage: sospread filename(s)\n");
+	exit(1);
+    }
+    for (i=1;i<argc;i++) {
+	if (argc != 1) {
+	    printf("--- Processing %s ---\n", argv[i]);
+	}
+	inFile = fopen(argv[i],"r");
+	if (inFile==NULL) {
+	   perror("open");
+	   exit(-1);
+	}
+	inTraceFile.stream = inFile;
+
+	getHeader(&inTraceFile, &hdr);
+	printf("From %d (%s) %32.32s\n", hdr.machineID,
+		hdr.machineType, hdr.kernel);
+	while (getNextRecord(&inTraceFile,buf)==0) {
+	    dorec(tracePtr);
+	}
+	fclose(inFile);
+    }
+}
+@
+
+
+1.1
+log
+@Initial revision
+@
+text
+@d8 1
+a8 3
+#include <kernel/sospRecord.h>
+#include <hash.h>
+#include <main.h>
+a9 4
+Hash_Table *tablePtr = NULL;
+
+long startSec, startUsec;
+
+d22 1
+a22 2
+    int recordLen;
+    nameRec *nameRecPtr;
+d25 1
+a25 1
+	fprintf(stderr,"Usage: sospread -i init filename(s) \n");
+a27 43
+    if (argv[1][0]=='-') {
+	if (argc<4) {
+	    fprintf(stderr,"Usage: sospread -i init filename(s) \n");
+	    exit(1);
+	}
+	inFile = fopen(argv[2],"r");
+	if (inFile==NULL) {
+	   perror("open");
+	   exit(-1);
+	}
+	tablePtr = (Hash_Table *)malloc(sizeof(Hash_Table));
+	Hash_InitTable(tablePtr, 0, 4);
+	while (1) {
+	    int created;
+	    Hash_Entry *entryPtr;
+	    nameRec *nameRecPtr;
+	    nameRecPtr = (nameRec *)malloc(sizeof(nameRec));
+	    if (fscanf(inFile,"%s %d %d %d %d", nameRecPtr->name,
+		&nameRecPtr->fileID[0], &nameRecPtr->fileID[1],
+		&nameRecPtr->fileID[2], &nameRecPtr->fileID[3]) != 5) break;
+	    entryPtr = Hash_CreateEntry(tablePtr, nameRecPtr->fileID,
+		    &created);
+	    if (created) {
+		entryPtr->clientData = (ClientData) nameRecPtr;
+	    } else {
+#if 0
+		fprintf(stderr,"%s (%d %d %d %d) already exists!\n",
+			nameRecPtr->name, nameRecPtr->fileID[0],
+			nameRecPtr->fileID[1], nameRecPtr->fileID[2],
+			nameRecPtr->fileID[3]);
+		fprintf(stderr,"The old name is %s (%d %d %d %d)\n",
+			((nameRec *)(entryPtr->clientData))->name,
+			((nameRec *)(entryPtr->clientData))->fileID[0],
+			((nameRec *)(entryPtr->clientData))->fileID[1],
+			((nameRec *)(entryPtr->clientData))->fileID[2],
+			((nameRec *)(entryPtr->clientData))->fileID[3]);
+#endif
+	    }
+	}
+	argc -= 2;
+	argv += 2;
+	fclose(inFile);
+    }
+d37 1
+d39 1
+a39 1
+	getHeader(inFile, &hdr);
+d42 1
+a42 3
+	startSec = hdr.bootTime[0];
+	startUsec = hdr.bootTime[1];
+	while (getNextRecord(inFile,buf)==0) {
+a46 70
+}
+
+int traceRecCount;
+int numRecs;
+/*
+ * Get the header.
+ * Return 0 for success, -1 for failure.
+ */
+int
+getHeader(file, hdr)
+FILE *file;
+Sys_TracelogHeader *hdr;
+{
+    int status;
+    status =fread(hdr, sizeof(Sys_TracelogHeader), 1, file);
+    if (status == 0) {
+	return -1;
+    }
+    if (hdr->lostRecords>0) {
+	fprintf(stderr,"*** Lost %d records\n", hdr->lostRecords);
+    }
+    traceRecCount = 0;
+    numRecs = hdr->numRecs;
+}
+
+/*
+ * Get the next record.
+ * Return 0 for success, -1 for failure.
+ */
+int
+getNextRecord(file,buf)
+char *buf;
+{
+    int status;
+    int recordLen;
+    Sys_TracelogHeader hdr;
+    Sys_TracelogRecord *tracePtr = (Sys_TracelogRecord *)buf;
+    /*
+    printf("traceRecCount %d, numRecs: %d\n", traceRecCount, numRecs);
+    */
+    if (traceRecCount == numRecs) {
+	if (getHeader(file,&hdr)<0) {
+	    return -1;
+	}
+    }
+    status = fread(buf,sizeof(int),1,file);
+    if (status==0) {
+	if (traceRecCount == numRecs) {
+	    return -1;
+	} else {
+	    fprintf(stderr,"Too early end of log at %d instead of %d\n",
+		   traceRecCount, numRecs);
+	    exit(-1);
+	}
+    }
+    traceRecCount++;
+    if (traceRecCount > numRecs) {
+	fprintf(stderr,"Warning: too many records in log\n");
+    }
+    recordLen = tracePtr->recordLen&TRACELOG_BYTEMASK;
+    if (recordLen <=0 || recordLen > 500) {
+	fprintf(stderr,"Record too long: %d\n", recordLen);
+	exit(-1);
+    }
+    status = fread(buf+sizeof(int), recordLen-sizeof(int), 1, file);
+    if (status==0) {
+	fprintf(stderr,"Truncated record\n");
+	exit(-1);
+    }
+    return 0;
+@

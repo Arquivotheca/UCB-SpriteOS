@@ -1,0 +1,44 @@
+\begin{figure}[h]
+ \begin{center}
+ \sspace		% single space
+\fbox{ \vbox{
+  \pspicture{/sprite/users/douglis/sprite/migration/dcs-timeline.ps}{1in}
+  \begin{tabbing}
+    \hspace*{3em} \= Label \hspace{1em} \= \hspace{1em}\=  \hspace{1em}\= Remote node
+    told to resume process  \hspace*{1em} \= Dura\=tion (ms) \hspace*{2em} 
+    \= Cumulati\=ve Time (ms) \kill
+    \> \hspace{-1em} \underline{Label} \>  \hspace{7em}
+    \underline{Event}  \> \> \> \hspace{-2em} \underline{Duration
+    (ms)} \> \> \hspace{-2em} \underline{Cumulative Time (ms)} \+ \\
+	\\
+    \raisebox{-.5em}{A}   \> {\em Issue migration request\/} \> \>\> \\
+    \> \> Confirm with remote node \> \> \> 5\' \> \`5\\
+    \raisebox{-.5em}{B} \> \> {\em Process traps\/} \> \>  \\
+    \> \> \>  Transfer process state \>\>  3\' \> \`8 \\
+    C \> \> \>  Transfer code segment \> \> 10\' \> \`18\\
+    D \> \> \>  Transfer stack segment \> \> 77\' \>  \`95 \\
+    E \>  \> \>  Transfer heap segment \> \>  419\' \> \`514\\
+    F \> \> \>  Transfer files \>\>  39\' \> \`553\\
+    G \> \> \> Tell remote node  to resume process\>\>  4\' \>  \`557\\
+    H \>  {\em Migration request completes\/} \> \>  \\
+  \end{tabbing}
+  }
+ }
+\caption{Time-line for migration of a process touching 25 8K-byte heap
+pages, having
+three open file descriptors.  The
+dominating costs are  for transferring the stack, heap, and open
+files of the process.  The entire operation takes approximately 560
+milliseconds.  All times listed are real time; CPU time was not
+measured.  (Note: the resolution of the Sun-3 timer chip is 10
+milliseconds, which is too long an interval to obtain accurate values
+for the time taken at each step.   The time-line is therefore a
+composite average of 10 identical migrations.)  
+%{\em AJS: ``"total time" is a terrible name.  Might say
+%"chronological time" or "cumulative time".  Are these real or CPU times?''}
+}
+\label{timeline}
+\end{center}
+\normalsize
+\end{figure}
+
